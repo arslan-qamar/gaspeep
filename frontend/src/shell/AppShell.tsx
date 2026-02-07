@@ -32,8 +32,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </div>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="pb-24 md:pb-0">
+        <main className="flex-1 overflow-hidden">
+          <div className="pb-24 md:pb-0 h-full overflow-hidden">
             {children}
           </div>
         </main>
