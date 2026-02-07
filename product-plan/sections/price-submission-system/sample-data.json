@@ -1,0 +1,423 @@
+{
+  "stations": [
+    {
+      "id": "station-001",
+      "name": "Shell Downtown",
+      "brand": "Shell",
+      "address": "789 Market Street",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94103",
+      "latitude": 37.7859,
+      "longitude": -122.4068,
+      "distance": 0.3
+    },
+    {
+      "id": "station-002",
+      "name": "Chevron Mission Bay",
+      "brand": "Chevron",
+      "address": "450 4th Street",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94107",
+      "latitude": 37.7749,
+      "longitude": -122.3977,
+      "distance": 0.8
+    },
+    {
+      "id": "station-003",
+      "name": "76 Station",
+      "brand": "76",
+      "address": "1250 Van Ness Avenue",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94109",
+      "latitude": 37.7897,
+      "longitude": -122.4201,
+      "distance": 1.2
+    }
+  ],
+  "currentUser": {
+    "id": "user-123",
+    "tier": "free",
+    "contributionStats": {
+      "totalSubmissions": 23,
+      "monthlySubmissions": 23,
+      "weeklySubmissions": 8,
+      "todaySubmissions": 3,
+      "pointsEarned": 1150,
+      "verificationRate": 94.5,
+      "trustScore": 78,
+      "usersHelped": 156
+    },
+    "submissionLimits": {
+      "dailyLimit": 10,
+      "remaining": 7,
+      "nextReset": "2026-02-08T00:00:00Z",
+      "upgradePrompt": "Premium users get unlimited submissions!"
+    }
+  },
+  "premiumUser": {
+    "id": "user-456",
+    "tier": "premium",
+    "contributionStats": {
+      "totalSubmissions": 342,
+      "monthlySubmissions": 67,
+      "weeklySubmissions": 18,
+      "todaySubmissions": 5,
+      "pointsEarned": 17100,
+      "verificationRate": 98.2,
+      "trustScore": 95,
+      "usersHelped": 2840,
+      "rank": "Top Contributor"
+    }
+  },
+  "recentSubmissions": [
+    {
+      "id": "sub-001",
+      "station": {
+        "id": "station-001",
+        "name": "Shell Downtown",
+        "brand": "Shell",
+        "address": "789 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94103",
+        "latitude": 37.7859,
+        "longitude": -122.4068
+      },
+      "fuelType": "E10",
+      "price": 3.85,
+      "timestamp": "2026-02-07T10:30:00Z",
+      "status": "published"
+    },
+    {
+      "id": "sub-002",
+      "station": {
+        "id": "station-002",
+        "name": "Chevron Mission Bay",
+        "brand": "Chevron",
+        "address": "450 4th Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94107",
+        "latitude": 37.7749,
+        "longitude": -122.3977
+      },
+      "fuelType": "Diesel",
+      "price": 4.39,
+      "timestamp": "2026-02-06T15:45:00Z",
+      "status": "published"
+    },
+    {
+      "id": "sub-003",
+      "station": {
+        "id": "station-003",
+        "name": "76 Station",
+        "brand": "76",
+        "address": "1250 Van Ness Avenue",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94109",
+        "latitude": 37.7897,
+        "longitude": -122.4201
+      },
+      "fuelType": "U95",
+      "price": 4.15,
+      "timestamp": "2026-02-05T09:20:00Z",
+      "status": "published"
+    }
+  ],
+  "activeSubmission": {
+    "id": "sub-draft-001",
+    "stationId": "station-001",
+    "station": {
+      "id": "station-001",
+      "name": "Shell Downtown",
+      "brand": "Shell",
+      "address": "789 Market Street",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94103",
+      "latitude": 37.7859,
+      "longitude": -122.4068,
+      "distance": 0.3
+    },
+    "fuelType": "Unleaded 91",
+    "price": 4.09,
+    "timestamp": "2026-02-07T14:22:00Z",
+    "method": "manual",
+    "status": "draft",
+    "notes": "",
+    "userId": "user-123"
+  },
+  "voiceSubmissionExample": {
+    "rawText": "Shell on Market Street regular unleaded three eighty five",
+    "parsedData": {
+      "stationName": "Shell Downtown",
+      "fuelType": "E10",
+      "price": 3.85,
+      "confidence": 0.92
+    },
+    "isProcessing": false
+  },
+  "voiceSubmissionProcessing": {
+    "rawText": "Chevron Mission...",
+    "parsedData": {
+      "confidence": 0
+    },
+    "isProcessing": true
+  },
+  "voiceSubmissionError": {
+    "rawText": "[inaudible]",
+    "parsedData": {
+      "confidence": 0
+    },
+    "isProcessing": false,
+    "error": "Couldn't understand. Try again in a quieter area."
+  },
+  "photoSubmissionExample": {
+    "imageUrl": "/mock-price-board.jpg",
+    "stationId": "station-001",
+    "detectedPrices": [
+      {
+        "fuelType": "E10",
+        "price": 3.85,
+        "confidence": 0.95,
+        "boundingBox": {
+          "x": 120,
+          "y": 180,
+          "width": 100,
+          "height": 60
+        }
+      },
+      {
+        "fuelType": "Unleaded 91",
+        "price": 4.09,
+        "confidence": 0.93,
+        "boundingBox": {
+          "x": 120,
+          "y": 260,
+          "width": 100,
+          "height": 60
+        }
+      },
+      {
+        "fuelType": "Diesel",
+        "price": 4.39,
+        "confidence": 0.88,
+        "boundingBox": {
+          "x": 120,
+          "y": 340,
+          "width": 100,
+          "height": 60
+        }
+      }
+    ],
+    "isProcessing": false,
+    "ocrConfidence": 0.92
+  },
+  "photoSubmissionProcessing": {
+    "imageUrl": "/mock-blurry-board.jpg",
+    "stationId": "station-001",
+    "detectedPrices": [],
+    "isProcessing": true,
+    "ocrConfidence": 0
+  },
+  "photoSubmissionLowConfidence": {
+    "imageUrl": "/mock-unclear-board.jpg",
+    "stationId": "station-001",
+    "detectedPrices": [
+      {
+        "fuelType": "E10",
+        "price": 3.85,
+        "confidence": 0.62,
+        "boundingBox": {
+          "x": 120,
+          "y": 180,
+          "width": 100,
+          "height": 60
+        }
+      }
+    ],
+    "isProcessing": false,
+    "ocrConfidence": 0.62,
+    "error": "Photo quality low. Please verify the detected price."
+  },
+  "completedSubmissions": [
+    {
+      "id": "sub-complete-001",
+      "stationId": "station-001",
+      "station": {
+        "id": "station-001",
+        "name": "Shell Downtown",
+        "brand": "Shell",
+        "address": "789 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94103",
+        "latitude": 37.7859,
+        "longitude": -122.4068
+      },
+      "fuelType": "E10",
+      "price": 3.85,
+      "timestamp": "2026-02-07T14:25:00Z",
+      "method": "manual",
+      "status": "published",
+      "userId": "user-123",
+      "verifiedAt": "2026-02-07T14:25:05Z"
+    },
+    {
+      "id": "sub-complete-002",
+      "stationId": "station-002",
+      "station": {
+        "id": "station-002",
+        "name": "Chevron Mission Bay",
+        "brand": "Chevron",
+        "address": "450 4th Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94107",
+        "latitude": 37.7749,
+        "longitude": -122.3977
+      },
+      "fuelType": "Diesel",
+      "price": 4.39,
+      "timestamp": "2026-02-07T13:10:00Z",
+      "method": "voice",
+      "status": "published",
+      "userId": "user-456",
+      "confidence": 0.92,
+      "verifiedAt": "2026-02-07T13:10:02Z"
+    },
+    {
+      "id": "sub-complete-003",
+      "stationId": "station-001",
+      "station": {
+        "id": "station-001",
+        "name": "Shell Downtown",
+        "brand": "Shell",
+        "address": "789 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94103",
+        "latitude": 37.7859,
+        "longitude": -122.4068
+      },
+      "fuelType": "Unleaded 91",
+      "price": 4.09,
+      "timestamp": "2026-02-07T12:45:00Z",
+      "method": "photo",
+      "status": "verifying",
+      "userId": "user-123",
+      "confidence": 0.88
+    },
+    {
+      "id": "sub-complete-004",
+      "stationId": "station-003",
+      "station": {
+        "id": "station-003",
+        "name": "76 Station",
+        "brand": "76",
+        "address": "1250 Van Ness Avenue",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94109",
+        "latitude": 37.7897,
+        "longitude": -122.4201
+      },
+      "fuelType": "E10",
+      "price": 3.65,
+      "timestamp": "2026-02-06T18:30:00Z",
+      "method": "manual",
+      "status": "rejected",
+      "userId": "user-123",
+      "rejectionReason": "Price significantly lower than other reports. Station may have special promotion."
+    }
+  ],
+  "validationErrors": [
+    {
+      "field": "price",
+      "message": "Price seems unusually high. Is $8.99 correct?",
+      "severity": "warning"
+    },
+    {
+      "field": "station",
+      "message": "Station is required",
+      "severity": "error"
+    },
+    {
+      "field": "fuelType",
+      "message": "Fuel type is required",
+      "severity": "error"
+    },
+    {
+      "field": "timestamp",
+      "message": "This price was reported 2 minutes ago. Update?",
+      "severity": "warning"
+    }
+  ],
+  "nearbyStations": [
+    {
+      "station": {
+        "id": "station-001",
+        "name": "Shell Downtown",
+        "brand": "Shell",
+        "address": "789 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94103",
+        "latitude": 37.7859,
+        "longitude": -122.4068,
+        "distance": 0.3
+      },
+      "lastUpdated": "2026-02-07T10:30:00Z",
+      "priceCount": 8
+    },
+    {
+      "station": {
+        "id": "station-002",
+        "name": "Chevron Mission Bay",
+        "brand": "Chevron",
+        "address": "450 4th Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94107",
+        "latitude": 37.7749,
+        "longitude": -122.3977,
+        "distance": 0.8
+      },
+      "lastUpdated": "2026-02-06T15:45:00Z",
+      "priceCount": 6
+    },
+    {
+      "station": {
+        "id": "station-003",
+        "name": "76 Station",
+        "brand": "76",
+        "address": "1250 Van Ness Avenue",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94109",
+        "latitude": 37.7897,
+        "longitude": -122.4201,
+        "distance": 1.2
+      },
+      "lastUpdated": "2026-02-05T09:20:00Z",
+      "priceCount": 4
+    }
+  ],
+  "fuelTypes": [
+    { "id": "E10", "name": "E10", "description": "Regular unleaded with 10% ethanol" },
+    { "id": "Unleaded 91", "name": "Unleaded 91", "description": "Regular unleaded (91 octane)" },
+    { "id": "Diesel", "name": "Diesel", "description": "Standard diesel fuel" },
+    { "id": "Premium Diesel", "name": "Premium Diesel", "description": "High-grade diesel fuel" },
+    { "id": "U95", "name": "U95", "description": "Mid-grade unleaded (95 octane)" },
+    { "id": "U98", "name": "U98", "description": "Premium unleaded (98 octane)" },
+    { "id": "LPG", "name": "LPG", "description": "Liquefied petroleum gas" },
+    { "id": "Truck Diesel", "name": "Truck Diesel", "description": "Diesel for heavy vehicles" },
+    { "id": "AdBlue", "name": "AdBlue", "description": "Diesel exhaust fluid (DEF)" },
+    { "id": "E85", "name": "E85", "description": "Flex fuel with 85% ethanol" },
+    { "id": "Biodiesel", "name": "Biodiesel", "description": "Renewable diesel fuel" }
+  ]
+}

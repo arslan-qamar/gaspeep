@@ -1,0 +1,612 @@
+{
+  "user": {
+    "id": "user_001",
+    "name": "Alex Thompson",
+    "email": "alex.thompson@example.com",
+    "isPremium": true,
+    "currentLocation": {
+      "address": "Sydney CBD, NSW",
+      "latitude": -33.8688,
+      "longitude": 151.2093
+    }
+  },
+  "alerts": [
+    {
+      "id": "alert_001",
+      "userId": "user_001",
+      "name": "Work commute diesel",
+      "fuelTypeId": "fuel_diesel",
+      "fuelTypeName": "Diesel",
+      "fuelTypeColor": "#FCD34D",
+      "priceThreshold": 1.85,
+      "currency": "AUD",
+      "unit": "L",
+      "location": {
+        "address": "Parramatta, NSW",
+        "latitude": -33.8150,
+        "longitude": 151.0010
+      },
+      "radius": 5,
+      "radiusUnit": "km",
+      "status": "active",
+      "notifyViaPush": true,
+      "notifyViaEmail": false,
+      "createdAt": "2026-01-15T08:30:00Z",
+      "lastModifiedAt": "2026-01-15T08:30:00Z",
+      "lastTriggeredAt": "2026-02-06T14:22:00Z",
+      "triggerCount": 12
+    },
+    {
+      "id": "alert_002",
+      "userId": "user_001",
+      "name": "Home area E10",
+      "fuelTypeId": "fuel_e10",
+      "fuelTypeName": "E10",
+      "fuelTypeColor": "#86EFAC",
+      "priceThreshold": 1.65,
+      "currency": "AUD",
+      "unit": "L",
+      "location": {
+        "address": "Bondi Junction, NSW",
+        "latitude": -33.8918,
+        "longitude": 151.2497
+      },
+      "radius": 3,
+      "radiusUnit": "km",
+      "status": "active",
+      "notifyViaPush": true,
+      "notifyViaEmail": true,
+      "createdAt": "2026-01-20T19:15:00Z",
+      "lastModifiedAt": "2026-01-25T10:30:00Z",
+      "lastTriggeredAt": "2026-02-05T08:15:00Z",
+      "triggerCount": 8
+    },
+    {
+      "id": "alert_003",
+      "userId": "user_001",
+      "name": "Weekend trips U98",
+      "fuelTypeId": "fuel_u98",
+      "fuelTypeName": "U98",
+      "fuelTypeColor": "#C084FC",
+      "priceThreshold": 2.10,
+      "currency": "AUD",
+      "unit": "L",
+      "location": {
+        "address": "Blue Mountains, NSW",
+        "latitude": -33.7128,
+        "longitude": 150.3111
+      },
+      "radius": 10,
+      "radiusUnit": "km",
+      "status": "paused",
+      "notifyViaPush": true,
+      "notifyViaEmail": false,
+      "createdAt": "2026-01-10T12:00:00Z",
+      "lastModifiedAt": "2026-01-28T16:45:00Z",
+      "lastTriggeredAt": null,
+      "triggerCount": 0
+    },
+    {
+      "id": "alert_004",
+      "userId": "user_001",
+      "name": "City center U91",
+      "fuelTypeId": "fuel_u91",
+      "fuelTypeName": "Unleaded 91",
+      "fuelTypeColor": "#60A5FA",
+      "priceThreshold": 1.75,
+      "currency": "AUD",
+      "unit": "L",
+      "location": {
+        "address": "Sydney CBD, NSW",
+        "latitude": -33.8688,
+        "longitude": 151.2093
+      },
+      "radius": 2,
+      "radiusUnit": "km",
+      "status": "active",
+      "notifyViaPush": true,
+      "notifyViaEmail": false,
+      "createdAt": "2026-02-01T09:00:00Z",
+      "lastModifiedAt": "2026-02-01T09:00:00Z",
+      "lastTriggeredAt": "2026-02-07T07:30:00Z",
+      "triggerCount": 3
+    }
+  ],
+  "alertTriggers": [
+    {
+      "id": "trigger_001",
+      "alertId": "alert_001",
+      "stationId": "station_042",
+      "stationName": "Metro Petroleum Parramatta",
+      "stationAddress": "123 Church St, Parramatta NSW 2150",
+      "stationLatitude": -33.8170,
+      "stationLongitude": 151.0050,
+      "price": 1.82,
+      "currency": "AUD",
+      "unit": "L",
+      "triggeredAt": "2026-02-06T14:22:00Z",
+      "distanceFromAlert": 1.2
+    },
+    {
+      "id": "trigger_002",
+      "alertId": "alert_001",
+      "stationName": "Shell Parramatta North",
+      "stationAddress": "456 Victoria Rd, Parramatta NSW 2150",
+      "stationLatitude": -33.8100,
+      "stationLongitude": 151.0030,
+      "price": 1.83,
+      "currency": "AUD",
+      "unit": "L",
+      "triggeredAt": "2026-02-04T10:15:00Z",
+      "distanceFromAlert": 2.1
+    },
+    {
+      "id": "trigger_003",
+      "alertId": "alert_001",
+      "stationName": "BP Westfield Parramatta",
+      "stationAddress": "159-175 Church St, Parramatta NSW 2150",
+      "stationLatitude": -33.8165,
+      "stationLongitude": 151.0045,
+      "price": 1.84,
+      "currency": "AUD",
+      "unit": "L",
+      "triggeredAt": "2026-02-02T16:30:00Z",
+      "distanceFromAlert": 0.8
+    },
+    {
+      "id": "trigger_004",
+      "alertId": "alert_002",
+      "stationName": "Coles Express Bondi Junction",
+      "stationAddress": "500 Oxford St, Bondi Junction NSW 2022",
+      "stationLatitude": -33.8925,
+      "stationLongitude": 151.2505,
+      "price": 1.63,
+      "currency": "AUD",
+      "unit": "L",
+      "triggeredAt": "2026-02-05T08:15:00Z",
+      "distanceFromAlert": 0.5
+    },
+    {
+      "id": "trigger_005",
+      "alertId": "alert_004",
+      "stationName": "7-Eleven Sydney CBD",
+      "stationAddress": "78 Pitt St, Sydney NSW 2000",
+      "stationLatitude": -33.8675,
+      "stationLongitude": 151.2085,
+      "price": 1.74,
+      "currency": "AUD",
+      "unit": "L",
+      "triggeredAt": "2026-02-07T07:30:00Z",
+      "distanceFromAlert": 0.3
+    }
+  ],
+  "matchingStations": [
+    {
+      "alertId": "alert_001",
+      "stations": [
+        {
+          "stationId": "station_042",
+          "stationName": "Metro Petroleum Parramatta",
+          "stationAddress": "123 Church St, Parramatta NSW 2150",
+          "price": 1.82,
+          "currency": "AUD",
+          "unit": "L",
+          "distance": 1.2,
+          "lastUpdated": "2026-02-07T06:00:00Z"
+        },
+        {
+          "stationId": "station_043",
+          "stationName": "Budget Petrol Parramatta West",
+          "stationAddress": "88 Great Western Hwy, Parramatta NSW 2150",
+          "price": 1.84,
+          "currency": "AUD",
+          "unit": "L",
+          "distance": 3.5,
+          "lastUpdated": "2026-02-07T08:15:00Z"
+        }
+      ]
+    },
+    {
+      "alertId": "alert_002",
+      "stations": [
+        {
+          "stationId": "station_078",
+          "stationName": "Independent Bondi",
+          "stationAddress": "234 Oxford St, Bondi Junction NSW 2022",
+          "price": 1.64,
+          "currency": "AUD",
+          "unit": "L",
+          "distance": 1.1,
+          "lastUpdated": "2026-02-07T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "alertId": "alert_004",
+      "stations": [
+        {
+          "stationId": "station_091",
+          "stationName": "7-Eleven Sydney CBD",
+          "stationAddress": "78 Pitt St, Sydney NSW 2000",
+          "price": 1.74,
+          "currency": "AUD",
+          "unit": "L",
+          "distance": 0.3,
+          "lastUpdated": "2026-02-07T07:30:00Z"
+        },
+        {
+          "stationId": "station_092",
+          "stationName": "Ampol Circular Quay",
+          "stationAddress": "15 Alfred St, Sydney NSW 2000",
+          "price": 1.73,
+          "currency": "AUD",
+          "unit": "L",
+          "distance": 0.9,
+          "lastUpdated": "2026-02-07T10:00:00Z"
+        }
+      ]
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_001",
+      "userId": "user_001",
+      "type": "alert",
+      "title": "Price Alert: Unleaded 91 at $1.74/L",
+      "message": "Price dropped to $1.74/L at 7-Eleven Sydney CBD (below your $1.75/L threshold)",
+      "sentAt": "2026-02-07T07:35:00Z",
+      "readAt": null,
+      "expiresAt": null,
+      "data": {
+        "type": "alert",
+        "alertId": "alert_004",
+        "fuelTypeId": "fuel_u91",
+        "fuelTypeName": "Unleaded 91",
+        "fuelTypeColor": "#60A5FA",
+        "stationId": "station_091",
+        "stationName": "7-Eleven Sydney CBD",
+        "stationAddress": "78 Pitt St, Sydney NSW 2000",
+        "stationLatitude": -33.8675,
+        "stationLongitude": 151.2085,
+        "price": 1.74,
+        "threshold": 1.75,
+        "currency": "AUD",
+        "unit": "L",
+        "distance": 0.3
+      }
+    },
+    {
+      "id": "notif_002",
+      "userId": "user_001",
+      "type": "broadcast",
+      "title": "Special Offer: Shell Parramatta",
+      "message": "Fill up and save 10¢/L on diesel this weekend! Valid until Sunday 11:59 PM.",
+      "sentAt": "2026-02-06T18:00:00Z",
+      "readAt": "2026-02-06T19:22:00Z",
+      "expiresAt": "2026-02-09T23:59:00Z",
+      "data": {
+        "type": "broadcast",
+        "broadcastId": "broadcast_012",
+        "stationId": "station_043",
+        "stationName": "Shell Parramatta North",
+        "stationLogo": "https://example.com/logos/shell.png",
+        "stationAddress": "456 Victoria Rd, Parramatta NSW 2150",
+        "stationLatitude": -33.8100,
+        "stationLongitude": 151.0030,
+        "promotionalMessage": "Fill up and save 10¢/L on diesel this weekend! Valid until Sunday 11:59 PM.",
+        "validUntil": "2026-02-09T23:59:00Z",
+        "distance": 2.1
+      }
+    },
+    {
+      "id": "notif_003",
+      "userId": "user_001",
+      "type": "alert",
+      "title": "Price Alert: Diesel at $1.82/L",
+      "message": "Price dropped to $1.82/L at Metro Petroleum Parramatta (below your $1.85/L threshold)",
+      "sentAt": "2026-02-06T14:25:00Z",
+      "readAt": "2026-02-06T15:10:00Z",
+      "expiresAt": null,
+      "data": {
+        "type": "alert",
+        "alertId": "alert_001",
+        "fuelTypeId": "fuel_diesel",
+        "fuelTypeName": "Diesel",
+        "fuelTypeColor": "#FCD34D",
+        "stationId": "station_042",
+        "stationName": "Metro Petroleum Parramatta",
+        "stationAddress": "123 Church St, Parramatta NSW 2150",
+        "stationLatitude": -33.8170,
+        "stationLongitude": 151.0050,
+        "price": 1.82,
+        "threshold": 1.85,
+        "currency": "AUD",
+        "unit": "L",
+        "distance": 1.2
+      }
+    },
+    {
+      "id": "notif_004",
+      "userId": "user_001",
+      "type": "system",
+      "title": "Submission Approved",
+      "message": "Your price submission for BP Westfield Parramatta has been verified and published. You earned 50 points!",
+      "sentAt": "2026-02-06T12:30:00Z",
+      "readAt": "2026-02-06T13:05:00Z",
+      "expiresAt": null,
+      "data": {
+        "type": "system",
+        "category": "submission",
+        "actionUrl": "/submissions/sub_456",
+        "actionLabel": "View Submission"
+      }
+    },
+    {
+      "id": "notif_005",
+      "userId": "user_001",
+      "type": "alert",
+      "title": "Price Alert: E10 at $1.63/L",
+      "message": "Price dropped to $1.63/L at Coles Express Bondi Junction (below your $1.65/L threshold)",
+      "sentAt": "2026-02-05T08:20:00Z",
+      "readAt": "2026-02-05T09:45:00Z",
+      "expiresAt": null,
+      "data": {
+        "type": "alert",
+        "alertId": "alert_002",
+        "fuelTypeId": "fuel_e10",
+        "fuelTypeName": "E10",
+        "fuelTypeColor": "#86EFAC",
+        "stationId": "station_078",
+        "stationName": "Coles Express Bondi Junction",
+        "stationAddress": "500 Oxford St, Bondi Junction NSW 2022",
+        "stationLatitude": -33.8925,
+        "stationLongitude": 151.2505,
+        "price": 1.63,
+        "threshold": 1.65,
+        "currency": "AUD",
+        "unit": "L",
+        "distance": 0.5
+      }
+    },
+    {
+      "id": "notif_006",
+      "userId": "user_001",
+      "type": "broadcast",
+      "title": "Special Offer: BP Bondi Junction",
+      "message": "Join BP Plus loyalty program today and get 5¢/L instant discount on all fuel grades!",
+      "sentAt": "2026-02-04T15:30:00Z",
+      "readAt": "2026-02-04T16:12:00Z",
+      "expiresAt": "2026-02-14T23:59:00Z",
+      "data": {
+        "type": "broadcast",
+        "broadcastId": "broadcast_008",
+        "stationId": "station_079",
+        "stationName": "BP Bondi Junction",
+        "stationLogo": "https://example.com/logos/bp.png",
+        "stationAddress": "120 Bondi Rd, Bondi Junction NSW 2022",
+        "stationLatitude": -33.8930,
+        "stationLongitude": 151.2510,
+        "promotionalMessage": "Join BP Plus loyalty program today and get 5¢/L instant discount on all fuel grades!",
+        "validUntil": "2026-02-14T23:59:00Z",
+        "distance": 1.8
+      }
+    },
+    {
+      "id": "notif_007",
+      "userId": "user_001",
+      "type": "system",
+      "title": "New Feature: Price Predictions",
+      "message": "We've launched AI-powered price predictions! See when prices are likely to drop in your area.",
+      "sentAt": "2026-02-03T10:00:00Z",
+      "readAt": "2026-02-03T11:30:00Z",
+      "expiresAt": null,
+      "data": {
+        "type": "system",
+        "category": "feature",
+        "actionUrl": "/features/price-predictions",
+        "actionLabel": "Learn More"
+      }
+    },
+    {
+      "id": "notif_008",
+      "userId": "user_001",
+      "type": "system",
+      "title": "Premium Subscription Renewed",
+      "message": "Your Premium subscription has been renewed for another month. Thank you for your support!",
+      "sentAt": "2026-02-01T09:00:00Z",
+      "readAt": "2026-02-01T09:15:00Z",
+      "expiresAt": null,
+      "data": {
+        "type": "system",
+        "category": "account",
+        "actionUrl": "/account/subscription",
+        "actionLabel": "Manage Subscription"
+      }
+    }
+  ],
+  "notificationPreferences": {
+    "userId": "user_001",
+    "pushEnabled": true,
+    "emailEnabled": true,
+    "emailFrequency": "immediately",
+    "smsEnabled": false,
+    "smsPhoneNumber": null,
+    "quietHoursEnabled": true,
+    "quietHoursStart": "22:00",
+    "quietHoursEnd": "07:00",
+    "maxAlertsPerDay": 5,
+    "minPriceDropPercentage": 3,
+    "stationBroadcastsEnabled": true,
+    "broadcastMaxDistance": 10,
+    "accountUpdatesEnabled": true,
+    "submissionStatusEnabled": true,
+    "featureAnnouncementsEnabled": true,
+    "lastModifiedAt": "2026-01-25T14:30:00Z"
+  },
+  "fuelTypes": [
+    {
+      "id": "fuel_e10",
+      "name": "E10",
+      "displayName": "E10",
+      "color": "#86EFAC",
+      "displayOrder": 1
+    },
+    {
+      "id": "fuel_u91",
+      "name": "Unleaded 91",
+      "displayName": "Unleaded 91",
+      "color": "#60A5FA",
+      "displayOrder": 2
+    },
+    {
+      "id": "fuel_diesel",
+      "name": "Diesel",
+      "displayName": "Diesel",
+      "color": "#FCD34D",
+      "displayOrder": 3
+    },
+    {
+      "id": "fuel_premium_diesel",
+      "name": "Premium Diesel",
+      "displayName": "Premium Diesel",
+      "color": "#FBBF24",
+      "displayOrder": 4
+    },
+    {
+      "id": "fuel_u95",
+      "name": "U95",
+      "displayName": "U95",
+      "color": "#818CF8",
+      "displayOrder": 5
+    },
+    {
+      "id": "fuel_u98",
+      "name": "U98",
+      "displayName": "U98",
+      "color": "#C084FC",
+      "displayOrder": 6
+    },
+    {
+      "id": "fuel_lpg",
+      "name": "LPG",
+      "displayName": "LPG",
+      "color": "#FB923C",
+      "displayOrder": 7
+    },
+    {
+      "id": "fuel_truck_diesel",
+      "name": "Truck Diesel",
+      "displayName": "Truck Diesel",
+      "color": "#F59E0B",
+      "displayOrder": 8
+    },
+    {
+      "id": "fuel_adblue",
+      "name": "AdBlue",
+      "displayName": "AdBlue",
+      "color": "#38BDF8",
+      "displayOrder": 9
+    },
+    {
+      "id": "fuel_e85",
+      "name": "E85",
+      "displayName": "E85",
+      "color": "#4ADE80",
+      "displayOrder": 10
+    },
+    {
+      "id": "fuel_biodiesel",
+      "name": "Biodiesel",
+      "displayName": "Biodiesel",
+      "color": "#22C55E",
+      "displayOrder": 11
+    }
+  ],
+  "priceContext": [
+    {
+      "fuelTypeId": "fuel_diesel",
+      "fuelTypeName": "Diesel",
+      "averagePrice": 1.92,
+      "lowestPrice": 1.82,
+      "lowestPriceStationName": "Metro Petroleum Parramatta",
+      "lowestPriceStationId": "station_042",
+      "currency": "AUD",
+      "unit": "L",
+      "stationCount": 24
+    },
+    {
+      "fuelTypeId": "fuel_e10",
+      "fuelTypeName": "E10",
+      "averagePrice": 1.71,
+      "lowestPrice": 1.63,
+      "lowestPriceStationName": "Coles Express Bondi Junction",
+      "lowestPriceStationId": "station_078",
+      "currency": "AUD",
+      "unit": "L",
+      "stationCount": 18
+    },
+    {
+      "fuelTypeId": "fuel_u91",
+      "fuelTypeName": "Unleaded 91",
+      "averagePrice": 1.82,
+      "lowestPrice": 1.73,
+      "lowestPriceStationName": "Ampol Circular Quay",
+      "lowestPriceStationId": "station_092",
+      "currency": "AUD",
+      "unit": "L",
+      "stationCount": 12
+    },
+    {
+      "fuelTypeId": "fuel_u98",
+      "fuelTypeName": "U98",
+      "averagePrice": 2.18,
+      "lowestPrice": 2.08,
+      "lowestPriceStationName": "Independent Blue Mountains",
+      "lowestPriceStationId": "station_105",
+      "currency": "AUD",
+      "unit": "L",
+      "stationCount": 8
+    }
+  ],
+  "alertStatistics": [
+    {
+      "alertId": "alert_001",
+      "triggerCount": 12,
+      "lastTriggeredAt": "2026-02-06T14:22:00Z",
+      "estimatedSavings": 14.4,
+      "currentMatchingStations": 2
+    },
+    {
+      "alertId": "alert_002",
+      "triggerCount": 8,
+      "lastTriggeredAt": "2026-02-05T08:15:00Z",
+      "estimatedSavings": 9.6,
+      "currentMatchingStations": 1
+    },
+    {
+      "alertId": "alert_003",
+      "triggerCount": 0,
+      "lastTriggeredAt": null,
+      "estimatedSavings": 0,
+      "currentMatchingStations": 0
+    },
+    {
+      "alertId": "alert_004",
+      "triggerCount": 3,
+      "lastTriggeredAt": "2026-02-07T07:30:00Z",
+      "estimatedSavings": 3.0,
+      "currentMatchingStations": 2
+    }
+  ],
+  "createAlertFormDefaults": {
+    "step": 1,
+    "fuelTypeId": null,
+    "location": null,
+    "radius": 5,
+    "radiusUnit": "km",
+    "priceThreshold": null,
+    "alertName": "",
+    "notifyViaPush": true,
+    "notifyViaEmail": false
+  }
+}

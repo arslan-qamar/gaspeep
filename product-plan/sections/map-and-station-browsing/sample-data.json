@@ -1,0 +1,557 @@
+{
+  "stations": [
+    {
+      "id": "sta_001",
+      "name": "Downtown Shell",
+      "brand": "Shell",
+      "address": {
+        "street": "1245 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94103"
+      },
+      "coordinates": {
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "operatingHours": {
+        "open": "24 hours"
+      },
+      "amenities": ["Car Wash", "Convenience Store", "Restroom", "ATM"],
+      "lastVerified": "2026-02-06T08:30:00Z",
+      "distance": 0.3
+    },
+    {
+      "id": "sta_002",
+      "name": "Chevron Mission Bay",
+      "brand": "Chevron",
+      "address": {
+        "street": "450 4th Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94107"
+      },
+      "coordinates": {
+        "latitude": 37.7704,
+        "longitude": -122.3931
+      },
+      "operatingHours": {
+        "open": "6:00 AM",
+        "close": "11:00 PM"
+      },
+      "amenities": ["Convenience Store", "Air Pump", "Restroom"],
+      "lastVerified": "2026-02-06T07:15:00Z",
+      "distance": 0.8
+    },
+    {
+      "id": "sta_003",
+      "name": "76 Station - SOMA",
+      "brand": "76",
+      "address": {
+        "street": "789 Howard Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94103"
+      },
+      "coordinates": {
+        "latitude": 37.7825,
+        "longitude": -122.4031
+      },
+      "operatingHours": {
+        "open": "5:00 AM",
+        "close": "10:00 PM"
+      },
+      "amenities": ["Convenience Store", "ATM"],
+      "lastVerified": "2026-02-05T16:45:00Z",
+      "distance": 1.2
+    },
+    {
+      "id": "sta_004",
+      "name": "Valero Gas",
+      "brand": "Valero",
+      "address": {
+        "street": "1520 Van Ness Avenue",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94109"
+      },
+      "coordinates": {
+        "latitude": 37.7886,
+        "longitude": -122.4221
+      },
+      "operatingHours": {
+        "open": "24 hours"
+      },
+      "amenities": ["Car Wash", "Convenience Store", "Restroom", "EV Charging"],
+      "lastVerified": "2026-02-06T09:00:00Z",
+      "distance": 1.5
+    },
+    {
+      "id": "sta_005",
+      "name": "Arco Marina District",
+      "brand": "Arco",
+      "address": {
+        "street": "2350 Lombard Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94123"
+      },
+      "coordinates": {
+        "latitude": 37.7996,
+        "longitude": -122.4377
+      },
+      "operatingHours": {
+        "open": "6:00 AM",
+        "close": "9:00 PM"
+      },
+      "amenities": ["Convenience Store", "Air Pump"],
+      "lastVerified": "2026-02-06T06:30:00Z",
+      "distance": 2.1
+    },
+    {
+      "id": "sta_006",
+      "name": "BP Express",
+      "brand": "BP",
+      "address": {
+        "street": "890 Geary Boulevard",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94109"
+      },
+      "coordinates": {
+        "latitude": 37.7858,
+        "longitude": -122.4193
+      },
+      "operatingHours": {
+        "open": "24 hours"
+      },
+      "amenities": ["Convenience Store", "Restroom", "ATM", "Air Pump"],
+      "lastVerified": "2026-02-06T10:20:00Z",
+      "distance": 0.6
+    }
+  ],
+  "fuelPrices": [
+    {
+      "id": "fp_001",
+      "stationId": "sta_001",
+      "fuelType": "E10",
+      "price": 3.89,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T08:30:00Z",
+      "verificationConfidence": 95,
+      "submissionCount": 3,
+      "trend": "down"
+    },
+    {
+      "id": "fp_002",
+      "stationId": "sta_001",
+      "fuelType": "Unleaded 91",
+      "price": 4.19,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T08:30:00Z",
+      "verificationConfidence": 95,
+      "submissionCount": 3,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_003",
+      "stationId": "sta_001",
+      "fuelType": "Diesel",
+      "price": 4.49,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T08:30:00Z",
+      "verificationConfidence": 95,
+      "submissionCount": 3,
+      "trend": "up"
+    },
+    {
+      "id": "fp_004",
+      "stationId": "sta_001",
+      "fuelType": "U95",
+      "price": 4.39,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T08:30:00Z",
+      "verificationConfidence": 95,
+      "submissionCount": 3,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_005",
+      "stationId": "sta_001",
+      "fuelType": "U98",
+      "price": 4.69,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T08:30:00Z",
+      "verificationConfidence": 95,
+      "submissionCount": 3,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_006",
+      "stationId": "sta_002",
+      "fuelType": "E10",
+      "price": 3.79,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T07:15:00Z",
+      "verificationConfidence": 88,
+      "submissionCount": 2,
+      "trend": "down"
+    },
+    {
+      "id": "fp_007",
+      "stationId": "sta_002",
+      "fuelType": "Unleaded 91",
+      "price": 4.09,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T07:15:00Z",
+      "verificationConfidence": 88,
+      "submissionCount": 2,
+      "trend": "down"
+    },
+    {
+      "id": "fp_008",
+      "stationId": "sta_002",
+      "fuelType": "Diesel",
+      "price": 4.39,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T07:15:00Z",
+      "verificationConfidence": 88,
+      "submissionCount": 2,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_009",
+      "stationId": "sta_002",
+      "fuelType": "U95",
+      "price": 4.29,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T07:15:00Z",
+      "verificationConfidence": 88,
+      "submissionCount": 2,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_010",
+      "stationId": "sta_003",
+      "fuelType": "E10",
+      "price": 4.09,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-05T16:45:00Z",
+      "verificationConfidence": 72,
+      "submissionCount": 1,
+      "trend": "up"
+    },
+    {
+      "id": "fp_011",
+      "stationId": "sta_003",
+      "fuelType": "Unleaded 91",
+      "price": 4.39,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-05T16:45:00Z",
+      "verificationConfidence": 72,
+      "submissionCount": 1,
+      "trend": "up"
+    },
+    {
+      "id": "fp_012",
+      "stationId": "sta_003",
+      "fuelType": "Diesel",
+      "price": 4.59,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-05T16:45:00Z",
+      "verificationConfidence": 72,
+      "submissionCount": 1,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_013",
+      "stationId": "sta_004",
+      "fuelType": "E10",
+      "price": 3.99,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T09:00:00Z",
+      "verificationConfidence": 90,
+      "submissionCount": 4,
+      "trend": "down"
+    },
+    {
+      "id": "fp_014",
+      "stationId": "sta_004",
+      "fuelType": "Unleaded 91",
+      "price": 4.29,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T09:00:00Z",
+      "verificationConfidence": 90,
+      "submissionCount": 4,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_015",
+      "stationId": "sta_004",
+      "fuelType": "Diesel",
+      "price": 4.55,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T09:00:00Z",
+      "verificationConfidence": 90,
+      "submissionCount": 4,
+      "trend": "up"
+    },
+    {
+      "id": "fp_016",
+      "stationId": "sta_004",
+      "fuelType": "Premium Diesel",
+      "price": 4.79,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T09:00:00Z",
+      "verificationConfidence": 90,
+      "submissionCount": 4,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_017",
+      "stationId": "sta_004",
+      "fuelType": "U95",
+      "price": 4.45,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T09:00:00Z",
+      "verificationConfidence": 90,
+      "submissionCount": 4,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_018",
+      "stationId": "sta_005",
+      "fuelType": "E10",
+      "price": 3.69,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T06:30:00Z",
+      "verificationConfidence": 85,
+      "submissionCount": 2,
+      "trend": "down"
+    },
+    {
+      "id": "fp_019",
+      "stationId": "sta_005",
+      "fuelType": "Unleaded 91",
+      "price": 3.99,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T06:30:00Z",
+      "verificationConfidence": 85,
+      "submissionCount": 2,
+      "trend": "down"
+    },
+    {
+      "id": "fp_020",
+      "stationId": "sta_005",
+      "fuelType": "Diesel",
+      "price": 4.29,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T06:30:00Z",
+      "verificationConfidence": 85,
+      "submissionCount": 2,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_021",
+      "stationId": "sta_006",
+      "fuelType": "E10",
+      "price": 3.95,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T10:20:00Z",
+      "verificationConfidence": 92,
+      "submissionCount": 5,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_022",
+      "stationId": "sta_006",
+      "fuelType": "Unleaded 91",
+      "price": 4.25,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T10:20:00Z",
+      "verificationConfidence": 92,
+      "submissionCount": 5,
+      "trend": "down"
+    },
+    {
+      "id": "fp_023",
+      "stationId": "sta_006",
+      "fuelType": "Diesel",
+      "price": 4.45,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T10:20:00Z",
+      "verificationConfidence": 92,
+      "submissionCount": 5,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_024",
+      "stationId": "sta_006",
+      "fuelType": "U95",
+      "price": 4.35,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T10:20:00Z",
+      "verificationConfidence": 92,
+      "submissionCount": 5,
+      "trend": "stable"
+    },
+    {
+      "id": "fp_025",
+      "stationId": "sta_006",
+      "fuelType": "U98",
+      "price": 4.65,
+      "currency": "USD",
+      "unit": "gallon",
+      "lastUpdated": "2026-02-06T10:20:00Z",
+      "verificationConfidence": 92,
+      "submissionCount": 5,
+      "trend": "up"
+    }
+  ],
+  "fuelTypeInfo": [
+    {
+      "id": "E10",
+      "displayName": "E10",
+      "description": "Regular unleaded with 10% ethanol",
+      "colorCode": "#10b981",
+      "displayOrder": 1
+    },
+    {
+      "id": "Unleaded 91",
+      "displayName": "Unleaded 91",
+      "description": "Regular unleaded (91 octane)",
+      "colorCode": "#3b82f6",
+      "displayOrder": 2
+    },
+    {
+      "id": "Diesel",
+      "displayName": "Diesel",
+      "description": "Standard diesel fuel",
+      "colorCode": "#78716c",
+      "displayOrder": 3
+    },
+    {
+      "id": "Premium Diesel",
+      "displayName": "Premium Diesel",
+      "description": "High-grade diesel fuel",
+      "colorCode": "#57534e",
+      "displayOrder": 4
+    },
+    {
+      "id": "U95",
+      "displayName": "U95",
+      "description": "Mid-grade unleaded (95 octane)",
+      "colorCode": "#0ea5e9",
+      "displayOrder": 5
+    },
+    {
+      "id": "U98",
+      "displayName": "U98",
+      "description": "Premium unleaded (98 octane)",
+      "colorCode": "#8b5cf6",
+      "displayOrder": 6
+    },
+    {
+      "id": "LPG",
+      "displayName": "LPG",
+      "description": "Liquefied petroleum gas",
+      "colorCode": "#f59e0b",
+      "displayOrder": 7
+    },
+    {
+      "id": "Truck Diesel",
+      "displayName": "Truck Diesel",
+      "description": "Diesel for heavy vehicles",
+      "colorCode": "#6b7280",
+      "displayOrder": 8
+    },
+    {
+      "id": "AdBlue",
+      "displayName": "AdBlue",
+      "description": "Diesel exhaust fluid (DEF)",
+      "colorCode": "#06b6d4",
+      "displayOrder": 9
+    },
+    {
+      "id": "E85",
+      "displayName": "E85",
+      "description": "Flex fuel with 85% ethanol",
+      "colorCode": "#22c55e",
+      "displayOrder": 10
+    },
+    {
+      "id": "Biodiesel",
+      "displayName": "Biodiesel",
+      "description": "Renewable diesel fuel",
+      "colorCode": "#84cc16",
+      "displayOrder": 11
+    }
+  ],
+  "searchSuggestions": [
+    {
+      "id": "sug_001",
+      "type": "station",
+      "displayText": "Downtown Shell - 1245 Market Street",
+      "stationId": "sta_001",
+      "coordinates": {
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      }
+    },
+    {
+      "id": "sug_002",
+      "type": "address",
+      "displayText": "Market Street, San Francisco, CA",
+      "coordinates": {
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      }
+    },
+    {
+      "id": "sug_003",
+      "type": "city",
+      "displayText": "Mission Bay, San Francisco",
+      "coordinates": {
+        "latitude": 37.7704,
+        "longitude": -122.3931
+      }
+    }
+  ],
+  "adContent": {
+    "id": "ad_001",
+    "type": "banner",
+    "imageUrl": "/placeholder-ad.jpg",
+    "duration": 5,
+    "ctaText": "Upgrade to Premium",
+    "ctaUrl": "/upgrade"
+  },
+  "defaultViewport": {
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "zoom": 13
+  }
+}

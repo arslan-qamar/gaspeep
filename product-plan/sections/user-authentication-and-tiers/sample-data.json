@@ -1,0 +1,549 @@
+{
+  "users": {
+    "freeUser": {
+      "id": "usr_f1a2b3c4",
+      "name": "Sarah Chen",
+      "email": "sarah.chen@example.com",
+      "avatar": "https://i.pravatar.cc/150?img=47",
+      "memberSince": "2025-11-15",
+      "tier": "free",
+      "emailVerified": true,
+      "connectedProviders": ["google"]
+    },
+    "premiumUser": {
+      "id": "usr_p5d6e7f8",
+      "name": "Marcus Johnson",
+      "email": "marcus.j@example.com",
+      "avatar": "https://i.pravatar.cc/150?img=12",
+      "memberSince": "2024-03-22",
+      "tier": "premium",
+      "subscriptionStatus": "active",
+      "billingCycle": "annual",
+      "emailVerified": true,
+      "connectedProviders": ["google", "apple"]
+    },
+    "newUser": {
+      "id": "usr_n9g8h7i6",
+      "name": "Alex Rivera",
+      "email": "alex.rivera@example.com",
+      "memberSince": "2026-02-07",
+      "tier": "free",
+      "emailVerified": false,
+      "connectedProviders": []
+    }
+  },
+  "oauthProviders": [
+    {
+      "provider": "google",
+      "enabled": true,
+      "displayName": "Google",
+      "icon": "google"
+    },
+    {
+      "provider": "apple",
+      "enabled": true,
+      "displayName": "Apple",
+      "icon": "apple"
+    }
+  ],
+  "authErrors": {
+    "invalidCredentials": {
+      "message": "Email or password is incorrect",
+      "code": "AUTH_INVALID_CREDENTIALS"
+    },
+    "emailNotFound": {
+      "field": "email",
+      "message": "No account found with this email",
+      "code": "AUTH_EMAIL_NOT_FOUND"
+    },
+    "emailAlreadyExists": {
+      "field": "email",
+      "message": "An account with this email already exists",
+      "code": "AUTH_EMAIL_EXISTS"
+    },
+    "weakPassword": {
+      "field": "password",
+      "message": "Password must be at least 8 characters with uppercase, lowercase, and numbers",
+      "code": "AUTH_WEAK_PASSWORD"
+    },
+    "networkError": {
+      "message": "Unable to connect. Please check your internet connection",
+      "code": "NETWORK_ERROR"
+    },
+    "oauthFailed": {
+      "message": "Authentication with provider failed. Please try again",
+      "code": "OAUTH_FAILED"
+    }
+  },
+  "passwordRequirements": [
+    {
+      "label": "At least 8 characters",
+      "met": false,
+      "description": "Minimum length requirement"
+    },
+    {
+      "label": "One uppercase letter",
+      "met": false,
+      "description": "Contains A-Z"
+    },
+    {
+      "label": "One lowercase letter",
+      "met": false,
+      "description": "Contains a-z"
+    },
+    {
+      "label": "One number",
+      "met": false,
+      "description": "Contains 0-9"
+    }
+  ],
+  "passwordStrengthExamples": {
+    "weak": {
+      "strength": "weak",
+      "score": 2,
+      "feedback": [
+        "Add more characters",
+        "Include uppercase letters",
+        "Include numbers"
+      ]
+    },
+    "medium": {
+      "strength": "medium",
+      "score": 6,
+      "feedback": [
+        "Consider adding special characters",
+        "Make it longer for better security"
+      ]
+    },
+    "strong": {
+      "strength": "strong",
+      "score": 9,
+      "feedback": [
+        "Great password!"
+      ]
+    }
+  },
+  "contributionStats": {
+    "freeUser": {
+      "totalSubmissions": 87,
+      "usersHelped": 1243,
+      "pointsEarned": 4350,
+      "contributionStreak": 5,
+      "dailySubmissionsUsed": 7,
+      "dailySubmissionsLimit": 10
+    },
+    "premiumUser": {
+      "totalSubmissions": 342,
+      "usersHelped": 12840,
+      "pointsEarned": 68400,
+      "accuracyRating": 96.8,
+      "accuracyTrend": "up",
+      "contributionStreak": 28,
+      "dailySubmissionsUsed": 15,
+      "dailySubmissionsLimit": -1
+    },
+    "newUser": {
+      "totalSubmissions": 0,
+      "usersHelped": 0,
+      "pointsEarned": 0,
+      "contributionStreak": 0,
+      "dailySubmissionsUsed": 0,
+      "dailySubmissionsLimit": 10
+    }
+  },
+  "recentSubmissions": {
+    "freeUser": [
+      {
+        "id": "sub_001",
+        "stationName": "Shell Downtown",
+        "fuelType": "E10",
+        "price": 3.85,
+        "timestamp": "2 hours ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_002",
+        "stationName": "Chevron Mission Bay",
+        "fuelType": "Diesel",
+        "price": 4.39,
+        "timestamp": "5 hours ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_003",
+        "stationName": "76 Station",
+        "fuelType": "U95",
+        "price": 4.15,
+        "timestamp": "Yesterday",
+        "status": "verifying"
+      }
+    ],
+    "premiumUser": [
+      {
+        "id": "sub_101",
+        "stationName": "Arco Marina District",
+        "fuelType": "E10",
+        "price": 3.79,
+        "timestamp": "1 hour ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_102",
+        "stationName": "Shell Airport",
+        "fuelType": "U91",
+        "price": 4.25,
+        "timestamp": "3 hours ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_103",
+        "stationName": "Valero Westside",
+        "fuelType": "Diesel",
+        "price": 4.45,
+        "timestamp": "5 hours ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_104",
+        "stationName": "Costco Gas",
+        "fuelType": "E10",
+        "price": 3.65,
+        "timestamp": "6 hours ago",
+        "status": "published"
+      },
+      {
+        "id": "sub_105",
+        "stationName": "Mobile Highway 101",
+        "fuelType": "U95",
+        "price": 4.35,
+        "timestamp": "Yesterday",
+        "status": "published"
+      }
+    ]
+  },
+  "accountSettings": {
+    "default": {
+      "notifications": {
+        "priceAlerts": true,
+        "contributionUpdates": true,
+        "weeklyDigest": false,
+        "marketingEmails": false,
+        "pushNotifications": true
+      },
+      "privacy": {
+        "profileVisibility": "public",
+        "showContributionStats": true,
+        "shareDataForResearch": true
+      }
+    },
+    "privacyFocused": {
+      "notifications": {
+        "priceAlerts": true,
+        "contributionUpdates": false,
+        "weeklyDigest": false,
+        "marketingEmails": false,
+        "pushNotifications": false
+      },
+      "privacy": {
+        "profileVisibility": "private",
+        "showContributionStats": false,
+        "shareDataForResearch": false
+      }
+    }
+  },
+  "subscriptionInfo": {
+    "premiumMonthly": {
+      "tier": "premium",
+      "status": "active",
+      "billingCycle": "monthly",
+      "currentPeriodEnd": "2026-03-07",
+      "cancelAtPeriodEnd": false,
+      "paymentMethod": {
+        "type": "card",
+        "last4": "4242",
+        "brand": "Visa"
+      }
+    },
+    "premiumAnnual": {
+      "tier": "premium",
+      "status": "active",
+      "billingCycle": "annual",
+      "currentPeriodEnd": "2027-03-22",
+      "cancelAtPeriodEnd": false,
+      "paymentMethod": {
+        "type": "apple_pay",
+        "brand": "Apple Pay"
+      }
+    },
+    "pastDue": {
+      "tier": "premium",
+      "status": "past_due",
+      "billingCycle": "monthly",
+      "currentPeriodEnd": "2026-02-07",
+      "cancelAtPeriodEnd": false,
+      "paymentMethod": {
+        "type": "card",
+        "last4": "5555",
+        "brand": "Mastercard"
+      }
+    }
+  },
+  "tierFeatures": [
+    {
+      "name": "Daily Submissions",
+      "description": "Number of price updates you can submit per day",
+      "free": "10",
+      "premium": "Unlimited",
+      "highlight": true
+    },
+    {
+      "name": "Station Information",
+      "description": "Access to station details and amenities",
+      "free": "Basic",
+      "premium": "Detailed"
+    },
+    {
+      "name": "Price Alerts",
+      "description": "Get notified when prices change at your favorite stations",
+      "free": false,
+      "premium": true,
+      "highlight": true
+    },
+    {
+      "name": "Advanced Filters",
+      "description": "Filter by amenities, brands, fuel types",
+      "free": false,
+      "premium": true
+    },
+    {
+      "name": "Historical Charts",
+      "description": "View price trends over time",
+      "free": false,
+      "premium": "Full history",
+      "highlight": true
+    },
+    {
+      "name": "Experience",
+      "description": "Browse without interruptions",
+      "free": "With ads",
+      "premium": "Ad-free"
+    },
+    {
+      "name": "Support",
+      "description": "Get help when you need it",
+      "free": "Community",
+      "premium": "Priority"
+    },
+    {
+      "name": "Accuracy Badge",
+      "description": "Show off your reliable contributions",
+      "free": false,
+      "premium": true
+    },
+    {
+      "name": "New Features",
+      "description": "Be first to try upcoming features",
+      "free": false,
+      "premium": "Early access"
+    },
+    {
+      "name": "Points Multiplier",
+      "description": "Earn more points for your contributions",
+      "free": "1x",
+      "premium": "2x"
+    }
+  ],
+  "pricing": {
+    "monthly": {
+      "tier": "premium",
+      "billing": "monthly",
+      "price": 4.99,
+      "currency": "USD",
+      "interval": "month",
+      "features": [
+        "Unlimited submissions",
+        "Advanced filters & alerts",
+        "Ad-free experience",
+        "Priority support",
+        "2x points multiplier"
+      ]
+    },
+    "annual": {
+      "tier": "premium",
+      "billing": "annual",
+      "price": 49.99,
+      "currency": "USD",
+      "interval": "year",
+      "savings": "Save $10 (~$4.17/month)",
+      "features": [
+        "Unlimited submissions",
+        "Advanced filters & alerts",
+        "Ad-free experience",
+        "Priority support",
+        "2x points multiplier",
+        "2 months free"
+      ]
+    }
+  },
+  "testimonials": [
+    {
+      "id": "test_001",
+      "author": "Jennifer Martinez",
+      "role": "Daily Commuter",
+      "avatar": "https://i.pravatar.cc/150?img=32",
+      "rating": 5,
+      "text": "Premium is absolutely worth it. The price alerts save me so much time, and I've saved over $200 on gas this year!",
+      "tier": "premium"
+    },
+    {
+      "id": "test_002",
+      "author": "David Kim",
+      "role": "Rideshare Driver",
+      "avatar": "https://i.pravatar.cc/150?img=15",
+      "rating": 5,
+      "text": "As a rideshare driver, unlimited submissions are a game changer. I update prices all day and help other drivers save money.",
+      "tier": "premium"
+    },
+    {
+      "id": "test_003",
+      "author": "Rachel Thompson",
+      "role": "Fleet Manager",
+      "avatar": "https://i.pravatar.cc/150?img=28",
+      "rating": 5,
+      "text": "The historical charts help me plan fuel purchases for our entire fleet. Premium pays for itself in one fill-up.",
+      "tier": "premium"
+    }
+  ],
+  "faq": [
+    {
+      "question": "Can I cancel my subscription anytime?",
+      "answer": "Yes, you can cancel anytime from your account settings. There are no long-term commitments or cancellation fees. Your Premium benefits will remain active until the end of your current billing period.",
+      "category": "billing"
+    },
+    {
+      "question": "What happens to my data if I downgrade to Free?",
+      "answer": "All your submissions and contribution history are preserved when you downgrade. You'll still have access to basic features, but advanced features like price alerts and historical charts will be disabled until you upgrade again.",
+      "category": "account"
+    },
+    {
+      "question": "Do you offer refunds?",
+      "answer": "Yes, we offer a 30-day money-back guarantee for Premium subscriptions. If you're not satisfied within the first 30 days, contact support for a full refund.",
+      "category": "billing"
+    },
+    {
+      "question": "How do I upgrade to Premium?",
+      "answer": "Tap the 'Upgrade to Premium' button anywhere in the app. You'll be guided through a simple payment flow using Stripe, Apple Pay, or Google Pay. Your Premium benefits activate immediately after payment.",
+      "category": "features"
+    },
+    {
+      "question": "Can I switch between monthly and annual billing?",
+      "answer": "Yes! You can switch from monthly to annual billing anytime to save money. If you're on annual and want to switch to monthly, the change will take effect at the end of your current annual period.",
+      "category": "billing"
+    },
+    {
+      "question": "What payment methods do you accept?",
+      "answer": "We accept all major credit cards (Visa, Mastercard, Amex, Discover), Apple Pay, Google Pay, and PayPal. All payments are processed securely through Stripe.",
+      "category": "billing"
+    },
+    {
+      "question": "Is there a family or team plan?",
+      "answer": "Not yet, but we're working on it! Sign up for our newsletter to be notified when team plans become available.",
+      "category": "features"
+    },
+    {
+      "question": "What are the benefits of unlimited submissions?",
+      "answer": "With unlimited submissions, you can update prices as often as you like without worrying about daily limits. This is perfect for frequent drivers, rideshare operators, or anyone who wants to contribute more to the community.",
+      "category": "features"
+    }
+  ],
+  "tierStats": {
+    "premiumMembers": 12847,
+    "averageRating": 4.8,
+    "reviewCount": 3421
+  },
+  "signInStates": {
+    "default": {
+      "email": "",
+      "password": "",
+      "isLoading": false,
+      "showPassword": false
+    },
+    "filled": {
+      "email": "sarah.chen@example.com",
+      "password": "••••••••",
+      "isLoading": false,
+      "showPassword": false
+    },
+    "loading": {
+      "email": "sarah.chen@example.com",
+      "password": "••••••••",
+      "isLoading": true,
+      "showPassword": false
+    },
+    "error": {
+      "email": "sarah.chen@example.com",
+      "password": "wrongpass",
+      "isLoading": false,
+      "showPassword": false,
+      "error": {
+        "message": "Email or password is incorrect",
+        "code": "AUTH_INVALID_CREDENTIALS"
+      }
+    }
+  },
+  "signUpStates": {
+    "default": {
+      "name": "",
+      "email": "",
+      "password": "",
+      "passwordConfirmation": "",
+      "selectedTier": "free",
+      "agreedToTerms": false,
+      "isLoading": false
+    },
+    "validating": {
+      "name": "Alex Rivera",
+      "email": "alex.rivera@example.com",
+      "password": "SecurePass123",
+      "passwordConfirmation": "SecurePass123",
+      "selectedTier": "free",
+      "agreedToTerms": true,
+      "isLoading": false,
+      "emailAvailable": true,
+      "passwordStrength": {
+        "strength": "strong",
+        "score": 9,
+        "feedback": ["Great password!"]
+      }
+    },
+    "premiumSelected": {
+      "name": "Jordan Lee",
+      "email": "jordan.lee@example.com",
+      "password": "MyStrongPass456",
+      "passwordConfirmation": "MyStrongPass456",
+      "selectedTier": "premium",
+      "agreedToTerms": true,
+      "isLoading": false,
+      "emailAvailable": true,
+      "passwordStrength": {
+        "strength": "strong",
+        "score": 9,
+        "feedback": ["Great password!"]
+      }
+    },
+    "emailExists": {
+      "name": "Sarah Chen",
+      "email": "sarah.chen@example.com",
+      "password": "Password123",
+      "passwordConfirmation": "Password123",
+      "selectedTier": "free",
+      "agreedToTerms": true,
+      "isLoading": false,
+      "error": {
+        "field": "email",
+        "message": "An account with this email already exists",
+        "code": "AUTH_EMAIL_EXISTS"
+      }
+    }
+  }
+}
