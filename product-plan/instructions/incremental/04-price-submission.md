@@ -449,7 +449,7 @@ export const PriceSubmissionForm: React.FC<PriceSubmissionFormProps> = ({
       {/* Submit Button */}
       <button
         type="submit"
-        className="w-full bg-lime-500 hover:bg-lime-600 text-white font-semibold py-3 rounded-lg transition-colors"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors"
       >
         Submit Price
       </button>
@@ -551,7 +551,7 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({
         className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors text-white w-full ${
           isRecording
             ? 'bg-red-500 hover:bg-red-600'
-            : 'bg-lime-500 hover:bg-lime-600'
+            : 'bg-blue-500 hover:bg-blue-600'
         }`}
       >
         {isRecording ? (
@@ -664,7 +664,7 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
           </button>
           <button
             onClick={() => {}}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
             Analyze Photo
           </button>
@@ -696,7 +696,7 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
             </button>
             <button
               onClick={takePhoto}
-              className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             >
               <Camera size={20} />
               Take Photo
@@ -723,9 +723,9 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full p-8 border-2 border-dashed border-lime-300 dark:border-lime-700 rounded-lg hover:bg-lime-50 dark:hover:bg-lime-950 transition-colors flex flex-col items-center gap-2"
+            className="w-full p-8 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors flex flex-col items-center gap-2"
           >
-            <Upload size={40} className="text-lime-500" />
+            <Upload size={40} className="text-blue-500" />
             <span className="font-medium">Upload Photo</span>
           </button>
 
@@ -794,7 +794,7 @@ export const SubmitPricePage: React.FC = () => {
           {/* Text Entry */}
           <button
             onClick={() => setMethod('text')}
-            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-lime-500 dark:hover:border-lime-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
+            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
           >
             <div className="text-3xl font-bold">📝</div>
             <h3 className="font-semibold">Manual Entry</h3>
@@ -806,7 +806,7 @@ export const SubmitPricePage: React.FC = () => {
           {/* Voice */}
           <button
             onClick={() => setMethod('voice')}
-            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-lime-500 dark:hover:border-lime-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
+            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
           >
             <div className="text-3xl font-bold">🎤</div>
             <h3 className="font-semibold">Voice Entry</h3>
@@ -818,7 +818,7 @@ export const SubmitPricePage: React.FC = () => {
           {/* Photo */}
           <button
             onClick={() => setMethod('photo')}
-            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-lime-500 dark:hover:border-lime-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
+            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
           >
             <div className="text-3xl font-bold">📸</div>
             <h3 className="font-semibold">Photo Upload</h3>

@@ -519,7 +519,7 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-lime-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3">
             <span className="font-bold text-white text-xl">GP</span>
           </div>
           <h1 className="text-3xl font-bold">Gas Peep</h1>
@@ -543,7 +543,7 @@ export const LoginPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -555,7 +555,7 @@ export const LoginPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -563,7 +563,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white font-semibold py-2 rounded-lg transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white font-semibold py-2 rounded-lg transition-colors"
           >
             {isLoading ? 'Logging in...' : 'Log In'}
           </button>
@@ -602,7 +602,7 @@ export const LoginPage: React.FC = () => {
           Don't have an account?{' '}
           <button
             onClick={() => navigate('/auth/register')}
-            className="text-lime-600 dark:text-lime-400 font-semibold hover:underline"
+            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
           >
             Sign up
           </button>
@@ -665,7 +665,7 @@ export const RegisterPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-lime-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3">
             <span className="font-bold text-white text-xl">GP</span>
           </div>
           <h1 className="text-3xl font-bold">Gas Peep</h1>
@@ -733,7 +733,7 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white font-semibold py-2 rounded-lg transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white font-semibold py-2 rounded-lg transition-colors"
           >
             {isLoading ? 'Creating account...' : 'Create Account'}
           </button>
@@ -744,7 +744,7 @@ export const RegisterPage: React.FC = () => {
           Already have an account?{' '}
           <button
             onClick={() => navigate('/auth/login')}
-            className="text-lime-600 dark:text-lime-400 font-semibold hover:underline"
+            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
           >
             Log in
           </button>
@@ -821,12 +821,12 @@ export const TierSelectionPage: React.FC = () => {
               key={tier.id}
               className={`p-6 rounded-lg border-2 transition-all ${
                 tier.id === 'premium'
-                  ? 'border-lime-500 bg-lime-50 dark:bg-lime-950'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
                   : 'border-slate-200 dark:border-slate-800'
               }`}
             >
               {tier.id === 'premium' && (
-                <div className="inline-block px-3 py-1 bg-lime-500 text-white text-xs font-bold rounded-full mb-2">
+                <div className="inline-block px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full mb-2">
                   POPULAR
                 </div>
               )}
@@ -845,7 +845,7 @@ export const TierSelectionPage: React.FC = () => {
                 onClick={tier.id === 'premium' ? handleUpgrade : undefined}
                 className={`w-full py-2 rounded-lg font-semibold transition-colors mb-6 ${
                   tier.id === 'premium'
-                    ? 'bg-lime-500 hover:bg-lime-600 text-white'
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
                     : 'border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -855,7 +855,7 @@ export const TierSelectionPage: React.FC = () => {
               <ul className="space-y-3">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2">
-                    <Check size={20} className="text-lime-500 flex-shrink-0" />
+                    <Check size={20} className="text-blue-500 flex-shrink-0" />
                     <span>{feature}</span>
                   </li>
                 ))}

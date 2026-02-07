@@ -106,7 +106,7 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
                 onSubmitPrice?.(station.id, '');
               }
             }}
-            className="w-full bg-lime-500 hover:bg-lime-600 text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors"
           >
             Update Price
           </button>

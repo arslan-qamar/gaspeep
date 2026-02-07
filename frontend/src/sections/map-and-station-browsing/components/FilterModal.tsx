@@ -141,7 +141,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           </button>
           <button
             onClick={handleApply}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
             Apply
           </button>

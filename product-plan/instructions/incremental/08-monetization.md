@@ -268,19 +268,19 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
             <h3 className="font-semibold text-lg">Premium Features</h3>
             <ul className="space-y-2">
               <li className="flex items-center gap-2">
-                <span className="text-lime-500">✓</span>
+                <span className="text-blue-500">✓</span>
                 <span>Custom price alerts</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-lime-500">✓</span>
+                <span className="text-blue-500">✓</span>
                 <span>Ad-free experience</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-lime-500">✓</span>
+                <span className="text-blue-500">✓</span>
                 <span>Priority notifications</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-lime-500">✓</span>
+                <span className="text-blue-500">✓</span>
                 <span>Advanced filters</span>
               </li>
             </ul>
@@ -311,7 +311,7 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
           <button
             onClick={handleUpgradeClick}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             {isLoading && <Loader size={18} className="animate-spin" />}
             {isLoading ? 'Loading...' : 'Upgrade Now'}

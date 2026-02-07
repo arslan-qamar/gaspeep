@@ -58,7 +58,7 @@ export const MapView: React.FC<MapViewProps> = ({
       {/* Loading Indicator */}
       {isFetchingMore && (
         <div className="absolute top-4 right-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg px-3 py-2 flex items-center gap-2 z-10">
-          <Loader2 size={16} className="animate-spin text-lime-500" />
+          <Loader2 size={16} className="animate-spin text-blue-500" />
           <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Loading stations...</span>
         </div>
       )}
@@ -81,8 +81,8 @@ export const MapView: React.FC<MapViewProps> = ({
           <button
             className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all cursor-pointer ${
               selectedStationId === station.id
-                ? 'bg-lime-600 shadow-lg scale-110'
-                : 'bg-lime-500 hover:bg-lime-600'
+                ? 'bg-blue-600 shadow-lg scale-110'
+                : 'bg-blue-500 hover:bg-blue-600'
             }`}
           >
             {station.prices.length > 0 

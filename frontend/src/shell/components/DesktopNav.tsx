@@ -33,7 +33,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ userTier, currentPath })
               to={link.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
                 isActive
-                  ? 'bg-lime-100 dark:bg-lime-950 text-lime-700 dark:text-lime-300'
+                  ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
@@ -53,7 +53,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ userTier, currentPath })
           {userTier}
         </p>
         {userTier === 'free' && (
-          <button className="mt-3 w-full bg-lime-500 hover:bg-lime-600 text-white font-medium py-2 rounded-lg transition-colors">
+          <button className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition-colors">
             Upgrade to Premium
           </button>
         )}

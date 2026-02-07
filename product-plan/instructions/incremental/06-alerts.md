@@ -545,7 +545,7 @@ export const CreateAlertScreen: React.FC<CreateAlertScreenProps> = ({
                     onClick={() => setStep1({ ...step1, fuelTypeId: ft.id })}
                     className={`p-3 border-2 rounded-lg font-medium transition-all ${
                       step1.fuelTypeId === ft.id
-                        ? `border-lime-500 bg-lime-50 dark:bg-lime-950`
+                        ? `border-blue-500 bg-blue-50 dark:bg-blue-950`
                         : `border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700`
                     }`}
                   >
@@ -557,7 +557,7 @@ export const CreateAlertScreen: React.FC<CreateAlertScreenProps> = ({
 
             <div>
               <label className="block font-semibold mb-2 flex items-center gap-2">
-                <Zap size={20} className="text-lime-500" />
+                <Zap size={20} className="text-blue-500" />
                 Price threshold
               </label>
               <div className="space-y-2">
@@ -594,7 +594,7 @@ export const CreateAlertScreen: React.FC<CreateAlertScreenProps> = ({
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <MapPin size={24} className="text-lime-500" />
+                <MapPin size={24} className="text-blue-500" />
                 Set location
               </h2>
               <div className="bg-slate-100 dark:bg-slate-800 h-64 rounded-lg flex items-center justify-center mb-4">
@@ -684,7 +684,7 @@ export const CreateAlertScreen: React.FC<CreateAlertScreenProps> = ({
           <button
             onClick={handleNext}
             disabled={!step1.fuelTypeId}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             Next
             <ChevronRight size={20} />
@@ -693,7 +693,7 @@ export const CreateAlertScreen: React.FC<CreateAlertScreenProps> = ({
           <button
             onClick={handleCreate}
             disabled={!alertName}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
           >
             Create Alert
           </button>
@@ -780,7 +780,7 @@ export const AlertsPage: React.FC = () => {
         <h1 className="text-2xl font-bold">Price Alerts</h1>
         <button
           onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
         >
           <Plus size={20} />
           <span className="hidden sm:inline">New Alert</span>
@@ -796,7 +796,7 @@ export const AlertsPage: React.FC = () => {
             </p>
             <button
               onClick={() => setIsCreating(true)}
-              className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
             >
               Create Your First Alert
             </button>
@@ -815,7 +815,7 @@ export const AlertsPage: React.FC = () => {
                     {alert.radiusKm}km
                   </p>
                   {alert.lastTriggeredAt && (
-                    <p className="text-xs text-lime-600 dark:text-lime-400 mt-1">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       Triggered {alert.triggerCount} times
                     </p>
                   )}
@@ -826,7 +826,7 @@ export const AlertsPage: React.FC = () => {
                     onClick={() => handleToggleAlert(alert.id)}
                     className={`p-2 rounded-lg transition-colors ${
                       alert.isActive
-                        ? 'bg-lime-100 dark:bg-lime-950 text-lime-700 dark:text-lime-300'
+                        ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
                         : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
                     }`}
                   >
@@ -904,7 +904,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const getIcon = (type: string) => {
     switch (type) {
       case 'price_alert':
-        return <AlertCircle className="text-lime-500" />;
+        return <AlertCircle className="text-blue-500" />;
       case 'broadcast':
         return <Bell className="text-blue-500" />;
       default:
@@ -947,7 +947,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   </p>
                 </div>
                 {!notif.isRead && (
-                  <div className="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
                 )}
               </div>
             </button>

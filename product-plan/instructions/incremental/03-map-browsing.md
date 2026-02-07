@@ -363,8 +363,8 @@ export const MapView: React.FC<MapViewProps> = ({
           <button
             className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all cursor-pointer ${
               selectedStationId === station.id
-                ? 'bg-lime-600 shadow-lg scale-110'
-                : 'bg-lime-500 hover:bg-lime-600'
+                ? 'bg-blue-600 shadow-lg scale-110'
+                : 'bg-blue-500 hover:bg-blue-600'
             }`}
           >
             ${Math.min(...station.prices.map((p) => p.price)).toFixed(2)}
@@ -502,7 +502,7 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
                 onSubmitPrice?.(station.id, station.prices[0].fuelTypeId);
               }
             }}
-            className="w-full bg-lime-500 hover:bg-lime-600 text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors"
           >
             Update Price
           </button>
@@ -661,7 +661,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           </button>
           <button
             onClick={handleApply}
-            className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
             Apply
           </button>
@@ -733,7 +733,7 @@ export const MapPage: React.FC = () => {
         </div>
         <button
           onClick={() => setFilterModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
         >
           <Filter size={20} />
           <span className="hidden sm:inline">Filters</span>

@@ -213,7 +213,7 @@ export const MapPage: React.FC = () => {
         </div>
         <button
           onClick={() => setFilterModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
         >
           <Filter size={20} />
           <span className="hidden sm:inline">Filters</span>

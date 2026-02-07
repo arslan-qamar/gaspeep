@@ -467,7 +467,7 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setTab('broadcasts')}
             className={`py-4 px-2 font-semibold border-b-2 transition-colors ${
               tab === 'broadcasts'
-                ? 'border-lime-500 text-lime-600 dark:text-lime-400'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-slate-600 dark:text-slate-400'
             }`}
           >
@@ -477,7 +477,7 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setTab('analytics')}
             className={`py-4 px-2 font-semibold border-b-2 transition-colors flex items-center gap-2 ${
               tab === 'analytics'
-                ? 'border-lime-500 text-lime-600 dark:text-lime-400'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-slate-600 dark:text-slate-400'
             }`}
           >
@@ -495,7 +495,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Your Broadcasts</h2>
                 {profile.verificationStatus === 'verified' && (
-                  <button className="flex items-center gap-2 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
                     <Plus size={20} />
                     New Broadcast
                   </button>
@@ -654,7 +654,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
                   s <= step
-                    ? 'bg-lime-500 text-white'
+                    ? 'bg-blue-500 text-white'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-600'
                 }`}
               >
@@ -663,7 +663,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
               {s < 3 && (
                 <div
                   className={`flex-1 h-1 mx-2 ${
-                    s < step ? 'bg-lime-500' : 'bg-slate-200 dark:bg-slate-800'
+                    s < step ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-800'
                   }`}
                 />
               )}
@@ -765,7 +765,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
 
         <button
           onClick={handleNext}
-          className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
         >
           {step === 3 ? 'Claim Station' : 'Next'}
           {step < 3 && <ChevronRight size={20} />}
@@ -947,7 +947,7 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
         <button
           onClick={handleSubmit}
           disabled={!formData.title || !formData.message}
-          className="flex-1 px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
+          className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
         >
           Create Broadcast
         </button>
