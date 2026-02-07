@@ -47,7 +47,7 @@ export function StationDetail({ station, prices, onClose }: StationDetailProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
+    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50"
