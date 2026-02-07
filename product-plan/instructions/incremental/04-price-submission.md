@@ -870,7 +870,7 @@ export default SubmitPricePage;
 ```bash
 npm run dev
 
-# Visit http://localhost:5173/submit
+# Visit http://localhost3000/submit
 # Should see three submission method options
 # Select "Manual Entry" to test text form
 # Test voice recording (needs mic permission)

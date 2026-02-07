@@ -444,8 +444,10 @@ func (r *UserRepository) GetUserByID(id string) (*User, error) {
 - [ ] Go project initialized with dependencies
 - [ ] Environment variables configured
 - [ ] Database connection working
-- [ ] Health check endpoint responds
+- [ ] Health check endpoint responds (test with curl: `curl http://localhost:8080/health`)
 - [ ] Basic error handling middleware in place
+
+**Note:** For backend API verification, curl is appropriate. For frontend verification, always use Playwright MCP tools.
 
 ---
 
@@ -741,15 +743,58 @@ export const router = createBrowserRouter([
 ]);
 ```
 
+### 2.6 Frontend Verification with Playwright MCP
+
+**Use Playwright MCP tools to verify the frontend is working correctly:**
+
+```typescript
+// Example verification workflow:
+// 1. Navigate to the application
+mcp_playwright_browser_navigate({ url: 'http://localhost:3000' })
+
+// 2. Take accessibility snapshot to verify UI rendered
+mcp_playwright_browser_snapshot({})
+
+// 3. Verify header elements are present
+mcp_playwright_browser_snapshot({ filename: 'header-check.md' })
+
+// 4. Test navigation by clicking bottom nav items
+mcp_playwright_browser_click({ 
+  ref: 'submit-button-ref',
+  element: 'Submit button in bottom navigation'
+})
+
+// 5. Verify responsive behavior by resizing
+mcp_playwright_browser_resize({ width: 375, height: 667 }) // Mobile
+mcp_playwright_browser_snapshot({ filename: 'mobile-view.md' })
+
+mcp_playwright_browser_resize({ width: 1920, height: 1080 }) // Desktop
+mcp_playwright_browser_snapshot({ filename: 'desktop-view.md' })
+
+// 6. Take screenshots for visual verification
+mcp_playwright_browser_take_screenshot({ 
+  type: 'png',
+  filename: 'app-shell-screenshot.png'
+})
+```
+
+**Prefer Playwright MCP over curl for frontend verification** because:
+- It tests the actual rendered UI, not just API responses
+- Verifies user interactions and navigation flows
+- Checks responsive behavior and CSS rendering
+- Validates accessibility and element visibility
+- Captures visual regressions with screenshots
+
 ### Checklist for Phase 2
 - [ ] AppShell wrapping all pages
-- [ ] Header renders correctly
-- [ ] Bottom nav shows on mobile only (< 768px)
-- [ ] Desktop nav shows on larger screens
-- [ ] User menu opens/closes
-- [ ] Navigation links work
-- [ ] Responsive layout verified
-- [ ] Dark mode styling applied
+- [ ] Header renders correctly (verified with Playwright snapshot)
+- [ ] Bottom nav shows on mobile only (< 768px) (verified with Playwright resize + snapshot)
+- [ ] Desktop nav shows on larger screens (verified with Playwright resize + snapshot)
+- [ ] User menu opens/closes (verified with Playwright click interaction)
+- [ ] Navigation links work (verified with Playwright navigation)
+- [ ] Responsive layout verified (tested at 375px, 768px, 1920px with Playwright)
+- [ ] Dark mode styling applied (verified with Playwright screenshot)
+- [ ] All interactive elements clickable (verified with Playwright click tests)
 
 ---
 
@@ -762,6 +807,27 @@ Each section follows similar patterns. Reference the section-specific instructio
 - **Phase 5**: [sections/user-authentication-and-tiers/spec.md](../sections/user-authentication-and-tiers/spec.md) + [tests.md](../sections/user-authentication-and-tiers/tests.md)
 - **Phase 6**: [sections/alerts-and-notifications/spec.md](../sections/alerts-and-notifications/spec.md) + [tests.md](../sections/alerts-and-notifications/tests.md)
 - **Phase 7**: [sections/station-owner-dashboard/spec.md](../sections/station-owner-dashboard/spec.md) + [tests.md](../sections/station-owner-dashboard/tests.md)
+
+### Verification Guidelines for Phases 3-7
+
+**Use Playwright MCP for all frontend verification:**
+
+- ✅ **Map rendering**: Navigate to `/` and verify map loads with `mcp_playwright_browser_snapshot`
+- ✅ **Station markers**: Check markers appear on map with accessibility snapshot
+- ✅ **Price submission form**: Fill and submit form using `mcp_playwright_browser_fill_form`
+- ✅ **Authentication flow**: Test login/signup with navigation and form filling
+- ✅ **Alerts creation**: Verify alert form works with Playwright interactions
+- ✅ **Notifications**: Check notification UI displays with snapshots
+- ✅ **Station owner dashboard**: Navigate and verify all panels load
+- ✅ **Responsive behavior**: Test each feature at multiple viewport sizes
+
+**Use curl only for backend API verification:**
+
+- Backend health checks: `curl http://localhost:8080/health`
+- API endpoint responses: `curl http://localhost:8080/api/stations`
+- Direct database queries: Use SQL client
+
+**Key principle:** If it involves UI, user interaction, or visual verification → use Playwright MCP. If it's pure backend API testing → use curl.
 
 ---
 
@@ -855,23 +921,91 @@ export const AdBanner: React.FC = () => {
 
 ### Testing Strategy
 
-1. **Unit Tests**: Test individual functions, services, hooks
-2. **Component Tests**: Test React components in isolation
-3. **Integration Tests**: Test API + database interactions
-4. **E2E Tests**: Full user flows (e.g., signup → map → alert → notification)
+1. **Frontend Verification (Playwright MCP)**: **PREFERRED METHOD** for verifying frontend functionality
+   - Navigate to pages and verify they render
+   - Take accessibility snapshots to check UI structure
+   - Test user interactions (clicks, form fills, navigation)
+   - Verify responsive behavior across viewport sizes
+   - Capture screenshots for visual regression testing
+   - Check console messages for errors
+   - Verify network requests are made correctly
+
+2. **Unit Tests**: Test individual functions, services, hooks
+   ```bash
+   npm run test  # Frontend
+   go test ./... # Backend
+   ```
+
+3. **Component Tests**: Test React components in isolation
+
+4. **Integration Tests**: Test API + database interactions (use curl for backend API only)
+
+5. **E2E Tests**: Full user flows using Playwright MCP
+   - Signup → Map → Alert → Notification flow
+   - Price submission → Moderation → Publication flow
+   - Station owner → Broadcast → User notification flow
+
+### Frontend Verification with Playwright MCP
+
+**Always use Playwright MCP tools to verify frontend changes:**
+
+```typescript
+// 1. Start by navigating to the app
+mcp_playwright_browser_navigate({ url: 'http://localhost:3000' })
+
+// 2. Verify page loaded without errors
+mcp_playwright_browser_console_messages({ level: 'error' })
+
+// 3. Check UI structure with accessibility snapshot
+mcp_playwright_browser_snapshot({ filename: 'page-structure.md' })
+
+// 4. Test interactions
+mcp_playwright_browser_click({ 
+  ref: 'element-ref',
+  element: 'Button description'
+})
+
+// 5. Verify forms work
+mcp_playwright_browser_fill_form({
+  fields: [
+    { name: 'Email', type: 'textbox', ref: 'email-input', value: 'test@example.com' },
+    { name: 'Password', type: 'textbox', ref: 'password-input', value: 'password123' }
+  ]
+})
+
+// 6. Check network requests
+mcp_playwright_browser_network_requests({ includeStatic: false })
+
+// 7. Take screenshots for visual verification
+mcp_playwright_browser_take_screenshot({ type: 'png', filename: 'result.png' })
+```
 
 ### Running Tests
 
 ```bash
-# Frontend
+# Frontend unit tests
 npm run test
 
-# Backend
+# Backend tests
 go test ./...
+
+# Frontend verification with Playwright MCP (preferred)
+# Use the MCP tools directly - no npm script needed
 ```
 
 ### Deployment Checklist
 
+**Frontend Verification (use Playwright MCP):**
+- [ ] All pages load without console errors (check with `mcp_playwright_browser_console_messages`)
+- [ ] Navigation works across all routes (verify with `mcp_playwright_browser_navigate`)
+- [ ] Interactive elements respond correctly (test with `mcp_playwright_browser_click`)
+- [ ] Forms submit successfully (test with `mcp_playwright_browser_fill_form`)
+- [ ] Responsive design works at mobile (375px), tablet (768px), desktop (1920px) sizes (verify with `mcp_playwright_browser_resize`)
+- [ ] Dark mode toggles correctly (capture with `mcp_playwright_browser_take_screenshot`)
+- [ ] No visual regressions (compare screenshots)
+- [ ] Network requests complete successfully (check with `mcp_playwright_browser_network_requests`)
+
+**Backend & Infrastructure:**
 - [ ] All environment variables configured
 - [ ] Database migrations applied
 - [ ] Security headers configured (HTTPS, CSP, etc.)
@@ -884,6 +1018,7 @@ go test ./...
 - [ ] Database backups automated
 - [ ] CI/CD pipeline configured
 - [ ] Load testing completed
+- [ ] API endpoints tested (use curl for backend API verification only)
 
 ### Docker Deployment
 
@@ -919,7 +1054,7 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**docker-compose.yml:**
+**docker compose.yml:**
 ```yaml
 version: '3.8'
 

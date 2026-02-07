@@ -555,7 +555,7 @@ EXPOSE 3000
 CMD ["serve", "-s", "dist", "-l", "3000"]
 ```
 
-### 4.2 docker-compose.yml
+### 4.2 docker compose.yml
 
 ```yaml
 version: '3.8'
@@ -826,7 +826,7 @@ router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 - [ ] Integration tests written and passing
 - [ ] E2E tests for critical flows
 - [ ] Docker images built and tested
-- [ ] docker-compose working locally
+- [ ] docker compose working locally
 - [ ] Kubernetes manifests created
 - [ ] Environment variables configured
 - [ ] Database migrations tested
@@ -847,7 +847,7 @@ docker build -t gas-peep-backend ./backend
 docker build -t gas-peep-frontend ./frontend
 
 # Test locally
-docker-compose up
+docker compose up
 
 # Run all tests
 npm run test

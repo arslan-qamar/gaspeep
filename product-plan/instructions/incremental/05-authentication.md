@@ -900,10 +900,10 @@ export default TierSelectionPage;
 npm run dev
 
 # Try registering a new account
-# http://localhost:5173/auth/register
+# http://localhost3000/auth/register
 
 # Try logging in
-# http://localhost:5173/auth/login
+# http://localhost3000/auth/login
 
 # After login, token should be in localStorage
 # Should be redirected to /map

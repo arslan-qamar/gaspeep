@@ -998,7 +998,7 @@ export default NotificationCenter;
 npm run dev
 
 # Create a premium user or upgrade existing user
-# Visit http://localhost:5173/alerts (premium-only)
+# Visit http://localhost3000/alerts (premium-only)
 # Create new alert with multi-step form
 # Should see alert in list
 # Toggle and delete alerts

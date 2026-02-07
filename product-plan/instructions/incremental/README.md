@@ -151,7 +151,7 @@ npm run test:e2e         # E2E tests
 ## Deployment Stages
 
 1. **Local Development** (Phases 1-2)
-   - docker-compose for PostgreSQL
+   - docker compose for PostgreSQL
    - npm run dev for frontend
    - go run cmd/api/main.go for backend
 

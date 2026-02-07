@@ -846,7 +846,7 @@ export interface MapViewport {
 ```bash
 npm run dev
 
-# Visit http://localhost:5173/map
+# Visit http://localhost3000/map
 # Should see:
 # - Interactive Mapbox map
 # - Station markers with prices
