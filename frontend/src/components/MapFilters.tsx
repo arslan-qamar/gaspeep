@@ -78,7 +78,7 @@ export function MapFilters({
           />
 
           {/* Filter Content */}
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] max-h-[calc(100vh-100px)] overflow-y-auto">
+          <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] max-h-[calc(100vh-100px)] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">Filters</h3>
