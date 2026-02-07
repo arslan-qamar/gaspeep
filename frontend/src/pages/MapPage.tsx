@@ -141,6 +141,10 @@ export function MapPage() {
     setMaxPrice(max)
   }
 
+  const handleMapMove = (center: [number, number]) => {
+    setUserLocation(center)
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
@@ -193,6 +197,7 @@ export function MapPage() {
             zoom={12}
             onStationClick={handleStationClick}
             selectedStationId={selectedStation?.id}
+            onMapMove={handleMapMove}
           />
         )}
 

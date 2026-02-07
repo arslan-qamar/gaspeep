@@ -10,6 +10,7 @@ interface MapProps {
   zoom?: number
   onStationClick?: (station: Station) => void
   selectedStationId?: string
+  onMapMove?: (center: [number, number]) => void
 }
 
 export function Map({
@@ -19,10 +20,13 @@ export function Map({
   zoom = 12,
   onStationClick,
   selectedStationId,
+  onMapMove,
 }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const markersRef = useRef<L.LayerGroup | null>(null)
+  const markersRef = useRef<L.Marker[]>([])
+  const isProgrammaticMoveRef = useRef(false)
+  const lastCenterRef = useRef<[number, number] | null>(null)
   const [isMapReady, setIsMapReady] = useState(false)
 
   // Initialize map
@@ -38,6 +42,20 @@ export function Map({
       maxZoom: 19,
     }).addTo(map)
 
+    // Listen for map move events (only user-initiated)
+    map.on('moveend', () => {
+      // Skip if this was a programmatic move
+      if (isProgrammaticMoveRef.current) {
+        isProgrammaticMoveRef.current = false
+        return
+      }
+      
+      const newCenter = map.getCenter()
+      if (onMapMove) {
+        onMapMove([newCenter.lat, newCenter.lng])
+      }
+    })
+
     mapRef.current = map
     setIsMapReady(true)
 
@@ -47,17 +65,18 @@ export function Map({
         mapRef.current = null
       }
     }
-  }, [])
+  }, [onMapMove])
 
   // Update markers when stations or prices change
   useEffect(() => {
     if (!mapRef.current || !isMapReady) return
 
     // Clear existing markers
-    if (markersRef.current) {
-      markersRef.current.clearLayers()
-    } else {
-      markersRef.current = L.layerGroup().addTo(mapRef.current)
+    if (markersRef.current.length > 0) {
+      markersRef.current.forEach((marker) => {
+        mapRef.current?.removeLayer(marker)
+      })
+      markersRef.current = []
     }
 
     // Create a map of station prices for quick lookup
@@ -143,13 +162,30 @@ export function Map({
         }
       })
 
-      markersRef.current?.addLayer(marker)
+      // Add marker to map and store reference
+      marker.addTo(mapRef.current)
+      markersRef.current.push(marker)
     })
   }, [stations, prices, isMapReady, selectedStationId, onStationClick])
 
-  // Update map center when center prop changes
+  // Update map center when center prop changes (programmatically)
   useEffect(() => {
     if (mapRef.current && center) {
+      // Check if center actually changed (with small tolerance for floating point)
+      if (lastCenterRef.current) {
+        const [lastLat, lastLon] = lastCenterRef.current
+        const [newLat, newLon] = center
+        const latDiff = Math.abs(lastLat - newLat)
+        const lonDiff = Math.abs(lastLon - newLon)
+        
+        // If change is less than 0.00001 degrees (~1 meter), skip update
+        if (latDiff < 0.00001 && lonDiff < 0.00001) {
+          return
+        }
+      }
+      
+      lastCenterRef.current = center
+      isProgrammaticMoveRef.current = true
       mapRef.current.setView(center, zoom)
     }
   }, [center, zoom])
