@@ -5,6 +5,7 @@ export interface User {
   email: string
   displayName: string
   tier: 'free' | 'premium'
+  isStationOwner?: boolean
   createdAt: string
 }
 
