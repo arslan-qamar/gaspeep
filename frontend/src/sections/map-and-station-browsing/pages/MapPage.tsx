@@ -16,13 +16,13 @@ export const MapPage: React.FC = () => {
     maxPrice: 10,
     onlyVerified: false,
   });
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
-    lat: 40.7128,
-    lng: -74.006,
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
+    lat: -33.8688,
+    lng: 151.2093,
   });
   const [viewport, setViewport] = useState<{ latitude: number; longitude: number; zoom: number }>({
-    latitude: 40.7128,
-    longitude: -74.006,
+    latitude: -33.8688,
+    longitude: 151.2093,
     zoom: 14,
   });
   const [loading, setLoading] = useState(false);
