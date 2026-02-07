@@ -1,50 +1,67 @@
-import React, { useState, useCallback } from 'react';
-import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React, { useCallback } from 'react';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, GeolocateControl, ScaleControl } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
+import { Loader2 } from 'lucide-react';
 
 interface MapViewProps {
   stations: Station[];
   onStationSelect: (station: Station) => void;
   selectedStationId?: string;
   userLocation?: { lat: number; lng: number };
+  onViewportChange?: (viewport: { latitude: number; longitude: number; zoom: number }) => void;
+  isFetchingMore?: boolean;
 }
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 export const MapView: React.FC<MapViewProps> = ({
   stations,
   onStationSelect,
   selectedStationId,
   userLocation = { lat: 40.7128, lng: -74.006 },
+  onViewportChange,
+  isFetchingMore = false,
 }) => {
-  const [viewport, setViewport] = useState({
-    latitude: userLocation.lat,
-    longitude: userLocation.lng,
-    zoom: 14,
-  });
-
   const handleMarkerClick = useCallback(
     (station: Station) => {
       onStationSelect(station);
-      setViewport({
-        latitude: station.latitude,
-        longitude: station.longitude,
-        zoom: 15,
-      });
     },
     [onStationSelect],
   );
 
   return (
     <Map
-      {...viewport}
-      onMove={(evt) => setViewport(evt.viewState)}
-      mapboxAccessToken={MAPBOX_TOKEN}
+      initialViewState={{
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        zoom: 14,
+      }}
+      onMove={(evt) => {
+        onViewportChange?.({
+          latitude: evt.viewState.latitude,
+          longitude: evt.viewState.longitude,
+          zoom: evt.viewState.zoom,
+        });
+      }}
       style={{ width: '100%', height: '100%' }}
-      mapStyle="mapbox://styles/mapbox/light-v10"
+      mapStyle="https://tiles.openfreemap.org/styles/liberty"
     >
-      <NavigationControl position="top-right" />
+      {/* Navigation Controls */}
+      <NavigationControl position="top-right" showCompass showZoom />
+      <FullscreenControl position="top-right" />
+      <GeolocateControl 
+        position="top-right"
+        trackUserLocation
+        showUserHeading
+      />
+      <ScaleControl position="bottom-left" />
+
+      {/* Loading Indicator */}
+      {isFetchingMore && (
+        <div className="absolute top-4 right-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg px-3 py-2 flex items-center gap-2 z-10">
+          <Loader2 size={16} className="animate-spin text-lime-500" />
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Loading stations...</span>
+        </div>
+      )}
 
       {/* User Location */}
       {userLocation && (

@@ -1,0 +1,11 @@
+[POST] http://192.168.1.91:3000/api/auth/signin => [200] OK
+[GET] http://192.168.1.91:3000/api/auth/me => [200] OK
+[GET] http://192.168.1.91:3000/api/auth/me => [200] OK
+[POST] http://192.168.1.91:3000/api/stations/nearby => [200] OK
+[POST] http://192.168.1.91:3000/api/stations/nearby => [200] OK
+[POST] http://192.168.1.91:3000/api/stations/nearby => [200] OK
+[POST] http://192.168.1.91:3000/api/stations/nearby => [200] OK
+[GET] http://192.168.1.91:3000/api/auth/me => [200] OK
+[GET] http://192.168.1.91:3000/api/auth/me => [200] OK
+[GET] https://api.mapbox.com/styles/v1/mapbox/light-v10?sdk=js-3.18.1&access_token=your_mapbox_token_here => [FAILED] net::ERR_FAILED
+[GET] https://api.mapbox.com/styles/v1/mapbox/light-v10?sdk=js-3.18.1&access_token=your_mapbox_token_here => [FAILED] net::ERR_FAILED

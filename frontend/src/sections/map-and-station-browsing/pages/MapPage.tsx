@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Filter } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
 import FilterModal, { FilterState } from '../components/FilterModal';
 import { Station } from '../types';
+import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
 
 export const MapPage: React.FC = () => {
   const [stations, setStations] = useState<Station[]>([]);
@@ -19,17 +20,37 @@ export const MapPage: React.FC = () => {
     lat: 40.7128,
     lng: -74.006,
   });
+  const [viewport, setViewport] = useState<{ latitude: number; longitude: number; zoom: number }>({
+    latitude: 40.7128,
+    longitude: -74.006,
+    zoom: 14,
+  });
   const [loading, setLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  
+  // Refs to track state
+  const hasManuallyMovedMap = useRef(false);
+  const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get user's location
+  // Get user's location (only on initial load)
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
+          // Only update if user hasn't manually moved the map
+          if (!hasManuallyMovedMap.current) {
+            const newLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setUserLocation(newLocation);
+            setViewport({
+              latitude: newLocation.lat,
+              longitude: newLocation.lng,
+              zoom: 14,
+            });
+          }
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -38,38 +59,120 @@ export const MapPage: React.FC = () => {
     }
   }, []);
 
-  // Fetch stations from API
-  useEffect(() => {
-    const fetchStations = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/stations/nearby', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            latitude: userLocation.lat,
-            longitude: userLocation.lng,
-            radiusKm: 10,
-            fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
-            maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-          }),
-        });
+  // Fetch stations helper function
+  const fetchStations = useCallback(async (
+    location: { lat: number; lng: number },
+    zoom: number,
+    clearExisting: boolean = false
+  ) => {
+    const setLoadingState = clearExisting ? setLoading : setIsFetchingMore;
+    setLoadingState(true);
+    
+    try {
+      const radius = getRadiusFromZoom(zoom);
+      const response = await fetch('/api/stations/nearby', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          latitude: location.lat,
+          longitude: location.lng,
+          radiusKm: radius,
+          fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
+          maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
+        }),
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setStations(data);
+      if (response.ok) {
+        const newStations = await response.json();
+        
+        if (clearExisting) {
+          // Filter change: clear and replace
+          setStations(newStations);
         } else {
-          console.error('Failed to fetch stations');
+          // Viewport change: merge and deduplicate
+          setStations((prevStations) => {
+            // Create a map of existing stations by ID
+            const stationsMap = new Map<string, Station>();
+            
+            // Add existing stations
+            prevStations.forEach((station) => {
+              stationsMap.set(station.id, station);
+            });
+            
+            // Add/update with new stations
+            newStations.forEach((station: Station) => {
+              stationsMap.set(station.id, station);
+            });
+            
+            // Convert back to array and calculate distances
+            const allStations = Array.from(stationsMap.values());
+            
+            // Sort by distance from current viewport center and keep closest 200
+            const stationsWithDistance = allStations.map((station) => ({
+              station,
+              distance: calculateDistance(
+                location.lat,
+                location.lng,
+                station.latitude,
+                station.longitude
+              ),
+            }));
+            
+            stationsWithDistance.sort((a, b) => a.distance - b.distance);
+            
+            return stationsWithDistance.slice(0, 200).map((item) => item.station);
+          });
         }
-      } catch (error) {
-        console.error('Error fetching stations:', error);
-      } finally {
-        setLoading(false);
+        
+        lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
+      } else {
+        console.error('Failed to fetch stations');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching stations:', error);
+    } finally {
+      setLoadingState(false);
+    }
+  }, [filters]);
 
-    fetchStations();
-  }, [userLocation, filters]);
+  // Initial fetch and filter changes (clears stations)
+  useEffect(() => {
+    // Clear stations when filters change
+    setStations([]);
+    fetchStations(userLocation, viewport.zoom, true);
+  }, [filters]);
+
+  // Fetch stations on initial load
+  useEffect(() => {
+    if (!lastFetchLocation.current) {
+      fetchStations(userLocation, viewport.zoom, true);
+    }
+  }, [userLocation]);
+
+  // Handle viewport changes (accumulates stations)
+  const handleViewportChange = useCallback((newViewport: { latitude: number; longitude: number; zoom: number }) => {
+    hasManuallyMovedMap.current = true;
+    setViewport(newViewport);
+    
+    // Clear existing timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    // Debounce: wait 500ms after user stops dragging
+    fetchTimeoutRef.current = setTimeout(() => {
+      const lastFetch = lastFetchLocation.current;
+      
+      // Check if we've moved significantly (>500m) or changed zoom significantly
+      if (
+        !lastFetch ||
+        calculateDistance(lastFetch.lat, lastFetch.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
+        Math.abs(lastFetch.zoom - newViewport.zoom) > 1
+      ) {
+        fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false);
+      }
+    }, 500);
+  }, [fetchStations]);
 
   // Search stations
   const handleSearch = async () => {
@@ -131,6 +234,8 @@ export const MapPage: React.FC = () => {
           selectedStationId={selectedStation?.id}
           onStationSelect={setSelectedStation}
           userLocation={userLocation}
+          onViewportChange={handleViewportChange}
+          isFetchingMore={isFetchingMore}
         />
       </div>
 

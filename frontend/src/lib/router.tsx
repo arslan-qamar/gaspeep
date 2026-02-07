@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '../shell/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
-import { MapPage } from '../pages/MapPage'
+import { MapPage } from '../sections/map-and-station-browsing/pages/MapPage'
 import { SignInPage } from '../pages/SignInPage'
 import { SignUpPage } from '../pages/SignUpPage'
 

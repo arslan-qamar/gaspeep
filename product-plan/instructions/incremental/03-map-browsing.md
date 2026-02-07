@@ -18,20 +18,13 @@ This section is the core of Gas Peep. Users can:
 
 ## Step 1: Install Mapping Library
 
-### 1.1 Add Mapbox GL JS
+### 1.1 Add MapLibre GL JS
 
 ```bash
-npm install mapbox-gl react-map-gl lucide-react
-npm install --save-dev @types/mapbox-gl
+npm install maplibre-gl react-map-gl lucide-react
 ```
 
-Get a free Mapbox access token from [mapbox.com](https://account.mapbox.com/auth/signin/)
-
-### 1.2 Store Token in .env
-
-```env
-VITE_MAPBOX_ACCESS_TOKEN=your_token_here
-```
+MapLibre GL JS is an open-source fork of Mapbox GL JS that doesn't require an API token. react-map-gl 8.x includes built-in support for MapLibre.
 
 ---
 
@@ -308,8 +301,8 @@ api := router.Group("/api")
 
 ```tsx
 import React, { useState, useCallback } from 'react';
-import Map, { Marker, Popup, NavigationControl } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
 
 interface MapViewProps {
@@ -318,8 +311,6 @@ interface MapViewProps {
   selectedStationId?: string;
   userLocation?: { lat: number; lng: number };
 }
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 export const MapView: React.FC<MapViewProps> = ({
   stations,
@@ -349,9 +340,8 @@ export const MapView: React.FC<MapViewProps> = ({
     <Map
       {...viewport}
       onMove={(evt) => setViewport(evt.viewState)}
-      mapboxAccessToken={MAPBOX_TOKEN}
       style={{ width: '100%', height: '100%' }}
-      mapStyle="mapbox://styles/mapbox/light-v10"
+      mapStyle="https://demotiles.maplibre.org/style.json"
     >
       <NavigationControl position="top-right" />
 
@@ -826,7 +816,7 @@ export interface MapViewport {
 
 ## Checklist for Phase 3
 
-- [ ] Mapbox GL JS installed and configured
+- [ ] MapLibre GL JS installed and configured
 - [ ] Backend API endpoints for stations working
 - [ ] Station repository queries tested
 - [ ] MapView component renders map
@@ -846,9 +836,9 @@ export interface MapViewport {
 ```bash
 npm run dev
 
-# Visit http://localhost3000/map
+# Visit http://localhost:3000/map
 # Should see:
-# - Interactive Mapbox map
+# - Interactive MapLibre map with OpenStreetMap tiles
 # - Station markers with prices
 # - Search bar and filter button
 # - Click marker to see detail sheet
