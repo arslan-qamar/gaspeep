@@ -23,16 +23,18 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
+        data-testid="backdrop"
       />
 
       {/* Sheet */}
-      <div className="relative w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-2xl overflow-y-auto">
+      <div className="relative w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-2xl overflow-y-auto" role="dialog">
         {/* Header */}
         <div className="sticky top-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <h2 className="text-xl font-bold">{station.name}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            aria-label="Close"
           >
             <X size={20} />
           </button>

@@ -53,6 +53,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
+        data-testid="backdrop"
       />
 
       {/* Modal */}
@@ -66,6 +67,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            aria-label="Close"
           >
             <X size={20} />
           </button>
