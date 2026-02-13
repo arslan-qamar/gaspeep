@@ -12,7 +12,7 @@ export type FuelType = { id: string; name: string; displayName?: string }
 
 export const PriceSubmissionForm: React.FC = () => {
   const [station, setStation] = useState<Station | null>(null)
-  const [fuelType, setFuelType] = useState<string>('E10')
+  const [fuelType, setFuelType] = useState<string>('')
   const [price, setPrice] = useState<string>('')
   const [method, setMethod] = useState<'text' | 'voice' | 'photo'>('text')
   const [loading, setLoading] = useState(false)
