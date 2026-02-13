@@ -40,8 +40,8 @@ export async function signUp(data: SignUpData): Promise<AuthResponse> {
 
     const result = await response.json();
 
-    // Store token in localStorage
-    localStorage.setItem('authToken', result.token);
+    // Store token in localStorage (use unified key expected elsewhere)
+    localStorage.setItem('auth_token', result.token);
 
     return result;
 }
@@ -65,8 +65,8 @@ export async function signIn(credentials: AuthCredentials): Promise<AuthResponse
 
     const result = await response.json();
 
-    // Store token in localStorage
-    localStorage.setItem('authToken', result.token);
+    // Store token in localStorage (use unified key expected elsewhere)
+    localStorage.setItem('auth_token', result.token);
 
     return result;
 }
@@ -75,7 +75,7 @@ export async function signIn(credentials: AuthCredentials): Promise<AuthResponse
  * Get current authenticated user
  */
 export async function getCurrentUser(): Promise<User> {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('auth_token');
 
     if (!token) {
         throw new Error('Not authenticated');
@@ -89,7 +89,7 @@ export async function getCurrentUser(): Promise<User> {
 
     if (!response.ok) {
         if (response.status === 401) {
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('auth_token');
             throw new Error('Session expired');
         }
         throw new Error('Failed to fetch user');
@@ -102,7 +102,7 @@ export async function getCurrentUser(): Promise<User> {
  * Sign out the current user
  */
 export function signOut(): void {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
 }
 
 /**
@@ -144,7 +144,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
  * Get user profile
  */
 export async function getUserProfile(): Promise<User> {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('auth_token');
 
     if (!token) {
         throw new Error('Not authenticated');
@@ -167,7 +167,7 @@ export async function getUserProfile(): Promise<User> {
  * Update user profile
  */
 export async function updateUserProfile(updates: Partial<User>): Promise<User> {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('auth_token');
 
     if (!token) {
         throw new Error('Not authenticated');

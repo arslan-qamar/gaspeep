@@ -1,7 +1,13 @@
 import axios from 'axios'
 
 // Use relative URL so nginx proxy works when accessed over network
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+// If a VITE_API_URL is provided, ensure it ends with /api so callers
+// using '/auth/...' become '/api/auth/...'. This prevents accidental
+// requests to '/auth/me' when the env var is e.g. 'http://host:8080'.
+const rawApiUrl = import.meta.env.VITE_API_URL || ''
+const API_BASE_URL = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl.replace(/\/+$/, '') + '/api')
+  : '/api'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -45,7 +45,7 @@ export function SignInScreen() {
         try {
             await signIn(credentials);
             // Navigate to map on successful sign in
-            navigate('/');
+            navigate('/map');
         } catch (err) {
             setError({
                 message: err instanceof Error ? err.message : 'Failed to sign in',
