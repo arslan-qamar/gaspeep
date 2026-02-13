@@ -11,9 +11,17 @@ import {
   TierComparisonScreen,
 } from '../sections/user-authentication-and-tiers'
 
+// Section 4: Price Submission System
 import { PriceSubmissionForm } from '../sections/price-submission-system/PriceSubmissionForm'
 import PriceSubmissionHistory from '../sections/price-submission-system/PriceSubmissionHistory'
-const AlertsList = () => <div className="p-4">Alerts - Coming Soon</div>
+
+// Section 6: Alerts & Notifications
+import {
+  AlertsListScreen,
+  CreateAlertScreen,
+  NotificationCenterScreen,
+} from '../sections/alerts-and-notifications'
+
 const DashboardPage = () => <div className="p-4">Dashboard - Coming Soon</div>
 
 export const router = createBrowserRouter([
@@ -83,7 +91,37 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <AppShell>
-          <AlertsList />
+          <AlertsListScreen />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/alerts/create',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <CreateAlertScreen />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/alerts/edit/:alertId',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <CreateAlertScreen />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/notifications',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <NotificationCenterScreen />
         </AppShell>
       </ProtectedRoute>
     ),
