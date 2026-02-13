@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, PlusCircle, Bell, User } from 'lucide-react'
+import { MapPin, PlusCircle, Bell, User, List } from 'lucide-react'
 
 interface BottomNavProps {
   userTier: 'free' | 'premium'
@@ -11,6 +11,7 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ userTier, currentPath, isAuthenticated }) => {
   const links = [
     { label: 'Map', href: '/map', icon: MapPin, show: true },
+    { label: 'Submissions', href: '/submissions', icon: List, show: isAuthenticated },
     { label: 'Submit', href: '/submit', icon: PlusCircle, show: isAuthenticated, authRequired: true },
     { label: 'Alerts', href: '/alerts', icon: Bell, show: isAuthenticated && userTier === 'premium', premium: true },
     { label: 'Profile', href: isAuthenticated ? '/profile' : '/signin', icon: User, show: true },

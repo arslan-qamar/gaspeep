@@ -5,8 +5,8 @@ import { MapPage } from '../sections/map-and-station-browsing/pages/MapPage'
 import { SignInPage } from '../pages/SignInPage'
 import { SignUpPage } from '../pages/SignUpPage'
 
-// Placeholder components for now
-const PriceSubmissionForm = () => <div className="p-4">Price Submission - Coming Soon</div>
+import { PriceSubmissionForm } from '../sections/price-submission-system/PriceSubmissionForm'
+import PriceSubmissionHistory from '../sections/price-submission-system/PriceSubmissionHistory'
 const AlertsList = () => <div className="p-4">Alerts - Coming Soon</div>
 const ProfilePage = () => <div className="p-4">Profile - Coming Soon</div>
 const DashboardPage = () => <div className="p-4">Dashboard - Coming Soon</div>
@@ -46,6 +46,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppShell>
           <PriceSubmissionForm />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/submissions',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <PriceSubmissionHistory />
         </AppShell>
       </ProtectedRoute>
     ),

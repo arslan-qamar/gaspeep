@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { UserMenu } from './UserMenu'
-import { MapPin, Upload, Bell, LayoutDashboard } from 'lucide-react'
+import { MapPin, Upload, Bell, LayoutDashboard, List } from 'lucide-react'
 
 interface HeaderProps {
   userName?: string
@@ -26,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { label: 'Map', href: '/map', icon: MapPin, show: true },
     { label: 'Submit Price', href: '/submit', icon: Upload, show: isAuthenticated },
+    { label: 'Submissions', href: '/submissions', icon: List, show: isAuthenticated },
     { label: 'Alerts', href: '/alerts', icon: Bell, show: isAuthenticated && userTier === 'premium' },
     { label: 'Station Dashboard', href: '/dashboard', icon: LayoutDashboard, show: isStationOwner },
   ]

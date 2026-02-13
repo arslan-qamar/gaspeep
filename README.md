@@ -69,30 +69,160 @@ docker compose up --build
    - Backend API: http://localhost:8080
    - Database: localhost:5432
 
-### Local Development
+### Local Development (Without Docker)
 
-#### Frontend
+#### Prerequisites
+
+- PostgreSQL 14+ with PostGIS extension
+- Go 1.21+
+- Node.js 18+
+- npm or yarn
+
+#### Step 1: Database Setup
+
+```bash
+# Install PostgreSQL and PostGIS (Ubuntu/Debian)
+sudo apt update
+sudo apt install -y postgresql postgresql-contrib postgis postgresql-16-postgis-3
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Create database and enable PostGIS
+sudo -u postgres psql -c "CREATE DATABASE gas_peep;"
+sudo -u postgres psql -d gas_peep -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+
+# Set postgres user password (must match .env file)
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+#### Step 2: Run Database Migrations
+
+```bash
+# Run migrations in order
+cd backend/internal/migrations
+for file in $(ls *.up.sql | sort); do
+  sudo -u postgres psql -d gas_peep -f "$file"
+done
+
+# Record migrations in tracking table
+sudo -u postgres psql -d gas_peep << EOF
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id SERIAL PRIMARY KEY,
+    migration VARCHAR(255) NOT NULL UNIQUE,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO schema_migrations (migration) VALUES
+('001_create_users_table.up.sql'),
+('002_create_stations_table.up.sql'),
+('003_create_fuel_types_table.up.sql'),
+('004_create_fuel_prices_table.up.sql'),
+('005_create_price_submissions_table.up.sql'),
+('006_create_alerts_table.up.sql'),
+('007_create_notifications_table.up.sql'),
+('008_create_station_owners_table.up.sql'),
+('009_create_broadcasts_table.up.sql')
+ON CONFLICT (migration) DO NOTHING;
+EOF
+```
+
+#### Step 3: Seed Database with Test Data
+
+```bash
+# Load seed data (15 stations in Sydney area, 11 fuel types, 58 prices)
+cd ../..  # back to backend/
+cat seed_data.sql | sudo -u postgres psql -d gas_peep
+```
+
+#### Step 4: Backend Setup
+
+```bash
+# Install dependencies and build
+cd backend
+go mod download
+cp .env.example .env
+
+# Edit .env if needed (default values work for local development)
+# Build the API
+go build -o bin/api cmd/api/main.go
+
+# Run the backend
+./bin/api
+# Backend will start on http://0.0.0.0:8080
+```
+
+#### Step 5: Frontend Setup
 
 ```bash
 cd frontend
 npm install
+
+# For localhost access only:
 npm run dev
+
+# For network access (accessible from other devices):
+# Set BACKEND_URL to your machine's IP address
+BACKEND_URL=http://192.168.1.91:8080 npm run dev
+
+# Frontend will start on http://0.0.0.0:3000
+# Accessible at http://192.168.1.91:3000 from other devices
 ```
 
-#### Backend
+#### Network Access
 
+The frontend and backend are configured to be accessible from other devices on your network:
+
+- **Frontend**: `http://<your-ip>:3000` (e.g., `http://192.168.1.91:3000`)
+- **Backend**: `http://<your-ip>:8080` (e.g., `http://192.168.1.91:8080`)
+
+**Find Your IP Address:**
 ```bash
+# Linux/Mac
+hostname -I | awk '{print $1}'
+
+# Or check all network interfaces
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+**Start Servers for Network Access:**
+```bash
+# Terminal 1: Backend (binds to 0.0.0.0 by default)
 cd backend
-go mod download
-cp .env.example .env
-go run cmd/api/main.go
+./bin/api
+
+# Terminal 2: Frontend (replace IP with your actual IP)
+cd frontend
+BACKEND_URL=http://192.168.1.91:8080 npm run dev
 ```
 
-#### Database
+#### Managing Development Servers
 
+**View Server Logs:**
 ```bash
-createdb gas_peep
-psql gas_peep -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+# Backend logs (if running in foreground, logs appear in terminal)
+# Frontend logs (if running in foreground, logs appear in terminal)
+```
+
+**Stop Servers:**
+```bash
+# Press Ctrl+C in the terminal where the server is running
+
+# Or find and kill processes
+ps aux | grep -E "api|vite"
+pkill -f "./bin/api"
+pkill -f "vite"
+```
+
+**Rebuild After Changes:**
+```bash
+# Backend (after Go code changes)
+cd backend
+go build -o bin/api cmd/api/main.go
+
+# Frontend (hot-reload is automatic with Vite)
+# Just save your files and Vite will rebuild
 ```
 
 ## Features
@@ -181,9 +311,22 @@ psql gas_peep -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 ## Environment Variables
 
 ### Frontend (.env.local)
-```env
-VITE_API_URL=http://localhost:8080/api
+
+The frontend uses Vite's proxy to forward `/api` requests to the backend. You can configure this in two ways:
+
+**Option 1: Environment Variable (Recommended)**
+```bash
+# Set when starting the dev server
+BACKEND_URL=http://192.168.1.91:8080 npm run dev
 ```
+
+**Option 2: .env.local File**
+```env
+# For direct API calls (bypasses Vite proxy)
+VITE_API_URL=http://192.168.1.91:8080/api
+```
+
+Note: Replace `192.168.1.91` with your actual machine IP address.
 
 ### Backend (.env)
 ```env
@@ -193,7 +336,13 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=gas_peep
 PORT=8080
-JWT_SECRET=your-secret-key
+JWT_SECRET=your-super-secret-key-change-in-production
+
+# Optional OAuth and external service credentials
+GOOGLE_OAUTH_ID=
+GOOGLE_OAUTH_SECRET=
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
 ```
 
 ## API Documentation
