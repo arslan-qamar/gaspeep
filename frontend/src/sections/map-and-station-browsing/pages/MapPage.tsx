@@ -192,7 +192,19 @@ export const MapPage: React.FC = () => {
 
   // Search stations
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    // If the query is empty, clear results and reload nearby stations for current viewport
+    if (!searchQuery.trim()) {
+      setLoading(true);
+      try {
+        setStations([]);
+        await fetchStations({ lat: viewport.latitude, lng: viewport.longitude }, viewport.zoom, true);
+      } catch (error) {
+        console.error('Error fetching nearby stations after clearing search:', error);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     setLoading(true);
     try {
