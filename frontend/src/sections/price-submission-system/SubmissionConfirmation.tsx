@@ -1,7 +1,9 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle, MapPin, Fuel, DollarSign, Clock } from 'lucide-react'
 
 export const SubmissionConfirmation: React.FC<{ submission: any; onDone: () => void }> = ({ submission, onDone }) => {
+  const navigate = useNavigate()
   const stationName = submission.station_name || submission.stationName || submission.station || 'Unknown'
   const fuelName = submission.fuel_type || submission.fuelTypeName || submission.fuelType || 'Unknown'
   const status = submission.moderationStatus || submission.moderation_status || 'pending'
@@ -136,7 +138,13 @@ export const SubmissionConfirmation: React.FC<{ submission: any; onDone: () => v
               Submit Another
             </button>
             <button
-              onClick={onDone}
+              onClick={() => {
+                try {
+                  onDone()
+                } finally {
+                  navigate('/map')
+                }
+              }}
               className="px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-slate-900 dark:text-white transition-colors"
             >
               Done
