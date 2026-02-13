@@ -105,7 +105,13 @@ export const MapPage: React.FC = () => {
         }
       }
 
-      if (newStations.length > 0) {
+      // If a search query was used, always replace the marker set with the
+      // search results (this clears the map when the search returns []). For
+      // non-search nearby fetches, preserve the previous merge/dedupe behavior
+      // on viewport changes.
+      if (searchQuery && searchQuery.trim() && newStations.length === 0) {
+        setStations(newStations);
+      } else if (newStations.length > 0) {
         if (clearExisting) {
           setStations(newStations);
         } else {

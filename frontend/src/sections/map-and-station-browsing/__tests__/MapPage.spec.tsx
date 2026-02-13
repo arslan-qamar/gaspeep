@@ -185,4 +185,43 @@ describe('MapPage', () => {
     const filterButton = screen.getByText('Filters');
     expect(filterButton).toHaveClass('hidden', 'sm:inline');
   });
+
+  it('clears markers when search returns empty', async () => {
+    // Override fetch so search returns an empty array
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      if (typeof url === 'string' && url.includes('/api/stations/nearby')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockStations),
+        });
+      }
+      if (typeof url === 'string' && url.includes('/api/stations/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search stations...');
+
+    // Ensure the station marker is present initially
+    await waitFor(() => expect(screen.getByText('$3.99')).toBeInTheDocument());
+
+    // Perform a search that returns no results
+    await user.type(searchInput, 'no results{Enter}');
+
+    // The station marker should be cleared
+    await waitFor(() => {
+      expect(screen.queryByText('$3.99')).not.toBeInTheDocument();
+    });
+  });
 });
