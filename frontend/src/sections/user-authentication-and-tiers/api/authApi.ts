@@ -9,7 +9,13 @@ import type {
     SubscriptionInfo,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Prefer an explicit VITE_API_URL when provided. If not provided, use
+// a relative `/api` so the dev server proxy or same-origin host is used
+// (avoids mixed-content when the page is loaded over HTTPS).
+const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = rawApiUrl
+    ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl.replace(/\/+$/, '') + '/api')
+    : '/api';
 
 interface AuthResponse {
     token: string;
@@ -20,7 +26,7 @@ interface AuthResponse {
  * Sign up a new user
  */
 export async function signUp(data: SignUpData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -50,7 +56,7 @@ export async function signUp(data: SignUpData): Promise<AuthResponse> {
  * Sign in an existing user
  */
 export async function signIn(credentials: AuthCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+    const response = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -81,7 +87,7 @@ export async function getCurrentUser(): Promise<User> {
         throw new Error('Not authenticated');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
             'Authorization': `Bearer ${token}`,
         },
@@ -127,7 +133,7 @@ export async function checkEmailAvailability(email: string): Promise<EmailAvaila
  * Request password reset
  */
 export async function requestPasswordReset(email: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/password-reset`, {
+    const response = await fetch(`${API_BASE_URL}/auth/password-reset`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -150,7 +156,7 @@ export async function getUserProfile(): Promise<User> {
         throw new Error('Not authenticated');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+    const response = await fetch(`${API_BASE_URL}/users/profile`, {
         headers: {
             'Authorization': `Bearer ${token}`,
         },
@@ -173,7 +179,7 @@ export async function updateUserProfile(updates: Partial<User>): Promise<User> {
         throw new Error('Not authenticated');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+    const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: {
             'Authorization': `Bearer ${token}`,

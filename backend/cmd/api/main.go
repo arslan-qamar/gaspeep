@@ -4,11 +4,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"gaspeep/backend/internal/db"
 	"gaspeep/backend/internal/handler"
 	"gaspeep/backend/internal/middleware"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -149,14 +150,23 @@ func main() {
 		users.PUT("/profile", userProfileHandler.UpdateProfile)
 	}
 
-	// Start server
+	// Start server (support TLS when cert and key paths provided)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Starting server on port %s", port)
-	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	tlsCert := os.Getenv("TLS_CERT")
+	tlsKey := os.Getenv("TLS_KEY")
+	if tlsCert != "" && tlsKey != "" {
+		log.Printf("Starting TLS server on port %s", port)
+		if err := router.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
+			log.Fatalf("Server failed to start (TLS): %v", err)
+		}
+	} else {
+		log.Printf("Starting server on port %s", port)
+		if err := router.Run(":" + port); err != nil {
+			log.Fatalf("Server failed to start: %v", err)
+		}
 	}
 }

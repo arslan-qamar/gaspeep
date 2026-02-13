@@ -48,9 +48,11 @@ export const MapView: React.FC<MapViewProps> = ({
       {/* Navigation Controls */}
       <NavigationControl position="top-right" showCompass showZoom />
       <FullscreenControl position="top-right" />
-      <GeolocateControl 
+      <GeolocateControl
         position="top-right"
         trackUserLocation
+        positionOptions={{ enableHighAccuracy: true }}
+        showAccuracyCircle
       />
       <ScaleControl position="bottom-left" />
 
