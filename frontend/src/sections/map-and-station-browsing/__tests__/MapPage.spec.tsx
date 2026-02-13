@@ -1,10 +1,10 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-void React;
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapPage from '../pages/MapPage';
 import { Station } from '../types';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock the fetch API
 global.fetch = jest.fn();
@@ -31,8 +31,8 @@ const mockStations: Station[] = [
         fuelTypeId: '1',
         fuelTypeName: 'Regular',
         price: 3.99,
-          currency: 'USD',
-          lastUpdated: '2026-02-07T08:00:00Z',
+        currency: 'USD',
+        lastUpdated: '2026-02-07T08:00:00Z',
         verified: true,
       },
     ],
@@ -71,14 +71,22 @@ describe('MapPage', () => {
   });
 
   it('renders search bar and filter button', () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     expect(screen.getByPlaceholderText('Search stations...')).toBeInTheDocument();
     expect(screen.getByText('Filters')).toBeInTheDocument();
   });
 
   it('opens filter modal when filter button clicked', async () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     const user = userEvent.setup();
     const filterButton = screen.getByText('Filters');
@@ -88,7 +96,11 @@ describe('MapPage', () => {
   });
 
   it('performs search when enter pressed in search input', async () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     const user = userEvent.setup();
     const searchInput = screen.getByPlaceholderText('Search stations...');
@@ -100,7 +112,11 @@ describe('MapPage', () => {
   });
 
   it('shows loading indicator during search', async () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     const user = userEvent.setup();
     const searchInput = screen.getByPlaceholderText('Search stations...');
@@ -112,7 +128,11 @@ describe('MapPage', () => {
   });
 
   it('fetches stations on initial load', async () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/stations/nearby', expect.objectContaining({
@@ -130,14 +150,22 @@ describe('MapPage', () => {
     });
 
     // Should not throw error
-    expect(() => render(<MapPage />)).not.toThrow();
+    expect(() => render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    )).not.toThrow();
   });
 
   it('handles API errors gracefully', async () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
     // Should not throw error
-    expect(() => render(<MapPage />)).not.toThrow();
+    expect(() => render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    )).not.toThrow();
 
     // Wait for error to be handled
     await waitFor(() => {
@@ -146,7 +174,11 @@ describe('MapPage', () => {
   });
 
   it('shows responsive filter button text', () => {
-    render(<MapPage />);
+    render(
+      <MemoryRouter>
+        <MapPage />
+      </MemoryRouter>
+    );
 
     // On small screens, text should be hidden
     const filterButton = screen.getByText('Filters');

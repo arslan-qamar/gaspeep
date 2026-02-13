@@ -14,7 +14,16 @@ jest.mock('../../../lib/api', () => {
 
 import { apiClient } from '../../../lib/api'
 import { PriceSubmissionForm } from '../PriceSubmissionForm'
+import { MemoryRouter } from 'react-router-dom'
 import SubmissionConfirmation from '../SubmissionConfirmation'
+
+jest.mock('react-router-dom', () => {
+  const original = jest.requireActual('react-router-dom')
+  return {
+    ...original,
+    useNavigate: jest.fn(),
+  }
+})
 
 describe('PriceSubmissionForm', () => {
   beforeEach(() => {
@@ -46,7 +55,11 @@ describe('PriceSubmissionForm', () => {
       return Promise.resolve({ data: {} })
     })
 
-    render(<PriceSubmissionForm />)
+    render(
+      <MemoryRouter>
+        <PriceSubmissionForm />
+      </MemoryRouter>
+    )
 
     // wait for fuel types to load
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
@@ -93,5 +106,22 @@ describe('SubmissionConfirmation', () => {
     expect(screen.getByText('Diesel')).toBeInTheDocument()
     expect(screen.getByText(/4\.2/)).toBeInTheDocument()
     expect(screen.getByText(/published/i)).toBeInTheDocument()
+  })
+
+  it('calls onDone and navigates to /map when Done clicked', async () => {
+    const submission = { station_name: 'Demo Station', fuel_type: 'Diesel', price: 4.2, moderationStatus: 'pending' }
+    const onDone = jest.fn()
+
+    const navigateMock = jest.fn()
+    const { useNavigate } = require('react-router-dom') as { useNavigate: jest.Mock }
+    useNavigate.mockReturnValue(navigateMock)
+
+    render(<SubmissionConfirmation submission={submission} onDone={onDone} />)
+
+    const doneBtn = screen.getByRole('button', { name: /done/i })
+    fireEvent.click(doneBtn)
+
+    expect(onDone).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalledWith('/map')
   })
 })
