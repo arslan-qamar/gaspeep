@@ -17,10 +17,7 @@ export const MapPage: React.FC = () => {
     maxPrice: 10,
     onlyVerified: false,
   });
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
-    lat: -33.8688,
-    lng: 151.2093,
-  });
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +25,7 @@ export const MapPage: React.FC = () => {
   // Refs — use refs for values only needed in callbacks/effects, not in render
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const viewportRef = useRef({ latitude: -33.8688, longitude: 151.2093, zoom: 14 });
+  const viewportRef = useRef<{ latitude: number; longitude: number; zoom: number } | null>(null);
   const prevFiltersRef = useRef(filters);
 
   // Fetch stations — aborts any in-flight request to prevent race conditions
@@ -137,6 +134,7 @@ export const MapPage: React.FC = () => {
   // AbortController ensures if geolocation resolves while the default-location fetch
   // is in flight, the stale fetch is cancelled and only the new one completes.
   useEffect(() => {
+    if (!userLocation) return;
     viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
     fetchStations(userLocation, 14, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,9 +145,11 @@ export const MapPage: React.FC = () => {
     if (prevFiltersRef.current === filters) return;
     prevFiltersRef.current = filters;
 
-    const vp = viewportRef.current;
+    const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
+    if (!vp) return;
+
     fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
-  }, [filters, fetchStations]);
+  }, [filters, fetchStations, userLocation]);
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -175,7 +175,8 @@ export const MapPage: React.FC = () => {
   // Search stations
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      const vp = viewportRef.current;
+      const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
+      if (!vp) return;
       fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
       return;
     }
@@ -231,14 +232,20 @@ export const MapPage: React.FC = () => {
 
       {/* Map */}
       <div className="flex-1">
-        <MapView
-          stations={stations}
-          selectedStationId={selectedStation?.id}
-          onStationSelect={setSelectedStation}
-          userLocation={userLocation}
-          onViewportChange={handleViewportChange}
-          isFetchingMore={isFetchingMore}
-        />
+        {userLocation ? (
+          <MapView
+            stations={stations}
+            selectedStationId={selectedStation?.id}
+            onStationSelect={setSelectedStation}
+            userLocation={userLocation}
+            onViewportChange={handleViewportChange}
+            isFetchingMore={isFetchingMore}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
+            Locating you...
+          </div>
+        )}
       </div>
 
       {/* Station Detail Sheet */}
