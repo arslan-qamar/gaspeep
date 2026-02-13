@@ -51,7 +51,6 @@ export const MapView: React.FC<MapViewProps> = ({
       <GeolocateControl 
         position="top-right"
         trackUserLocation
-        showUserHeading
       />
       <ScaleControl position="bottom-left" />
 

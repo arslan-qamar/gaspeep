@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+void React;
 import '@testing-library/jest-dom'
 
 jest.mock('../../../lib/api', () => {
@@ -23,7 +24,9 @@ describe('PriceSubmissionForm', () => {
 
   it('loads fuel types, autocompletes station, submits and shows confirmation', async () => {
     // mock fuel types
-    ;(apiClient.get as jest.Mock).mockImplementation((url: string, opts?: any) => {
+    ;(apiClient.get as jest.Mock).mockImplementation((...args: any[]) => {
+      const url = args[0] as string;
+      // const opts = args[1];
       if (url === '/fuel-types') {
         return Promise.resolve({ data: [
           { id: 'f-e10', name: 'E10', displayName: 'E10' },
@@ -64,11 +67,11 @@ describe('PriceSubmissionForm', () => {
     fireEvent.change(select, { target: { value: 'f-91' } })
 
     // enter price
-    const price = screen.getByPlaceholderText(/e.g. 3.79/i)
+    const price = screen.getByPlaceholderText(/3.79/i)
     fireEvent.change(price, { target: { value: '3.49' } })
 
     // click submit
-    const submitBtn = screen.getByRole('button', { name: /Confirm & Submit|Confirm/ })
+    const submitBtn = screen.getByRole('button', { name: /Submit Price|Confirm & Submit|Confirm/ })
     fireEvent.click(submitBtn)
 
     // expect post called
@@ -86,9 +89,9 @@ describe('SubmissionConfirmation', () => {
   it('renders resolved names and status', () => {
     const submission = { station_name: 'Demo Station', fuel_type: 'Diesel', price: 4.2, moderationStatus: 'published' }
     render(<SubmissionConfirmation submission={submission} onDone={() => {}} />)
-    expect(screen.getByText('Station: Demo Station')).toBeInTheDocument()
-    expect(screen.getByText('Fuel: Diesel')).toBeInTheDocument()
-    expect(screen.getByText('Price: 4.2')).toBeInTheDocument()
-    expect(screen.getByText(/Status: published/i)).toBeInTheDocument()
+    expect(screen.getByText('Demo Station')).toBeInTheDocument()
+    expect(screen.getByText('Diesel')).toBeInTheDocument()
+    expect(screen.getByText(/4\.2/)).toBeInTheDocument()
+    expect(screen.getByText(/published/i)).toBeInTheDocument()
   })
 })

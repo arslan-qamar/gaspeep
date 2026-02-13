@@ -2,23 +2,42 @@ import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '../shell/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
 import { MapPage } from '../sections/map-and-station-browsing/pages/MapPage'
-import { SignInPage } from '../pages/SignInPage'
-import { SignUpPage } from '../pages/SignUpPage'
+
+// Section 5: User Authentication & Tiers
+import {
+  SignInScreen,
+  SignUpScreen,
+  AccountScreen,
+  TierComparisonScreen,
+} from '../sections/user-authentication-and-tiers'
 
 import { PriceSubmissionForm } from '../sections/price-submission-system/PriceSubmissionForm'
 import PriceSubmissionHistory from '../sections/price-submission-system/PriceSubmissionHistory'
 const AlertsList = () => <div className="p-4">Alerts - Coming Soon</div>
-const ProfilePage = () => <div className="p-4">Profile - Coming Soon</div>
 const DashboardPage = () => <div className="p-4">Dashboard - Coming Soon</div>
 
 export const router = createBrowserRouter([
+  // Authentication routes (public)
+  {
+    path: '/auth/signin',
+    element: <SignInScreen />,
+  },
+  {
+    path: '/auth/signup',
+    element: <SignUpScreen />,
+  },
+  {
+    path: '/auth/tier-comparison',
+    element: <TierComparisonScreen />,
+  },
+  // Legacy routes (redirect to new auth routes)
   {
     path: '/signin',
-    element: <SignInPage />,
+    element: <SignInScreen />,
   },
   {
     path: '/signup',
-    element: <SignUpPage />,
+    element: <SignUpScreen />,
   },
   {
     path: '/',
@@ -75,7 +94,7 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <AppShell>
-          <ProfilePage />
+          <AccountScreen />
         </AppShell>
       </ProtectedRoute>
     ),

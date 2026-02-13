@@ -1,5 +1,6 @@
 import React from 'react';
 import '@testing-library/jest-dom';
+void React;
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import FilterModal, { FilterState } from '../components/FilterModal';

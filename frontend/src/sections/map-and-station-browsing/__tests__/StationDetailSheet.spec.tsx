@@ -1,6 +1,7 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent } from '@testing-library/react';
+void React;
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StationDetailSheet from '../components/StationDetailSheet';
 import { Station } from '../types';
@@ -17,12 +18,16 @@ const mockStation: Station = {
       fuelTypeId: '1',
       fuelTypeName: 'Regular',
       price: 3.99,
+      currency: 'USD',
+      lastUpdated: '2026-02-07T08:00:00Z',
       verified: true,
     },
     {
       fuelTypeId: '2',
       fuelTypeName: 'Premium',
       price: 4.29,
+      currency: 'USD',
+      lastUpdated: '2026-02-07T08:00:00Z',
       verified: false,
     },
   ],

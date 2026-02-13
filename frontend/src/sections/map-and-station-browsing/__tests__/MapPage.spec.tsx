@@ -1,6 +1,7 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+void React;
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapPage from '../pages/MapPage';
 import { Station } from '../types';
@@ -30,6 +31,8 @@ const mockStations: Station[] = [
         fuelTypeId: '1',
         fuelTypeName: 'Regular',
         price: 3.99,
+          currency: 'USD',
+          lastUpdated: '2026-02-07T08:00:00Z',
         verified: true,
       },
     ],
@@ -121,7 +124,8 @@ describe('MapPage', () => {
   });
 
   it('handles geolocation error gracefully', () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((...args: any[]) => {
+      const error = args[1];
       error({ code: 1, message: 'Permission denied' });
     });
 
