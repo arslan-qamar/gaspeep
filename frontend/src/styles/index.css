@@ -11,7 +11,8 @@ body,
 #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  /* allow scrolling for long pages (previously prevented site-wide) */
+  overflow: auto;
 }
 
 html {

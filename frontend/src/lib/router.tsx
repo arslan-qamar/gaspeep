@@ -29,8 +29,7 @@ export const router = createBrowserRouter([
   {
     path: '/auth/tier-comparison',
     element: <TierComparisonScreen />,
-  },
-  // Legacy routes (redirect to new auth routes)
+  },  
   {
     path: '/signin',
     element: <SignInScreen />,
