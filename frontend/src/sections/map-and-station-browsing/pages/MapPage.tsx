@@ -32,7 +32,8 @@ export const MapPage: React.FC = () => {
   const fetchStations = useCallback(async (
     location: { lat: number; lng: number },
     zoom: number,
-    clearExisting: boolean = false
+    clearExisting: boolean = false,
+    searchQuery?: string,
   ) => {
     // Abort any in-flight request so only the latest fetch wins
     abortControllerRef.current?.abort();
@@ -46,22 +47,65 @@ export const MapPage: React.FC = () => {
 
     try {
       const radius = getRadiusFromZoom(zoom);
-      const response = await fetch('/api/stations/nearby', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: location.lat,
-          longitude: location.lng,
-          radiusKm: radius,
-          fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
-          maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-        }),
-        signal: controller.signal,
-      });
 
-      if (response.ok) {
-        const newStations = await response.json();
+      let newStations: Station[] = [];
 
+      // If there's a search query, use the search endpoint and then filter by
+      // radius and local filters client-side so moving the map respects the
+      // current search term.
+      if (searchQuery && searchQuery.trim()) {
+        const response = await fetch(`/api/stations/search?q=${encodeURIComponent(searchQuery)}`);
+
+        if (!response.ok) {
+          console.error('Failed to search stations');
+        } else {
+          const results = await response.json();
+
+          const matchesFuelType = (station: Station) => {
+            if (filters.fuelTypes.length === 0) return true;
+            return (station.prices || []).some((p: any) => {
+              const id = p.fuelTypeId ?? p.fuel_type_id ?? p.fuel_type ?? p.fuelType;
+              return id != null && filters.fuelTypes.includes(id);
+            });
+          };
+
+          const matchesMaxPrice = (station: Station) => {
+            if (!filters.maxPrice || filters.maxPrice <= 0) return true;
+            return (station.prices || []).some((p: any) => {
+              const price = p.price ?? p.amount;
+              return typeof price === 'number' && price <= filters.maxPrice;
+            });
+          };
+
+          newStations = (results as Station[])
+            .map((station) => ({ station, distance: calculateDistance(location.lat, location.lng, station.latitude, station.longitude) }))
+            .filter((item) => item.distance <= radius && matchesFuelType(item.station) && matchesMaxPrice(item.station))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 200)
+            .map((item) => item.station);
+        }
+      } else {
+        const response = await fetch('/api/stations/nearby', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            latitude: location.lat,
+            longitude: location.lng,
+            radiusKm: radius,
+            fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
+            maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          newStations = await response.json();
+        } else {
+          console.error('Failed to fetch stations');
+        }
+      }
+
+      if (newStations.length > 0) {
         if (clearExisting) {
           setStations(newStations);
         } else {
@@ -84,8 +128,6 @@ export const MapPage: React.FC = () => {
               .map((item) => item.station);
           });
         }
-      } else {
-        console.error('Failed to fetch stations');
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -136,7 +178,7 @@ export const MapPage: React.FC = () => {
   useEffect(() => {
     if (!userLocation) return;
     viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
-    fetchStations(userLocation, 14, true);
+    fetchStations(userLocation, 14, true, searchQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation]);
 
@@ -148,7 +190,7 @@ export const MapPage: React.FC = () => {
     const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
     if (!vp) return;
 
-    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
+    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true, searchQuery);
   }, [filters, fetchStations, userLocation]);
 
   // Cleanup abort controller on unmount
@@ -168,31 +210,18 @@ export const MapPage: React.FC = () => {
       calculateDistance(last.lat, last.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
       Math.abs(last.zoom - newViewport.zoom) > 1
     ) {
-      fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false);
+      fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false, searchQuery);
     }
-  }, [fetchStations]);
+  }, [fetchStations, searchQuery]);
 
   // Search stations
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
-      if (!vp) return;
-      fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
-      return;
-    }
+    const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
+    if (!vp) return;
 
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/stations/search?q=${encodeURIComponent(searchQuery)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setStations(data);
-      }
-    } catch (error) {
-      console.error('Error searching stations:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Delegate to fetchStations so the search respects current viewport, radius
+    // and local filters (and so moving the map after a search keeps the query).
+    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true, searchQuery);
   };
 
   return (

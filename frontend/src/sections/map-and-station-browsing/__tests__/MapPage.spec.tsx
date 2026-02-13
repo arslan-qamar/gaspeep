@@ -107,7 +107,8 @@ describe('MapPage', () => {
     await user.type(searchInput, 'test station{Enter}');
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/stations/search?q=test%20station');
+      const calls = (global.fetch as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(calls).toContain('/api/stations/search?q=test%20station');
     });
   });
 
