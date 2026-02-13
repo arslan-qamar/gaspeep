@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"gaspeep/backend/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gaspeep/backend/internal/models"
+	"github.com/lib/pq"
 )
 
 type StationHandler struct {
@@ -24,7 +27,7 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 	lon := c.Query("lon")
 	radius := c.Query("radius") // in kilometers
 	fuelTypeID := c.Query("fuelTypeId")
-	
+
 	var query string
 	var args []interface{}
 	argIndex := 1
@@ -34,7 +37,7 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 		latitude, _ := strconv.ParseFloat(lat, 64)
 		longitude, _ := strconv.ParseFloat(lon, 64)
 		radiusKm, _ := strconv.ParseFloat(radius, 64)
-		
+
 		query = `
 			SELECT DISTINCT s.id, s.name, s.brand, s.address, 
 				ST_Y(s.location::geometry) as latitude, 
@@ -45,10 +48,10 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 					ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
 				) / 1000 as distance_km
 			FROM stations s`
-		
+
 		args = append(args, longitude, latitude)
 		argIndex = 3
-		
+
 		if fuelTypeID != "" {
 			query += `
 			INNER JOIN fuel_prices fp ON s.id = fp.station_id
@@ -68,7 +71,7 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 			)`
 			args = append(args, radiusKm*1000) // Convert km to meters
 		}
-		
+
 		query += ` ORDER BY distance_km LIMIT 100`
 	} else {
 		// Simple query without geospatial filtering
@@ -78,14 +81,14 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 				ST_X(s.location::geometry) as longitude,
 				s.operating_hours, s.amenities, s.last_verified_at, s.created_at, s.updated_at
 			FROM stations s`
-		
+
 		if fuelTypeID != "" {
 			query += `
 			INNER JOIN fuel_prices fp ON s.id = fp.station_id
 			WHERE fp.fuel_type_id = $1`
 			args = append(args, fuelTypeID)
 		}
-		
+
 		query += ` ORDER BY s.name LIMIT 100`
 	}
 
@@ -101,23 +104,23 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 		var s models.Station
 		var amenitiesJSON interface{}
 		var distanceKm *float64
-		
+
 		scanArgs := []interface{}{
 			&s.ID, &s.Name, &s.Brand, &s.Address,
 			&s.Latitude, &s.Longitude, &s.OperatingHours,
 			&amenitiesJSON, &s.LastVerifiedAt, &s.CreatedAt, &s.UpdatedAt,
 		}
-		
+
 		// Add distance_km if present in result
 		if lat != "" && lon != "" && radius != "" {
 			scanArgs = append(scanArgs, &distanceKm)
 		}
-		
+
 		if err := rows.Scan(scanArgs...); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan station"})
 			return
 		}
-		
+
 		// Parse amenities from JSONB
 		if amenitiesJSON != nil {
 			// Handle PostgreSQL array
@@ -125,7 +128,7 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 		} else {
 			s.Amenities = []string{}
 		}
-		
+
 		stations = append(stations, s)
 	}
 
@@ -138,7 +141,7 @@ func (h *StationHandler) GetStation(c *gin.Context) {
 
 	var s models.Station
 	var amenitiesJSON interface{}
-	
+
 	query := `
 		SELECT id, name, brand, address, 
 			ST_Y(location::geometry) as latitude, 
@@ -146,13 +149,13 @@ func (h *StationHandler) GetStation(c *gin.Context) {
 			operating_hours, amenities, last_verified_at, created_at, updated_at
 		FROM stations
 		WHERE id = $1`
-	
+
 	err := h.db.QueryRow(query, id).Scan(
 		&s.ID, &s.Name, &s.Brand, &s.Address,
 		&s.Latitude, &s.Longitude, &s.OperatingHours,
 		&amenitiesJSON, &s.LastVerifiedAt, &s.CreatedAt, &s.UpdatedAt,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Station not found"})
 		return
@@ -161,7 +164,7 @@ func (h *StationHandler) GetStation(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch station"})
 		return
 	}
-	
+
 	// Parse amenities
 	s.Amenities = []string{}
 
@@ -196,16 +199,16 @@ func (h *StationHandler) CreateStation(c *gin.Context) {
 	}
 
 	id := uuid.New().String()
-	
+
 	query := `
 		INSERT INTO stations (id, name, brand, address, location, operating_hours, amenities)
 		VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $7, $8)
 		RETURNING id, name, brand, address, ST_Y(location::geometry), ST_X(location::geometry), 
 			operating_hours, amenities, last_verified_at, created_at, updated_at`
-	
+
 	var s models.Station
 	var amenitiesJSON interface{}
-	
+
 	err := h.db.QueryRow(
 		query,
 		id, input.Name, input.Brand, input.Address,
@@ -216,12 +219,12 @@ func (h *StationHandler) CreateStation(c *gin.Context) {
 		&s.Latitude, &s.Longitude, &s.OperatingHours,
 		&amenitiesJSON, &s.LastVerifiedAt, &s.CreatedAt, &s.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create station"})
 		return
 	}
-	
+
 	s.Amenities = input.Amenities
 
 	c.JSON(http.StatusCreated, s)
@@ -252,14 +255,14 @@ func (h *StationHandler) UpdateStation(c *gin.Context) {
 			location = ST_SetSRID(ST_MakePoint($4, $5), 4326),
 			operating_hours = $6, updated_at = NOW()
 		WHERE id = $7`
-	
+
 	result, err := h.db.Exec(
 		query,
 		input.Name, input.Brand, input.Address,
 		input.Longitude, input.Latitude,
 		input.OperatingHours, id,
 	)
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update station"})
 		return
@@ -280,7 +283,7 @@ func (h *StationHandler) DeleteStation(c *gin.Context) {
 
 	query := `DELETE FROM stations WHERE id = $1`
 	result, err := h.db.Exec(query, id)
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete station"})
 		return
@@ -333,9 +336,29 @@ func (h *StationHandler) GetStationsNearby(c *gin.Context) {
 	argIndex := 4
 
 	if len(req.FuelTypes) > 0 {
-		query += ` AND fp.fuel_type_id = ANY($` + strconv.Itoa(argIndex) + `)`
-		args = append(args, req.FuelTypes)
-		argIndex++
+		var uuidVals []string
+		var nameVals []string
+		for _, ft := range req.FuelTypes {
+			if _, err := uuid.Parse(ft); err == nil {
+				uuidVals = append(uuidVals, ft)
+			} else {
+				nameVals = append(nameVals, strings.ToUpper(ft))
+			}
+		}
+
+		if len(uuidVals) > 0 && len(nameVals) > 0 {
+			query += ` AND (fp.fuel_type_id = ANY($` + strconv.Itoa(argIndex) + `::uuid[]) OR UPPER(ft.name) = ANY($` + strconv.Itoa(argIndex+1) + `))`
+			args = append(args, pq.Array(uuidVals), pq.Array(nameVals))
+			argIndex += 2
+		} else if len(uuidVals) > 0 {
+			query += ` AND fp.fuel_type_id = ANY($` + strconv.Itoa(argIndex) + `::uuid[])`
+			args = append(args, pq.Array(uuidVals))
+			argIndex++
+		} else {
+			query += ` AND UPPER(ft.name) = ANY($` + strconv.Itoa(argIndex) + `)`
+			args = append(args, pq.Array(nameVals))
+			argIndex++
+		}
 	}
 
 	if req.MaxPrice > 0 {
