@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
+import { stationApi } from '../../lib/api'
 import { VoiceInputScreen } from './VoiceInputScreen'
 import { PhotoUploadScreen } from './PhotoUploadScreen'
 import { SubmissionConfirmation } from './SubmissionConfirmation'
@@ -23,6 +25,27 @@ export const PriceSubmissionForm: React.FC = () => {
   const suggestionRef = useRef<HTMLDivElement>(null)
 
   const [fuelTypesList, setFuelTypesList] = useState<FuelType[]>([])
+
+  const location = useLocation()
+
+  // Prefill station / fuel type from navigation state (e.g. from map)
+  useEffect(() => {
+    const state = (location.state || {}) as any
+    if (state?.stationId) {
+      ;(async () => {
+        try {
+          const resp = await stationApi.getStation(state.stationId)
+          const data = resp.data
+          setStation({ id: data.id, name: data.name, address: data.address, brand: (data as any).brand })
+        } catch (err) {
+          // ignore
+        }
+      })()
+    }
+    if (state?.fuelTypeId) {
+      setFuelType(state.fuelTypeId)
+    }
+  }, [location.state])
 
   // Load fuel types on mount
   useEffect(() => {

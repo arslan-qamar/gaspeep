@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
@@ -27,6 +28,7 @@ export const MapPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const navigate = useNavigate();
   
   // Refs to track state
   const hasManuallyMovedMap = useRef(false);
@@ -259,9 +261,9 @@ export const MapPage: React.FC = () => {
         isOpen={!!selectedStation}
         onClose={() => setSelectedStation(null)}
         onSubmitPrice={(stationId, fuelTypeId) => {
-          // Navigate to price submission
-          console.log('Submit price for', stationId, fuelTypeId);
-          // TODO: Implement navigation to price submission page
+          navigate('/submit', { state: { stationId, fuelTypeId } });
+          // close the sheet after navigating
+          setSelectedStation(null);
         }}
       />
 
