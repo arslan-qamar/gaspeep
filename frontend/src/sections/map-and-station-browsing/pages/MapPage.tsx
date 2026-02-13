@@ -34,6 +34,9 @@ export const MapPage: React.FC = () => {
   const hasManuallyMovedMap = useRef(false);
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingFetchesRef = useRef<Set<string>>(new Set());
+  const initialFetchDoneRef = useRef(false);
+  const mountedRef = useRef(false);
 
   // Get user's location (only on initial load)
   useEffect(() => {
@@ -81,6 +84,14 @@ export const MapPage: React.FC = () => {
     zoom: number,
     clearExisting: boolean = false
   ) => {
+    const key = `${location.lat.toFixed(5)}:${location.lng.toFixed(5)}:${zoom}:${clearExisting ? 'c' : 'a'}`;
+    if (pendingFetchesRef.current.has(key)) {
+      return;
+    }
+    pendingFetchesRef.current.add(key);
+    // mark requested location immediately so other effects won't trigger duplicate fetches
+    const prevLast = lastFetchLocation.current;
+    lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
     const setLoadingState = clearExisting ? setLoading : setIsFetchingMore;
     setLoadingState(true);
     
@@ -140,19 +151,29 @@ export const MapPage: React.FC = () => {
           });
         }
         
-        lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
+        // mark that we've completed an initial fetch at least once
+        initialFetchDoneRef.current = true;
       } else {
         console.error('Failed to fetch stations');
       }
     } catch (error) {
       console.error('Error fetching stations:', error);
+      // restore previous lastFetchLocation so retries may occur
+      lastFetchLocation.current = prevLast;
     } finally {
       setLoadingState(false);
+      pendingFetchesRef.current.delete(key);
     }
   }, [filters]);
 
   // Initial fetch and filter changes (clears stations)
   useEffect(() => {
+    // Skip running on initial mount; run for subsequent filter changes
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+
     // Clear stations when filters change
     setStations([]);
     fetchStations(userLocation, viewport.zoom, true);
@@ -167,6 +188,9 @@ export const MapPage: React.FC = () => {
 
   // Handle viewport changes (accumulates stations)
   const handleViewportChange = useCallback((newViewport: { latitude: number; longitude: number; zoom: number }) => {
+    // ignore automatic onMove events until initial fetch completes
+    if (!initialFetchDoneRef.current) return;
+
     hasManuallyMovedMap.current = true;
     setViewport(newViewport);
     
