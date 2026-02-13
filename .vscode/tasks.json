@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backend: Dev (air)",
+      "type": "shell",
+      "command": "make",
+      "args": ["-C", "backend", "dev"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Backend: Build",
+      "type": "shell",
+      "command": "make",
+      "args": ["-C", "backend", "build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent" }
+    },
+    {
+      "label": "Backend: Install Air",
+      "type": "shell",
+      "command": "make",
+      "args": ["-C", "backend", "install-air"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent" }
+    }
+    ,
+    {
+      "label": "Backend: Install Delve",
+      "type": "shell",
+      "command": "make",
+      "args": ["-C", "backend", "install-dlv"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent" }
+    },
+    {
+      "label": "Backend: Start Delve Headless",
+      "type": "shell",
+      "command": "make",
+      "args": ["-C", "backend", "dlv-headless"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ]
+}

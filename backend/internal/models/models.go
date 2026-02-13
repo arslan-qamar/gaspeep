@@ -3,28 +3,28 @@ package models
 import "time"
 
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	DisplayName string  `json:"displayName"`
-	PasswordHash string  `json:"-"`
-	Tier      string    `json:"tier"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	DisplayName  string    `json:"displayName"`
+	PasswordHash string    `json:"-"`
+	Tier         string    `json:"tier"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 type Station struct {
-	ID              string         `json:"id"`
-	Name            string         `json:"name"`
-	Brand           string         `json:"brand"`
-	Address         string         `json:"address"`
-	Latitude        float64        `json:"latitude"`
-	Longitude       float64        `json:"longitude"`
-	OperatingHours  string         `json:"operatingHours"`
-	Amenities       []string       `json:"amenities"`
-	LastVerifiedAt  *time.Time     `json:"lastVerifiedAt"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-	Prices          []FuelPriceData `json:"prices,omitempty"`
+	ID             string          `json:"id"`
+	Name           string          `json:"name"`
+	Brand          string          `json:"brand"`
+	Address        string          `json:"address"`
+	Latitude       float64         `json:"latitude"`
+	Longitude      float64         `json:"longitude"`
+	OperatingHours string          `json:"operatingHours"`
+	Amenities      []string        `json:"amenities"`
+	LastVerifiedAt *time.Time      `json:"lastVerifiedAt"`
+	CreatedAt      time.Time       `json:"createdAt"`
+	UpdatedAt      time.Time       `json:"updatedAt"`
+	Prices         []FuelPriceData `json:"prices,omitempty"`
 }
 
 type FuelType struct {
@@ -37,15 +37,15 @@ type FuelType struct {
 }
 
 type FuelPrice struct {
-	ID                 string    `json:"id"`
-	StationID          string    `json:"stationId"`
-	FuelTypeID         string    `json:"fuelTypeId"`
-	Price              float64   `json:"price"`
-	Currency           string    `json:"currency"`
-	Unit               string    `json:"unit"`
+	ID                 string     `json:"id"`
+	StationID          string     `json:"stationId"`
+	FuelTypeID         string     `json:"fuelTypeId"`
+	Price              float64    `json:"price"`
+	Currency           string     `json:"currency"`
+	Unit               string     `json:"unit"`
 	LastUpdatedAt      *time.Time `json:"lastUpdatedAt"`
-	VerificationStatus string    `json:"verificationStatus"`
-	ConfirmationCount  int       `json:"confirmationCount"`
+	VerificationStatus string     `json:"verificationStatus"`
+	ConfirmationCount  int        `json:"confirmationCount"`
 }
 
 type PriceSubmission struct {
@@ -65,59 +65,59 @@ type PriceSubmission struct {
 }
 
 type Alert struct {
-	ID              string    `json:"id"`
-	UserID          string    `json:"userId"`
-	FuelTypeID      string    `json:"fuelTypeId"`
-	PriceThreshold  float64   `json:"priceThreshold"`
-	Latitude        float64   `json:"latitude"`
-	Longitude       float64   `json:"longitude"`
-	RadiusKm        int       `json:"radiusKm"`
-	AlertName       string    `json:"alertName"`
-	IsActive        bool      `json:"isActive"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID              string     `json:"id"`
+	UserID          string     `json:"userId"`
+	FuelTypeID      string     `json:"fuelTypeId"`
+	PriceThreshold  float64    `json:"priceThreshold"`
+	Latitude        float64    `json:"latitude"`
+	Longitude       float64    `json:"longitude"`
+	RadiusKm        int        `json:"radiusKm"`
+	AlertName       string     `json:"alertName"`
+	IsActive        bool       `json:"isActive"`
+	CreatedAt       time.Time  `json:"createdAt"`
 	LastTriggeredAt *time.Time `json:"lastTriggeredAt"`
-	TriggerCount    int       `json:"triggerCount"`
+	TriggerCount    int        `json:"triggerCount"`
 }
 
 type Notification struct {
-	ID             string    `json:"id"`
-	UserID         string    `json:"userId"`
-	NotificationType string  `json:"notificationType"`
-	Title          string    `json:"title"`
-	Message        string    `json:"message"`
-	SentAt         time.Time `json:"sentAt"`
-	IsRead         bool      `json:"isRead"`
-	DeliveryStatus string    `json:"deliveryStatus"`
-	ActionURL      string    `json:"actionUrl"`
-	AlertID        *string   `json:"alertId"`
-	BroadcastID    *string   `json:"broadcastId"`
+	ID               string    `json:"id"`
+	UserID           string    `json:"userId"`
+	NotificationType string    `json:"notificationType"`
+	Title            string    `json:"title"`
+	Message          string    `json:"message"`
+	SentAt           time.Time `json:"sentAt"`
+	IsRead           bool      `json:"isRead"`
+	DeliveryStatus   string    `json:"deliveryStatus"`
+	ActionURL        string    `json:"actionUrl"`
+	AlertID          *string   `json:"alertId"`
+	BroadcastID      *string   `json:"broadcastId"`
 }
 
 type StationOwner struct {
-	ID                   string     `json:"id"`
-	UserID               string     `json:"userId"`
-	BusinessName         string     `json:"businessName"`
-	VerificationStatus   string     `json:"verificationStatus"`
-	VerificationDocuments []string  `json:"verificationDocuments"`
-	ContactInfo          string     `json:"contactInfo"`
-	VerifiedAt           *time.Time `json:"verifiedAt"`
-	CreatedAt            time.Time  `json:"createdAt"`
+	ID                    string     `json:"id"`
+	UserID                string     `json:"userId"`
+	BusinessName          string     `json:"businessName"`
+	VerificationStatus    string     `json:"verificationStatus"`
+	VerificationDocuments []string   `json:"verificationDocuments"`
+	ContactInfo           string     `json:"contactInfo"`
+	VerifiedAt            *time.Time `json:"verifiedAt"`
+	CreatedAt             time.Time  `json:"createdAt"`
 }
 
 type Broadcast struct {
-	ID               string    `json:"id"`
-	StationOwnerID   string    `json:"stationOwnerId"`
-	StationID        string    `json:"stationId"`
-	Title            string    `json:"title"`
-	Message          string    `json:"message"`
-	TargetRadiusKm   int       `json:"targetRadiusKm"`
-	StartDate        time.Time `json:"startDate"`
-	EndDate          time.Time `json:"endDate"`
-	BroadcastStatus  string    `json:"broadcastStatus"`
-	TargetFuelTypes  []string  `json:"targetFuelTypes"`
-	CreatedAt        time.Time `json:"createdAt"`
-	Views            int       `json:"views"`
-	Clicks           int       `json:"clicks"`
+	ID              string    `json:"id"`
+	StationOwnerID  string    `json:"stationOwnerId"`
+	StationID       string    `json:"stationId"`
+	Title           string    `json:"title"`
+	Message         string    `json:"message"`
+	TargetRadiusKm  int       `json:"targetRadiusKm"`
+	StartDate       time.Time `json:"startDate"`
+	EndDate         time.Time `json:"endDate"`
+	BroadcastStatus string    `json:"broadcastStatus"`
+	TargetFuelTypes []string  `json:"targetFuelTypes"`
+	CreatedAt       time.Time `json:"createdAt"`
+	Views           int       `json:"views"`
+	Clicks          int       `json:"clicks"`
 }
 
 // FuelPriceData represents fuel price information for a station

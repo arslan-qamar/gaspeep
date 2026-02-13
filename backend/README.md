@@ -6,6 +6,14 @@ Go REST API for the Gas Peep real-time gas price tracking platform.
 
 ### Prerequisites
 
+# Gas Peep Backend API
+
+Go REST API for the Gas Peep real-time gas price tracking platform.
+
+## Getting Started
+
+### Prerequisites
+
 - Go 1.21+
 - PostgreSQL 14+ with PostGIS extension
 - Docker (optional)
@@ -68,7 +76,7 @@ golangci-lint run
 ```
 cmd/
 └── api/
-    └── main.go           # Entry point
+        └── main.go           # Entry point
 
 internal/
 ├── db/                   # Database connection
@@ -130,3 +138,42 @@ See main repository for contributing guidelines.
 ## License
 
 MIT
+
+## Debugging (Delve)
+
+You can debug the backend with Delve (dlv). Two convenient flows are provided:
+
+- Start Delve headless (builds and serves on :2345) and attach from VS Code:
+
+    - Install Delve:
+
+        ```bash
+        make -C backend install-dlv
+        ```
+
+    - Start headless Delve (from repo root):
+
+        ```bash
+        make -C backend dlv-headless
+        ```
+
+    - In VS Code: Run the `Attach to Delve (Remote :2345)` configuration in the Run view.
+
+- Attach to a running process (useful when using `air`):
+
+    - Start the dev watcher (builds and restarts binary):
+
+        ```bash
+        make -C backend dev
+        ```
+
+    - In VS Code: Run `Attach to Running Backend (Pick Process)` and select the process for `bin/api`.
+
+- Launch and debug directly from VS Code (no separate dlv install required):
+
+    - Use the `Launch Backend (dlv debug)` configuration in the Run view. This launches the backend under the debugger.
+
+Notes:
+
+- Ensure `$GOPATH/bin` or `$GOBIN` is on your `PATH` so installed tools (`air`, `dlv`) are found.
+- If you prefer a task, use `Tasks: Run Task` → `Backend: Start Delve Headless` to start the headless server from VS Code.
