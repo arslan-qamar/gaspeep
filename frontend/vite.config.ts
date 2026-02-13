@@ -10,14 +10,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: process.env.BACKEND_URL || 'http://backend:8080',
-        changeOrigin: true,
+    server: {
+      host: '0.0.0.0',
+      port: 3000,
+      proxy: {
+        '/api': {
+          // Default to localhost for local development; allow override with BACKEND_URL
+          target: process.env.BACKEND_URL || 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
     },
-  },
 })
