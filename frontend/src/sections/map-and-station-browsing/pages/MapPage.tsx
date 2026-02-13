@@ -17,45 +17,100 @@ export const MapPage: React.FC = () => {
     maxPrice: 10,
     onlyVerified: false,
   });
-    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
     lat: -33.8688,
     lng: 151.2093,
-  });
-  const [viewport, setViewport] = useState<{ latitude: number; longitude: number; zoom: number }>({
-    latitude: -33.8688,
-    longitude: 151.2093,
-    zoom: 14,
   });
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const navigate = useNavigate();
-  
-  // Refs to track state
-  const hasManuallyMovedMap = useRef(false);
+
+  // Refs — use refs for values only needed in callbacks/effects, not in render
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingFetchesRef = useRef<Set<string>>(new Set());
-  const initialFetchDoneRef = useRef(false);
-  const mountedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const viewportRef = useRef({ latitude: -33.8688, longitude: 151.2093, zoom: 14 });
+  const prevFiltersRef = useRef(filters);
+
+  // Fetch stations — aborts any in-flight request to prevent race conditions
+  const fetchStations = useCallback(async (
+    location: { lat: number; lng: number },
+    zoom: number,
+    clearExisting: boolean = false
+  ) => {
+    // Abort any in-flight request so only the latest fetch wins
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Mark requested location immediately to prevent duplicate triggers
+    lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
+    const setLoadingState = clearExisting ? setLoading : setIsFetchingMore;
+    setLoadingState(true);
+
+    try {
+      const radius = getRadiusFromZoom(zoom);
+      const response = await fetch('/api/stations/nearby', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          latitude: location.lat,
+          longitude: location.lng,
+          radiusKm: radius,
+          fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
+          maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (response.ok) {
+        const newStations = await response.json();
+
+        if (clearExisting) {
+          setStations(newStations);
+        } else {
+          // Viewport change: merge and deduplicate
+          setStations((prevStations) => {
+            const stationsMap = new Map<string, Station>();
+            prevStations.forEach((station) => stationsMap.set(station.id, station));
+            newStations.forEach((station: Station) => stationsMap.set(station.id, station));
+
+            return Array.from(stationsMap.values())
+              .map((station) => ({
+                station,
+                distance: calculateDistance(
+                  location.lat, location.lng,
+                  station.latitude, station.longitude
+                ),
+              }))
+              .sort((a, b) => a.distance - b.distance)
+              .slice(0, 200)
+              .map((item) => item.station);
+          });
+        }
+      } else {
+        console.error('Failed to fetch stations');
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      console.error('Error fetching stations:', error);
+      // Reset lastFetchLocation so retries may occur
+      lastFetchLocation.current = null;
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoadingState(false);
+      }
+    }
+  }, [filters]);
 
   // Get user's location (only on initial load)
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // Only update if user hasn't manually moved the map
-          if (!hasManuallyMovedMap.current) {
-            const newLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            setUserLocation(newLocation);
-            setViewport({
-              latitude: newLocation.lat,
-              longitude: newLocation.lng,
-              zoom: 14,
-            });
-          }
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -78,155 +133,50 @@ export const MapPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch stations helper function
-  const fetchStations = useCallback(async (
-    location: { lat: number; lng: number },
-    zoom: number,
-    clearExisting: boolean = false
-  ) => {
-    const key = `${location.lat.toFixed(5)}:${location.lng.toFixed(5)}:${zoom}:${clearExisting ? 'c' : 'a'}`;
-    if (pendingFetchesRef.current.has(key)) {
-      return;
-    }
-    pendingFetchesRef.current.add(key);
-    // mark requested location immediately so other effects won't trigger duplicate fetches
-    const prevLast = lastFetchLocation.current;
-    lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
-    const setLoadingState = clearExisting ? setLoading : setIsFetchingMore;
-    setLoadingState(true);
-    
-    try {
-      const radius = getRadiusFromZoom(zoom);
-      const response = await fetch('/api/stations/nearby', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: location.lat,
-          longitude: location.lng,
-          radiusKm: radius,
-          fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
-          maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-        }),
-      });
-
-      if (response.ok) {
-        const newStations = await response.json();
-        
-        if (clearExisting) {
-          // Filter change: clear and replace
-          setStations(newStations);
-        } else {
-          // Viewport change: merge and deduplicate
-          setStations((prevStations) => {
-            // Create a map of existing stations by ID
-            const stationsMap = new Map<string, Station>();
-            
-            // Add existing stations
-            prevStations.forEach((station) => {
-              stationsMap.set(station.id, station);
-            });
-            
-            // Add/update with new stations
-            newStations.forEach((station: Station) => {
-              stationsMap.set(station.id, station);
-            });
-            
-            // Convert back to array and calculate distances
-            const allStations = Array.from(stationsMap.values());
-            
-            // Sort by distance from current viewport center and keep closest 200
-            const stationsWithDistance = allStations.map((station) => ({
-              station,
-              distance: calculateDistance(
-                location.lat,
-                location.lng,
-                station.latitude,
-                station.longitude
-              ),
-            }));
-            
-            stationsWithDistance.sort((a, b) => a.distance - b.distance);
-            
-            return stationsWithDistance.slice(0, 200).map((item) => item.station);
-          });
-        }
-        
-        // mark that we've completed an initial fetch at least once
-        initialFetchDoneRef.current = true;
-      } else {
-        console.error('Failed to fetch stations');
-      }
-    } catch (error) {
-      console.error('Error fetching stations:', error);
-      // restore previous lastFetchLocation so retries may occur
-      lastFetchLocation.current = prevLast;
-    } finally {
-      setLoadingState(false);
-      pendingFetchesRef.current.delete(key);
-    }
-  }, [filters]);
-
-  // Initial fetch and filter changes (clears stations)
+  // Fetch stations when userLocation changes (initial load + geolocation resolution).
+  // AbortController ensures if geolocation resolves while the default-location fetch
+  // is in flight, the stale fetch is cancelled and only the new one completes.
   useEffect(() => {
-    // Skip running on initial mount; run for subsequent filter changes
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-
-    // Clear stations when filters change
-    setStations([]);
-    fetchStations(userLocation, viewport.zoom, true);
-  }, [filters]);
-
-  // Fetch stations on initial load
-  useEffect(() => {
-    if (!lastFetchLocation.current) {
-      fetchStations(userLocation, viewport.zoom, true);
-    }
+    viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
+    fetchStations(userLocation, 14, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation]);
 
-  // Handle viewport changes (accumulates stations)
-  const handleViewportChange = useCallback((newViewport: { latitude: number; longitude: number; zoom: number }) => {
-    // ignore automatic onMove events until initial fetch completes
-    if (!initialFetchDoneRef.current) return;
+  // Re-fetch when filters change (skip initial render via reference comparison)
+  useEffect(() => {
+    if (prevFiltersRef.current === filters) return;
+    prevFiltersRef.current = filters;
 
-    hasManuallyMovedMap.current = true;
-    setViewport(newViewport);
-    
-    // Clear existing timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
+    const vp = viewportRef.current;
+    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
+  }, [filters, fetchStations]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Handle map move end — called once when the user stops panning/zooming
+  const handleViewportChange = useCallback((newViewport: { latitude: number; longitude: number; zoom: number }) => {
+    viewportRef.current = newViewport;
+
+    const last = lastFetchLocation.current;
+    if (
+      !last ||
+      calculateDistance(last.lat, last.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
+      Math.abs(last.zoom - newViewport.zoom) > 1
+    ) {
+      fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false);
     }
-    
-    // Debounce: wait 500ms after user stops dragging
-    fetchTimeoutRef.current = setTimeout(() => {
-      const lastFetch = lastFetchLocation.current;
-      
-      // Check if we've moved significantly (>500m) or changed zoom significantly
-      if (
-        !lastFetch ||
-        calculateDistance(lastFetch.lat, lastFetch.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
-        Math.abs(lastFetch.zoom - newViewport.zoom) > 1
-      ) {
-        fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false);
-      }
-    }, 500);
   }, [fetchStations]);
 
   // Search stations
   const handleSearch = async () => {
-    // If the query is empty, clear results and reload nearby stations for current viewport
     if (!searchQuery.trim()) {
-      setLoading(true);
-      try {
-        setStations([]);
-        await fetchStations({ lat: viewport.latitude, lng: viewport.longitude }, viewport.zoom, true);
-      } catch (error) {
-        console.error('Error fetching nearby stations after clearing search:', error);
-      } finally {
-        setLoading(false);
-      }
+      const vp = viewportRef.current;
+      fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true);
       return;
     }
 
@@ -298,7 +248,6 @@ export const MapPage: React.FC = () => {
         onClose={() => setSelectedStation(null)}
         onSubmitPrice={(stationId, fuelTypeId) => {
           navigate('/submit', { state: { stationId, fuelTypeId } });
-          // close the sheet after navigating
           setSelectedStation(null);
         }}
       />

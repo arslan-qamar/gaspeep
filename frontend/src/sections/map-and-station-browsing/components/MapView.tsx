@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl, GeolocateControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
@@ -28,6 +28,11 @@ export const MapView: React.FC<MapViewProps> = ({
     [onStationSelect],
   );
 
+  const selectedStation = useMemo(
+    () => selectedStationId ? stations.find((s) => s.id === selectedStationId) : undefined,
+    [stations, selectedStationId],
+  );
+
   return (
     <Map
       initialViewState={{
@@ -35,7 +40,7 @@ export const MapView: React.FC<MapViewProps> = ({
         longitude: userLocation.lng,
         zoom: 14,
       }}
-      onMove={(evt) => {
+      onMoveEnd={(evt) => {
         onViewportChange?.({
           latitude: evt.viewState.latitude,
           longitude: evt.viewState.longitude,
@@ -86,7 +91,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
           >
-            {station.prices.length > 0 
+            {station.prices.length > 0
               ? `$${Math.min(...station.prices.map((p) => p.price)).toFixed(2)}`
               : '?'}
           </button>
@@ -94,21 +99,15 @@ export const MapView: React.FC<MapViewProps> = ({
       ))}
 
       {/* Popup for selected station */}
-      {selectedStationId && stations.find((s) => s.id === selectedStationId) && (
+      {selectedStation && (
         <Popup
-          longitude={
-            stations.find((s) => s.id === selectedStationId)?.longitude || 0
-          }
-          latitude={
-            stations.find((s) => s.id === selectedStationId)?.latitude || 0
-          }
+          longitude={selectedStation.longitude}
+          latitude={selectedStation.latitude}
           closeButton={false}
           closeOnClick={false}
         >
           <div className="p-2">
-            <p className="font-bold text-sm">
-              {stations.find((s) => s.id === selectedStationId)?.name}
-            </p>
+            <p className="font-bold text-sm">{selectedStation.name}</p>
             <p className="text-xs text-slate-600">Click for details</p>
           </div>
         </Popup>
