@@ -19,16 +19,6 @@ const PriceSubmissionHistory: React.FC = () => {
   const [expanded, setExpanded] = useState(false)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number } | null>(null)
 
-  // diagnostic: track mount/unmount counts to help confirm duplicate mounts/effects
-  const mountedRef = useRef(0)
-  useEffect(() => {
-    mountedRef.current += 1
-    console.log('PriceSubmissionHistory mount count:', mountedRef.current)
-    return () => {
-      console.log('PriceSubmissionHistory unmounted')
-    }
-  }, [])
-
   const fetchSubmissions = async (page = 1) => {
     const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page } })
     const payload = resp.data
