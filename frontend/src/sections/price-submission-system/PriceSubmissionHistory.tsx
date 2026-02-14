@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { apiClient } from '../../lib/api'
 import { RefreshCw, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 export type HistoryRecord = {
   id: string
@@ -13,49 +14,49 @@ export type HistoryRecord = {
 
 const PriceSubmissionHistory: React.FC = () => {
   const [items, setItems] = useState<HistoryRecord[] | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loadingAll, setLoadingAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
-  const [loadingAll, setLoadingAll] = useState(false)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number } | null>(null)
 
-  async function load() {
-    setLoading(true)
-    setError(null)
-    try {
-      const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page: 1 } })
-      const payload = resp.data
-      // backend may return either an array or an object with `submissions`
-      const data = Array.isArray(payload)
-        ? payload
-        : payload && Array.isArray(payload.submissions)
-        ? payload.submissions
-        : []
-      const pageInfo = payload && payload.pagination ? payload.pagination : null
-      if (pageInfo) {
-        setPagination({ page: pageInfo.page || 1, limit: pageInfo.limit || data.length || 0, total: pageInfo.total || data.length || 0 })
-      }
-      // normalize records to HistoryRecord shape
-      const normalized = (data || []).map((r: any) => ({
-        id: r.id,
-        station_name: r.station_name || r.station?.name || r.stationName || r.stationId,
-        fuel_type: r.fuel_type || r.fuelTypeName || r.fuel_type_name || r.fuelTypeId,
-        price: r.price,
-        submittedAt: r.submittedAt || r.createdAt || r.submitted_at || new Date().toISOString(),
-        moderationStatus: r.moderationStatus || r.status || r.moderation_status || 'pending',
-      }))
-      setItems(normalized)
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || 'Failed to load submissions')
-      setItems([])
-    } finally {
-      setLoading(false)
+  // diagnostic: track mount/unmount counts to help confirm duplicate mounts/effects
+  const mountedRef = useRef(0)
+  useEffect(() => {
+    mountedRef.current += 1
+    console.log('PriceSubmissionHistory mount count:', mountedRef.current)
+    return () => {
+      console.log('PriceSubmissionHistory unmounted')
+    }
+  }, [])
+
+  const fetchSubmissions = async (page = 1) => {
+    const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page } })
+    const payload = resp.data
+    const data = Array.isArray(payload)
+      ? payload
+      : payload && Array.isArray(payload.submissions)
+      ? payload.submissions
+      : []
+    const pageInfo = payload && payload.pagination ? payload.pagination : null
+    const normalized = (data || []).map((r: any) => ({
+      id: r.id,
+      station_name: r.station_name || r.station?.name || r.stationName || r.stationId,
+      fuel_type: r.fuel_type || r.fuelTypeName || r.fuel_type_name || r.fuelTypeId,
+      price: r.price,
+      submittedAt: r.submittedAt || r.createdAt || r.submitted_at || new Date().toISOString(),
+      moderationStatus: r.moderationStatus || r.status || r.moderation_status || 'pending',
+    }))
+
+    return {
+      items: normalized,
+      pagination: pageInfo ? { page: pageInfo.page || 1, limit: pageInfo.limit || normalized.length || 0, total: pageInfo.total || normalized.length || 0 } : null,
     }
   }
 
   const loadAll = async () => {
-    if (!pagination) return setExpanded(true)
-    const { page, limit, total } = pagination
+    const pageInfo = pagination
+    if (!pageInfo) return setExpanded(true)
+    const { page, limit, total } = pageInfo
     const pages = Math.max(1, Math.ceil(total / limit))
     if (pages <= page) {
       setExpanded(true)
@@ -66,22 +67,8 @@ const PriceSubmissionHistory: React.FC = () => {
     try {
       const results: HistoryRecord[] = []
       for (let p = page + 1; p <= pages; p++) {
-        const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page: p } })
-        const payload = resp.data
-        const data = Array.isArray(payload)
-          ? payload
-          : payload && Array.isArray(payload.submissions)
-          ? payload.submissions
-          : []
-        const normalized = (data || []).map((r: any) => ({
-          id: r.id,
-          station_name: r.station_name || r.station?.name || r.stationName || r.stationId,
-          fuel_type: r.fuel_type || r.fuelTypeName || r.fuel_type_name || r.fuelTypeId,
-          price: r.price,
-          submittedAt: r.submittedAt || r.createdAt || r.submitted_at || new Date().toISOString(),
-          moderationStatus: r.moderationStatus || r.status || r.moderation_status || 'pending',
-        }))
-        results.push(...normalized)
+        const resp = await fetchSubmissions(p)
+        results.push(...(resp.items || []))
       }
 
       setItems((prev) => (prev ? [...prev, ...results] : results))
@@ -93,9 +80,29 @@ const PriceSubmissionHistory: React.FC = () => {
     }
   }
 
+  const { data, isLoading, isError, error: queryError, refetch } = useQuery({
+    queryKey: ['my-submissions', 1],
+    queryFn: () => fetchSubmissions(1),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+
   useEffect(() => {
-    load()
-  }, [])
+    console.log('PriceSubmissionHistory: query state changed', { isLoading, isError })
+  }, [isLoading, isError])
+
+  useEffect(() => {
+    if (data) {
+      setItems(data.items || [])
+      setPagination(data.pagination)
+      setError(null)
+    } else if (!isLoading) {
+      setItems([])
+    }
+    if (isError) {
+      setError((queryError as any)?.response?.data?.error || (queryError as Error)?.message || 'Failed to load submissions')
+    }
+  }, [data, isLoading, isError, queryError])
 
 
   const getStatusIcon = (status: string) => {
@@ -138,7 +145,7 @@ const PriceSubmissionHistory: React.FC = () => {
     return date.toLocaleDateString()
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="mt-8">
         <div className="flex items-center justify-center p-8">
@@ -156,7 +163,7 @@ const PriceSubmissionHistory: React.FC = () => {
             Unable to load submissions: {error}
           </p>
           <button
-            onClick={load}
+            onClick={() => refetch()}
             className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
             Retry
@@ -172,7 +179,7 @@ const PriceSubmissionHistory: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Submissions</h3>
           <button
-            onClick={load}
+            onClick={() => refetch()}
             className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
           >
             <RefreshCw size={14} />
@@ -197,7 +204,7 @@ const PriceSubmissionHistory: React.FC = () => {
             Recent Submissions
           </h3>
           <button
-            onClick={load}
+            onClick={() => refetch()}
             className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
           >
             <RefreshCw size={14} />
@@ -240,11 +247,11 @@ const PriceSubmissionHistory: React.FC = () => {
                   setExpanded(false)
                 } else {
                   // if backend pagination already returned all items, just expand
-                  if (pagination && items && items.length >= (pagination.total || 0)) {
-                    setExpanded(true)
-                  } else {
-                    await loadAll()
-                  }
+                    if (pagination && items && items.length >= (pagination.total || 0)) {
+                      setExpanded(true)
+                    } else {
+                      await loadAll()
+                    }
                 }
               }}
               aria-label={expanded ? `Show fewer submissions` : `View all ${items.length} submissions`}
