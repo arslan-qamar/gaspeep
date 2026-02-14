@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gaspeep/backend/internal/auth"
 	"gaspeep/backend/internal/models"
 	"gaspeep/backend/internal/repository"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
@@ -25,6 +26,10 @@ type SignUpRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Password    string `json:"password" binding:"required,min=8"`
 	DisplayName string `json:"displayName" binding:"required"`
+}
+
+type SignUpResponse struct {
+	Available bool `json:"available"`
 }
 
 type SignInRequest struct {
@@ -136,3 +141,18 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// CheckEmailAvailability returns whether an email is available for sign up
+func (h *AuthHandler) CheckEmailAvailability(c *gin.Context) {
+	email := c.Query("email")
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email is required"})
+		return
+	}
+
+	existingUser, _ := h.userRepo.GetUserByEmail(email)
+	available := existingUser == nil
+
+	c.JSON(http.StatusOK, SignUpResponse{
+		Available: available,
+	})
+}

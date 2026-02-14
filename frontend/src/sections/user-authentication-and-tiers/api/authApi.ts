@@ -116,18 +116,17 @@ export function signOut(): void {
  * Check if email is available
  */
 export async function checkEmailAvailability(email: string): Promise<EmailAvailability> {
-    // For now, simulate the check
-    // In production, this would call the backend
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    const resp = await fetch(`${API_BASE_URL}/auth/check-email?email=${encodeURIComponent(
+        email
+    )}`);
 
-    // Simulate some taken emails
-    const takenEmails = ['sarah.chen@example.com', 'test@example.com'];
-    const available = !takenEmails.includes(email.toLowerCase());
+    if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to check email availability');
+    }
 
-    return {
-        available,
-        suggestion: available ? undefined : `${email.split('@')[0]}.new@${email.split('@')[1]}`,
-    };
+    // Backend returns { available: boolean, suggestion?: string }
+    return resp.json();
 }
 
 /**

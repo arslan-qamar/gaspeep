@@ -66,6 +66,7 @@ func main() {
 	{
 		auth.POST("/signup", authHandler.SignUp)
 		auth.POST("/signin", authHandler.SignIn)
+		auth.GET("/check-email", authHandler.CheckEmailAvailability)
 		auth.GET("/me", middleware.AuthMiddleware(), authHandler.GetCurrentUser)
 		auth.POST("/password-reset", userProfileHandler.PasswordReset)
 	}
