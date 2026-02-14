@@ -186,3 +186,13 @@ export interface UpgradeFlow {
   processing: boolean;
   error?: string;
 }
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetConfirm {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}

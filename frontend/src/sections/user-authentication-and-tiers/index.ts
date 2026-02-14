@@ -3,6 +3,8 @@ export { SignInScreen } from './screens/SignInScreen';
 export { SignUpScreen } from './screens/SignUpScreen';
 export { AccountScreen } from './screens/AccountScreen';
 export { TierComparisonScreen } from './screens/TierComparisonScreen';
+export { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
+export { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 
 // Components
 export { PasswordStrengthIndicator } from './components/PasswordStrengthIndicator';

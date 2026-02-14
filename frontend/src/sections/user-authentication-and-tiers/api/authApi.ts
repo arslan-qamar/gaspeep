@@ -7,6 +7,7 @@ import type {
     RecentSubmission,
     AccountSettings,
     SubscriptionInfo,
+    PasswordResetConfirm,
 } from '../types';
 
 // Prefer an explicit VITE_API_URL when provided. If not provided, use
@@ -143,6 +144,27 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
     if (!response.ok) {
         throw new Error('Failed to send password reset email');
+    }
+}
+
+/**
+ * Reset password with token from email link
+ */
+export async function resetPassword(data: PasswordResetConfirm): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            token: data.token,
+            password: data.newPassword,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reset password');
     }
 }
 

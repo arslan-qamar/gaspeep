@@ -9,6 +9,8 @@ import {
   SignUpScreen,
   AccountScreen,
   TierComparisonScreen,
+  ForgotPasswordScreen,
+  ResetPasswordScreen,
 } from '../sections/user-authentication-and-tiers'
 
 // Section 4: Price Submission System
@@ -37,7 +39,15 @@ export const router = createBrowserRouter([
   {
     path: '/auth/tier-comparison',
     element: <TierComparisonScreen />,
-  },  
+  },
+  {
+    path: '/auth/forgot-password',
+    element: <ForgotPasswordScreen />,
+  },
+  {
+    path: '/auth/reset-password',
+    element: <ResetPasswordScreen />,
+  },
   {
     path: '/signin',
     element: <SignInScreen />,
