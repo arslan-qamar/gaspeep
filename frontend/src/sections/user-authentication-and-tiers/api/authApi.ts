@@ -188,7 +188,23 @@ export async function getUserProfile(): Promise<User> {
         throw new Error('Failed to fetch profile');
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Map backend fields to frontend `User` shape
+    const user: User = {
+        id: data.id,
+        name: data.displayName ?? data.name ?? '',
+        email: data.email,
+        avatar: data.avatar ?? undefined,
+        memberSince: data.createdAt ?? data.memberSince ?? new Date().toISOString(),
+        tier: (data.tier as any) ?? 'free',
+        subscriptionStatus: data.subscriptionStatus ?? undefined,
+        billingCycle: data.billingCycle ?? undefined,
+        emailVerified: data.emailVerified ?? false,
+        connectedProviders: data.connectedProviders ?? [],
+    };
+
+    return user;
 }
 
 /**
@@ -201,20 +217,27 @@ export async function updateUserProfile(updates: Partial<User>): Promise<User> {
         throw new Error('Not authenticated');
     }
 
+    // Map frontend update fields to backend expected fields
+    const payload: any = {};
+    if (typeof updates.name !== 'undefined') payload.displayName = updates.name;
+    if (typeof updates.tier !== 'undefined') payload.tier = updates.tier;
+    if (typeof updates.email !== 'undefined') payload.email = updates.email;
+
     const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
         throw new Error('Failed to update profile');
     }
 
-    return response.json();
+    // Backend returns a minimal confirmation; fetch and return the fresh user
+    return getUserProfile();
 }
 
 /**
@@ -224,8 +247,8 @@ export async function getContributionStats(): Promise<ContributionStats> {
     // Mock data - in production this would come from the backend
     return {
         totalSubmissions: 87,
-        usersHelped: 1243,
-        pointsEarned: 4350,
+        usersHelped: 0, 
+        pointsEarned: 0,
         contributionStreak: 5,
         dailySubmissionsUsed: 7,
         dailySubmissionsLimit: 10,
