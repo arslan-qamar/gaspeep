@@ -15,15 +15,26 @@ const PriceSubmissionHistory: React.FC = () => {
   const [items, setItems] = useState<HistoryRecord[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
+  const [loadingAll, setLoadingAll] = useState(false)
+  const [pagination, setPagination] = useState<{ page: number; limit: number; total: number } | null>(null)
 
   async function load() {
     setLoading(true)
     setError(null)
     try {
-      const resp = await apiClient.get('/price-submissions/my-submissions')
+      const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page: 1 } })
       const payload = resp.data
       // backend may return either an array or an object with `submissions`
-      const data = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.submissions) ? payload.submissions : [])
+      const data = Array.isArray(payload)
+        ? payload
+        : payload && Array.isArray(payload.submissions)
+        ? payload.submissions
+        : []
+      const pageInfo = payload && payload.pagination ? payload.pagination : null
+      if (pageInfo) {
+        setPagination({ page: pageInfo.page || 1, limit: pageInfo.limit || data.length || 0, total: pageInfo.total || data.length || 0 })
+      }
       // normalize records to HistoryRecord shape
       const normalized = (data || []).map((r: any) => ({
         id: r.id,
@@ -42,9 +53,50 @@ const PriceSubmissionHistory: React.FC = () => {
     }
   }
 
+  const loadAll = async () => {
+    if (!pagination) return setExpanded(true)
+    const { page, limit, total } = pagination
+    const pages = Math.max(1, Math.ceil(total / limit))
+    if (pages <= page) {
+      setExpanded(true)
+      return
+    }
+
+    setLoadingAll(true)
+    try {
+      const results: HistoryRecord[] = []
+      for (let p = page + 1; p <= pages; p++) {
+        const resp = await apiClient.get('/price-submissions/my-submissions', { params: { page: p } })
+        const payload = resp.data
+        const data = Array.isArray(payload)
+          ? payload
+          : payload && Array.isArray(payload.submissions)
+          ? payload.submissions
+          : []
+        const normalized = (data || []).map((r: any) => ({
+          id: r.id,
+          station_name: r.station_name || r.station?.name || r.stationName || r.stationId,
+          fuel_type: r.fuel_type || r.fuelTypeName || r.fuel_type_name || r.fuelTypeId,
+          price: r.price,
+          submittedAt: r.submittedAt || r.createdAt || r.submitted_at || new Date().toISOString(),
+          moderationStatus: r.moderationStatus || r.status || r.moderation_status || 'pending',
+        }))
+        results.push(...normalized)
+      }
+
+      setItems((prev) => (prev ? [...prev, ...results] : results))
+      setExpanded(true)
+    } catch (e) {
+      console.error('Failed to load all submissions', e)
+    } finally {
+      setLoadingAll(false)
+    }
+  }
+
   useEffect(() => {
     load()
   }, [])
+
 
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -154,7 +206,7 @@ const PriceSubmissionHistory: React.FC = () => {
         </div>
 
         <ul className="space-y-3">
-          {items.slice(0, 5).map((it) => (
+          {(expanded ? items : items.slice(0, 5)).map((it) => (
             <li
               key={it.id}
               className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
@@ -182,8 +234,24 @@ const PriceSubmissionHistory: React.FC = () => {
 
         {items.length > 5 && (
           <div className="mt-4 text-center">
-            <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-              View all {items.length} submissions
+            <button
+              onClick={async () => {
+                if (expanded) {
+                  setExpanded(false)
+                } else {
+                  // if backend pagination already returned all items, just expand
+                  if (pagination && items && items.length >= (pagination.total || 0)) {
+                    setExpanded(true)
+                  } else {
+                    await loadAll()
+                  }
+                }
+              }}
+              aria-label={expanded ? `Show fewer submissions` : `View all ${items.length} submissions`}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {expanded ? 'Show less' : `View all ${pagination?.total ?? items.length} submissions`}
+              {loadingAll && <span className="ml-2">…</span>}
             </button>
           </div>
         )}
