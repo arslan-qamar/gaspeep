@@ -1,87 +1,72 @@
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { User, authService } from '../services/authService'
 
-// Module-level cache + pending fetch to dedupe concurrent callers
-let cachedUser: User | null = null
-let cachedError: string | null = null
-let pendingFetch: Promise<User> | null = null
+const CURRENT_USER_KEY = ['auth', 'currentUser']
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(cachedUser)
-  const [loading, setLoading] = useState<boolean>(() => (cachedUser === null && !!localStorage.getItem('auth_token')))
-  const [error, setError] = useState<string | null>(cachedError)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
+  const fetchCurrentUser = async (): Promise<User | null> => {
     const token = localStorage.getItem('auth_token')
-    if (!token) {
-      setLoading(false)
-      return
-    }
+    if (!token) return null
+    return await authService.getCurrentUser()
+  }
 
-    if (cachedUser) {
-      setUser(cachedUser)
-      setLoading(false)
-      return
-    }
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery<User | null, Error>({
+    queryKey: CURRENT_USER_KEY,
+    queryFn: fetchCurrentUser,
+    // Only try to fetch if we have a token
+    enabled: !!localStorage.getItem('auth_token'),
+    // Note: keepPreviousData/onError removed for v5 types; handle error side-effects below
+  })
 
-    if (pendingFetch) {
-      pendingFetch
-        .then((u) => setUser(u))
-        .catch((err) => {
-          setError(err.message)
-          localStorage.removeItem('auth_token')
-        })
-        .finally(() => setLoading(false))
-      return
-    }
-
-    pendingFetch = authService
-      .getCurrentUser()
-      .then((u) => {
-        cachedUser = u
-        setUser(u)
-        return u
-      })
-      .catch((err) => {
-        cachedError = err.message
-        localStorage.removeItem('auth_token')
-        setError(err.message)
-        throw err
-      })
-      .finally(() => {
-        pendingFetch = null
-        setLoading(false)
-      })
-
-    return () => {
-      // No-op cleanup; subscribers simply unmount
-    }
-  }, [])
-
-  const login = async (email: string, password: string) => {
+  // Clear token on query error to avoid stuck auth state
+  if (error) {
     try {
-      setLoading(true)
-      const { token, user } = await authService.signin(email, password)
-      localStorage.setItem('auth_token', token)
-      cachedUser = user
-      setUser(user)
-      setError(null)
-      return { token, user }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Login failed'
-      setError(msg)
-      throw err
-    } finally {
-      setLoading(false)
+      localStorage.removeItem('auth_token')
+    } catch (e) {
+      /* ignore */
     }
   }
 
-  const logout = () => {
-    authService.logout()
-    cachedUser = null
-    cachedError = null
-    setUser(null)
-  }
+  const signinMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      return await authService.signin(email, password)
+    },
+    onSuccess: (data) => {
+      const { token, user } = data
+      localStorage.setItem('auth_token', token)
+      queryClient.setQueryData(CURRENT_USER_KEY, user)
+    },
+  })
 
-  return { user, loading, error, login, logout }
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const result = await signinMutation.mutateAsync({ email, password })
+      return result
+    },
+    [signinMutation]
+  )
+
+  const logout = useCallback(() => {
+    authService.logout()
+    localStorage.removeItem('auth_token')
+    queryClient.setQueryData(CURRENT_USER_KEY, null)
+    queryClient.clear()
+  }, [queryClient])
+
+  return {
+    user: user ?? null,
+    loading: isLoading || signinMutation.isPending,
+    error: error ? String(error.message) : signinMutation.error ? String((signinMutation.error as Error).message) : null,
+    login,
+    logout,
+    // expose mutation state for callers that need it
+    _mutations: { signin: signinMutation },
+  }
 }

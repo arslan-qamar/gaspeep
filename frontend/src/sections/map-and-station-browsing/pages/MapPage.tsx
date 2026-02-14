@@ -6,7 +6,7 @@ import StationDetailSheet from '../components/StationDetailSheet';
 import FilterModal, { FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { fetchNearbyStations, searchStations } from '../../../services/stationsService'
 
 export const MapPage: React.FC = () => {
@@ -39,7 +39,7 @@ export const MapPage: React.FC = () => {
   } | null>(null)
 
   // Use React Query to fetch stations; this improves deduplication and caching.
-  const { data: fetchedStations, isFetching } = useQuery({
+  const queryOptions: UseQueryOptions<Station[], Error, Station[]> = {
     queryKey: ['stations', fetchParams, filters],
     queryFn: async ({ signal }) => {
       if (!fetchParams) return [] as Station[]
@@ -58,43 +58,12 @@ export const MapPage: React.FC = () => {
       }, signal) as Promise<Station[]>
     },
     enabled: !!fetchParams,
-    keepPreviousData: true,
     staleTime: 60_000,
-    cacheTime: 5 * 60_000,
-    onSuccess: (newStations) => {
-      if (!fetchParams) return
+    // onSuccess handling moved into a separate useEffect below to keep
+    // query options compatible with v5 TypeScript definitions.
+  }
 
-      if (fetchParams.searchQuery && fetchParams.searchQuery.trim() && newStations.length === 0) {
-        setStations(newStations)
-        return
-      }
-
-      if (newStations.length > 0) {
-        if (fetchParams.clearExisting) {
-          setStations(newStations)
-        } else {
-          setStations((prevStations) => {
-            const stationsMap = new Map<string, Station>()
-            prevStations.forEach((station) => stationsMap.set(station.id, station))
-            newStations.forEach((station: Station) => stationsMap.set(station.id, station))
-
-            return Array.from(stationsMap.values())
-              .map((station) => ({
-                station,
-                distance: calculateDistance(
-                  fetchParams.lat, fetchParams.lng,
-                  station.latitude, station.longitude
-                ),
-              }))
-              .sort((a, b) => a.distance - b.distance)
-              .slice(0, 200)
-              .map((item) => item.station)
-          })
-        }
-      }
-      lastFetchLocation.current = { lat: fetchParams.lat, lng: fetchParams.lng, zoom: fetchParams.zoom }
-    },
-  })
+  const { data: fetchedStations, isFetching } = useQuery(queryOptions)
 
     // Ensure fetchedStations are reflected into local `stations` state. This
     // duplicates onSuccess safety and guards against cases where the query
