@@ -77,9 +77,6 @@ const PriceSubmissionHistory: React.FC = () => {
     retry: 1,
   })
 
-  useEffect(() => {
-    console.log('PriceSubmissionHistory: query state changed', { isLoading, isError })
-  }, [isLoading, isError])
 
   useEffect(() => {
     if (data) {
