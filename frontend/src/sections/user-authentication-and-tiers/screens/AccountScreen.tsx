@@ -381,7 +381,7 @@ export function AccountScreen() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm text-slate-500 dark:text-slate-500">
-                                            {submission.timestamp}
+                                            {new Date(submission.timestamp).toLocaleString()}
                                         </p>
                                         <span
                                             className={`inline-block px-2 py-1 text-xs font-medium rounded ${submission.status === 'published'

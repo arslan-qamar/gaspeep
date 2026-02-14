@@ -259,33 +259,49 @@ export async function getContributionStats(): Promise<ContributionStats> {
  * Get recent submissions (mock for now)
  */
 export async function getRecentSubmissions(): Promise<RecentSubmission[]> {
-    // Mock data - in production this would come from the backend
-    return [
-        {
-            id: 'sub_001',
-            stationName: 'Shell Downtown',
-            fuelType: 'E10',
-            price: 3.85,
-            timestamp: '2 hours ago',
-            status: 'published',
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const resp = await fetch(`${API_BASE_URL}/price-submissions/my-submissions`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
         },
-        {
-            id: 'sub_002',
-            stationName: 'Chevron Mission Bay',
-            fuelType: 'Diesel',
-            price: 4.39,
-            timestamp: '5 hours ago',
-            status: 'published',
-        },
-        {
-            id: 'sub_003',
-            stationName: '76 Station',
-            fuelType: 'U95',
-            price: 4.15,
-            timestamp: 'Yesterday',
-            status: 'verifying',
-        },
-    ];
+    });
+
+    if (!resp.ok) {
+        if (resp.status === 401) {
+            localStorage.removeItem('auth_token');
+            throw new Error('Session expired');
+        }
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to fetch submissions');
+    }
+
+    const payload = await resp.json();
+
+    // backend may return either an array or an object with `submissions`
+    const data = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.submissions) ? payload.submissions : []);
+
+    const normalizeStatus = (raw: any): RecentSubmission['status'] => {
+        const s = (raw || '').toString().toLowerCase();
+        if (!s) return 'verifying';
+        if (['approved', 'published', 'approved_by_moderator', 'auto_approved'].includes(s)) return 'published';
+        if (['pending', 'verifying', 'pending_review', 'in_review'].includes(s)) return 'verifying';
+        if (['rejected', 'denied'].includes(s)) return 'rejected';
+        return 'verifying';
+    };
+
+    return (data || []).map((r: any) => ({
+        id: r.id,
+        stationName: r.station_name || (r.station && r.station.name) || r.stationName || r.stationId || '',
+        fuelType: r.fuel_type || r.fuelTypeName || r.fuel_type_name || r.fuelTypeId || (r.fuelType && r.fuelType.display_name) || '',
+        price: typeof r.price === 'number' ? r.price : Number(r.price) || 0,
+        timestamp: r.submittedAt || r.createdAt || r.submitted_at || new Date().toISOString(),
+        status: normalizeStatus(r.moderationStatus || r.status || r.moderation_status || r.moderationStatus),
+    }));
 }
 
 /**
