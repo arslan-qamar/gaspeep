@@ -26,6 +26,7 @@ type SignUpRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Password    string `json:"password" binding:"required,min=8"`
 	DisplayName string `json:"displayName" binding:"required"`
+	Tier        string `json:"tier" binding:"required"`
 }
 
 type SignUpResponse struct {
@@ -64,7 +65,7 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 	}
 
 	// Create user
-	user, err := h.userRepo.CreateUser(req.Email, string(hashedPassword), req.DisplayName, "free")
+	user, err := h.userRepo.CreateUser(req.Email, string(hashedPassword), req.DisplayName, req.Tier)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
