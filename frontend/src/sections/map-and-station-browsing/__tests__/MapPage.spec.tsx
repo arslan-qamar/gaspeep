@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapPage from '../pages/MapPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Station } from '../types';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -74,7 +75,9 @@ describe('MapPage', () => {
   it('renders search bar and filter button', () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -85,7 +88,9 @@ describe('MapPage', () => {
   it('opens filter modal when filter button clicked', async () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -99,7 +104,9 @@ describe('MapPage', () => {
   it('performs search when enter pressed in search input', async () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -116,7 +123,9 @@ describe('MapPage', () => {
   it('shows loading indicator during search', async () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -132,7 +141,9 @@ describe('MapPage', () => {
   it('fetches stations on initial load', async () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -154,7 +165,9 @@ describe('MapPage', () => {
     // Should not throw error
     expect(() => render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     )).not.toThrow();
   });
@@ -165,7 +178,9 @@ describe('MapPage', () => {
     // Should not throw error
     expect(() => render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     )).not.toThrow();
 
@@ -178,7 +193,9 @@ describe('MapPage', () => {
   it('shows responsive filter button text', () => {
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -207,7 +224,9 @@ describe('MapPage', () => {
 
     render(
       <MemoryRouter>
-        <MapPage />
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 

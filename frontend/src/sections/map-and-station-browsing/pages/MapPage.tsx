@@ -6,6 +6,8 @@ import StationDetailSheet from '../components/StationDetailSheet';
 import FilterModal, { FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
+import { useQuery } from '@tanstack/react-query'
+import { fetchNearbyStations, searchStations } from '../../../services/stationsService'
 
 export const MapPage: React.FC = () => {
   const [stations, setStations] = useState<Station[]>([]);
@@ -24,128 +26,114 @@ export const MapPage: React.FC = () => {
 
   // Refs — use refs for values only needed in callbacks/effects, not in render
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const viewportRef = useRef<{ latitude: number; longitude: number; zoom: number } | null>(null);
   const prevFiltersRef = useRef(filters);
 
-  // Fetch stations — aborts any in-flight request to prevent race conditions
-  const fetchStations = useCallback(async (
-    location: { lat: number; lng: number },
-    zoom: number,
-    clearExisting: boolean = false,
-    searchQuery?: string,
-  ) => {
-    // Abort any in-flight request so only the latest fetch wins
-    abortControllerRef.current?.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+  // Params for the current fetch — updating this triggers the React Query fetch
+  const [fetchParams, setFetchParams] = useState<{
+    lat: number
+    lng: number
+    zoom: number
+    searchQuery?: string
+    clearExisting?: boolean
+  } | null>(null)
 
-    // Mark requested location immediately to prevent duplicate triggers
-    lastFetchLocation.current = { lat: location.lat, lng: location.lng, zoom };
-    const setLoadingState = clearExisting ? setLoading : setIsFetchingMore;
-    setLoadingState(true);
+  // Use React Query to fetch stations; this improves deduplication and caching.
+  const { data: fetchedStations, isFetching } = useQuery({
+    queryKey: ['stations', fetchParams, filters],
+    queryFn: async ({ signal }) => {
+      if (!fetchParams) return [] as Station[]
 
-    try {
-      const radius = getRadiusFromZoom(zoom);
-
-      let newStations: Station[] = [];
-
-      // If there's a search query, use the search endpoint and then filter by
-      // radius and local filters client-side so moving the map respects the
-      // current search term.
-      if (searchQuery && searchQuery.trim()) {
-        const response = await fetch(`/api/stations/search?q=${encodeURIComponent(searchQuery)}`);
-
-        if (!response.ok) {
-          console.error('Failed to search stations');
-        } else {
-          const results = await response.json();
-
-          const matchesFuelType = (station: Station) => {
-            if (filters.fuelTypes.length === 0) return true;
-            return (station.prices || []).some((p: any) => {
-              const id = p.fuelTypeId ?? p.fuel_type_id ?? p.fuel_type ?? p.fuelType;
-              return id != null && filters.fuelTypes.includes(id);
-            });
-          };
-
-          const matchesMaxPrice = (station: Station) => {
-            if (!filters.maxPrice || filters.maxPrice <= 0) return true;
-            return (station.prices || []).some((p: any) => {
-              const price = p.price ?? p.amount;
-              return typeof price === 'number' && price <= filters.maxPrice;
-            });
-          };
-
-          newStations = (results as Station[])
-            .map((station) => ({ station, distance: calculateDistance(location.lat, location.lng, station.latitude, station.longitude) }))
-            .filter((item) => item.distance <= radius && matchesFuelType(item.station) && matchesMaxPrice(item.station))
-            .sort((a, b) => a.distance - b.distance)
-            .slice(0, 200)
-            .map((item) => item.station);
-        }
-      } else {
-        const response = await fetch('/api/stations/nearby', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            latitude: location.lat,
-            longitude: location.lng,
-            radiusKm: radius,
-            fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
-            maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-          }),
-          signal: controller.signal,
-        });
-
-        if (response.ok) {
-          newStations = await response.json();
-        } else {
-          console.error('Failed to fetch stations');
-        }
+      if (fetchParams.searchQuery && fetchParams.searchQuery.trim()) {
+        return searchStations(fetchParams.searchQuery, { lat: fetchParams.lat, lng: fetchParams.lng }, fetchParams.zoom, filters, signal) as Promise<Station[]>
       }
 
-      // If a search query was used, always replace the marker set with the
-      // search results (this clears the map when the search returns []). For
-      // non-search nearby fetches, preserve the previous merge/dedupe behavior
-      // on viewport changes.
-      if (searchQuery && searchQuery.trim() && newStations.length === 0) {
-        setStations(newStations);
-      } else if (newStations.length > 0) {
-        if (clearExisting) {
-          setStations(newStations);
+      const radius = getRadiusFromZoom(fetchParams.zoom)
+      return fetchNearbyStations({
+        latitude: fetchParams.lat,
+        longitude: fetchParams.lng,
+        radiusKm: radius,
+        fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
+        maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
+      }, signal) as Promise<Station[]>
+    },
+    enabled: !!fetchParams,
+    keepPreviousData: true,
+    staleTime: 60_000,
+    cacheTime: 5 * 60_000,
+    onSuccess: (newStations) => {
+      if (!fetchParams) return
+
+      if (fetchParams.searchQuery && fetchParams.searchQuery.trim() && newStations.length === 0) {
+        setStations(newStations)
+        return
+      }
+
+      if (newStations.length > 0) {
+        if (fetchParams.clearExisting) {
+          setStations(newStations)
         } else {
-          // Viewport change: merge and deduplicate
           setStations((prevStations) => {
-            const stationsMap = new Map<string, Station>();
-            prevStations.forEach((station) => stationsMap.set(station.id, station));
-            newStations.forEach((station: Station) => stationsMap.set(station.id, station));
+            const stationsMap = new Map<string, Station>()
+            prevStations.forEach((station) => stationsMap.set(station.id, station))
+            newStations.forEach((station: Station) => stationsMap.set(station.id, station))
 
             return Array.from(stationsMap.values())
               .map((station) => ({
                 station,
                 distance: calculateDistance(
-                  location.lat, location.lng,
+                  fetchParams.lat, fetchParams.lng,
                   station.latitude, station.longitude
                 ),
               }))
               .sort((a, b) => a.distance - b.distance)
               .slice(0, 200)
-              .map((item) => item.station);
-          });
+              .map((item) => item.station)
+          })
         }
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-      console.error('Error fetching stations:', error);
-      // Reset lastFetchLocation so retries may occur
-      lastFetchLocation.current = null;
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoadingState(false);
+      lastFetchLocation.current = { lat: fetchParams.lat, lng: fetchParams.lng, zoom: fetchParams.zoom }
+    },
+  })
+
+    // Ensure fetchedStations are reflected into local `stations` state. This
+    // duplicates onSuccess safety and guards against cases where the query
+    // resolves but onSuccess didn't run (e.g. during strict mode re-renders).
+    useEffect(() => {
+      if (!fetchParams || !fetchedStations) return
+
+      const newStations = fetchedStations as Station[]
+
+      if (fetchParams.searchQuery && fetchParams.searchQuery.trim() && newStations.length === 0) {
+        setStations(newStations)
+        return
       }
-    }
-  }, [filters]);
+
+      if (newStations.length > 0) {
+        if (fetchParams.clearExisting) {
+          setStations(newStations)
+        } else {
+          setStations((prevStations) => {
+            const stationsMap = new Map<string, Station>()
+            prevStations.forEach((station) => stationsMap.set(station.id, station))
+            newStations.forEach((station: Station) => stationsMap.set(station.id, station))
+
+            return Array.from(stationsMap.values())
+              .map((station) => ({
+                station,
+                distance: calculateDistance(
+                  fetchParams.lat, fetchParams.lng,
+                  station.latitude, station.longitude
+                ),
+              }))
+              .sort((a, b) => a.distance - b.distance)
+              .slice(0, 200)
+              .map((item) => item.station)
+          })
+        }
+      }
+      lastFetchLocation.current = { lat: fetchParams.lat, lng: fetchParams.lng, zoom: fetchParams.zoom }
+    }, [fetchedStations, fetchParams])
 
   // Get user's location (only on initial load)
   useEffect(() => {
@@ -184,7 +172,7 @@ export const MapPage: React.FC = () => {
   useEffect(() => {
     if (!userLocation) return;
     viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
-    fetchStations(userLocation, 14, true, searchQuery);
+    setFetchParams({ lat: userLocation.lat, lng: userLocation.lng, zoom: 14, searchQuery, clearExisting: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation]);
 
@@ -196,15 +184,20 @@ export const MapPage: React.FC = () => {
     const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
     if (!vp) return;
 
-    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true, searchQuery);
-  }, [filters, fetchStations, userLocation]);
+    setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery, clearExisting: true });
+  }, [filters, userLocation]);
 
-  // Cleanup abort controller on unmount
+  // Reflect React Query's fetching state into local loading flags for UI
   useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
+    if (!fetchParams) return
+    if (isFetching) {
+      if (fetchParams.clearExisting) setLoading(true)
+      else setIsFetchingMore(true)
+    } else {
+      setLoading(false)
+      setIsFetchingMore(false)
+    }
+  }, [isFetching, fetchParams])
 
   // Handle map move end — called once when the user stops panning/zooming
   const handleViewportChange = useCallback((newViewport: { latitude: number; longitude: number; zoom: number }) => {
@@ -216,18 +209,18 @@ export const MapPage: React.FC = () => {
       calculateDistance(last.lat, last.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
       Math.abs(last.zoom - newViewport.zoom) > 1
     ) {
-      fetchStations({ lat: newViewport.latitude, lng: newViewport.longitude }, newViewport.zoom, false, searchQuery);
+      setFetchParams({ lat: newViewport.latitude, lng: newViewport.longitude, zoom: newViewport.zoom, searchQuery, clearExisting: false });
     }
-  }, [fetchStations, searchQuery]);
+  }, [searchQuery]);
 
   // Search stations
   const handleSearch = async () => {
     const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
     if (!vp) return;
 
-    // Delegate to fetchStations so the search respects current viewport, radius
+    // Update `fetchParams` so the search respects current viewport, radius
     // and local filters (and so moving the map after a search keeps the query).
-    fetchStations({ lat: vp.latitude, lng: vp.longitude }, vp.zoom, true, searchQuery);
+    setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery, clearExisting: true });
   };
 
   return (

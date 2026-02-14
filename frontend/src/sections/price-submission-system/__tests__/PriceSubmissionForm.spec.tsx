@@ -14,6 +14,7 @@ jest.mock('../../../lib/api', () => {
 
 import { apiClient } from '../../../lib/api'
 import { PriceSubmissionForm } from '../PriceSubmissionForm'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import SubmissionConfirmation from '../SubmissionConfirmation'
 
@@ -57,7 +58,9 @@ describe('PriceSubmissionForm', () => {
 
     render(
       <MemoryRouter>
-        <PriceSubmissionForm />
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
       </MemoryRouter>
     )
 

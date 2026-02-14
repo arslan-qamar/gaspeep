@@ -77,26 +77,28 @@ export const MapView: React.FC<MapViewProps> = ({
       )}
 
       {/* Stations */}
-      {stations.map((station) => (
-        <Marker
-          key={station.id}
-          longitude={station.longitude}
-          latitude={station.latitude}
-          onClick={() => handleMarkerClick(station)}
-        >
-          <button
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all cursor-pointer ${
-              selectedStationId === station.id
-                ? 'bg-blue-600 shadow-lg scale-110'
-                : 'bg-blue-500 hover:bg-blue-600'
-            }`}
+      {stations
+        .filter((station) => typeof station.latitude === 'number' && typeof station.longitude === 'number')
+        .map((station) => (
+          <Marker
+            key={station.id}
+            longitude={station.longitude}
+            latitude={station.latitude}
+            onClick={() => handleMarkerClick(station)}
           >
-            {station.prices.length > 0
-              ? `$${Math.min(...station.prices.map((p) => p.price)).toFixed(2)}`
-              : '?'}
-          </button>
-        </Marker>
-      ))}
+            <button
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all cursor-pointer ${
+                selectedStationId === station.id
+                  ? 'bg-blue-600 shadow-lg scale-110'
+                  : 'bg-blue-500 hover:bg-blue-600'
+              }`}
+            >
+              {Array.isArray(station.prices) && station.prices.length > 0
+                ? `$${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}`
+                : '?'}
+            </button>
+          </Marker>
+        ))}
 
       {/* Popup for selected station */}
       {selectedStation && (
