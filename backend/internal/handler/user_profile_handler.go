@@ -18,11 +18,15 @@ import (
 
 // UserProfileHandler handles user profile endpoints
 type UserProfileHandler struct {
-	db *sql.DB
+	userRepo repository.UserRepository
+	prRepo   repository.PasswordResetRepository
 }
 
-func NewUserProfileHandler(db *sql.DB) *UserProfileHandler {
-	return &UserProfileHandler{db: db}
+func NewUserProfileHandler(userRepo repository.UserRepository, prRepo repository.PasswordResetRepository) *UserProfileHandler {
+	return &UserProfileHandler{
+		userRepo: userRepo,
+		prRepo:   prRepo,
+	}
 }
 
 // GetProfile handles GET /api/users/profile
@@ -33,29 +37,19 @@ func (h *UserProfileHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	query := `SELECT id, email, display_name, tier, created_at, updated_at FROM users WHERE id = $1`
-	var (
-		id, email, displayName, tier string
-		createdAt, updatedAt         time.Time
-	)
-
-	err := h.db.QueryRow(query, userID.(string)).Scan(&id, &email, &displayName, &tier, &createdAt, &updatedAt)
-	if err == sql.ErrNoRows {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
+	user, err := h.userRepo.GetUserByID(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch profile"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":          id,
-		"email":       email,
-		"displayName": displayName,
-		"tier":        tier,
-		"createdAt":   createdAt,
-		"updatedAt":   updatedAt,
+		"id":          user.ID,
+		"email":       user.Email,
+		"displayName": user.DisplayName,
+		"tier":        user.Tier,
+		"createdAt":   user.CreatedAt,
+		"updatedAt":   user.UpdatedAt,
 	})
 }
 
@@ -77,9 +71,7 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	query := `UPDATE users SET display_name = COALESCE($1, display_name), tier = COALESCE($2, tier), updated_at = NOW() WHERE id = $3 RETURNING id`
-	var updatedID string
-	err := h.db.QueryRow(query, req.DisplayName, req.Tier, userID.(string)).Scan(&updatedID)
+	updatedID, err := h.userRepo.UpdateProfile(userID.(string), req.DisplayName, req.Tier)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -103,16 +95,12 @@ func (h *UserProfileHandler) PasswordReset(c *gin.Context) {
 		return
 	}
 
-	// Check whether a user exists with this email. We always return 200
-	// to avoid leaking which emails are registered.
-	var userID string
-	err := h.db.QueryRow(`SELECT id FROM users WHERE email = $1`, req.Email).Scan(&userID)
-	if err != nil && err != sql.ErrNoRows {
+	userID, err := h.userRepo.GetUserIDByEmail(req.Email)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process request"})
 		return
 	}
 
-	// Generate a secure token regardless of whether the user exists.
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate reset token"})
@@ -121,14 +109,11 @@ func (h *UserProfileHandler) PasswordReset(c *gin.Context) {
 	token := hex.EncodeToString(b)
 	expiresAt := time.Now().Add(1 * time.Hour).UTC()
 
-	// If user exists, persist the token using the repository and attempt to send email.
 	if userID != "" {
-		repo := repository.NewPasswordResetRepository(h.db)
-		if err := repo.Create(userID, token, expiresAt); err != nil {
+		if err := h.prRepo.Create(userID, token, expiresAt); err != nil {
 			log.Printf("warning: failed to persist password reset token: %v", err)
 		}
 
-		// Build full reset URL if APP_BASE_URL is set, otherwise use relative path.
 		resetPath := "/auth/reset-password?token=" + token
 		base := os.Getenv("APP_BASE_URL")
 		var fullURL string

@@ -4,40 +4,25 @@ import (
 	"database/sql"
 	"net/http"
 
+	"gaspeep/backend/internal/service"
+
 	"github.com/gin-gonic/gin"
-	"gaspeep/backend/internal/models"
 )
 
 type FuelTypeHandler struct {
-	db *sql.DB
+	fuelTypeService service.FuelTypeService
 }
 
-func NewFuelTypeHandler(db *sql.DB) *FuelTypeHandler {
-	return &FuelTypeHandler{db: db}
+func NewFuelTypeHandler(fuelTypeService service.FuelTypeService) *FuelTypeHandler {
+	return &FuelTypeHandler{fuelTypeService: fuelTypeService}
 }
 
 // GetFuelTypes retrieves all fuel types ordered by display order
 func (h *FuelTypeHandler) GetFuelTypes(c *gin.Context) {
-	query := `
-		SELECT id, name, display_name, description, color_code, display_order
-		FROM fuel_types
-		ORDER BY display_order`
-	
-	rows, err := h.db.Query(query)
+	fuelTypes, err := h.fuelTypeService.GetFuelTypes()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch fuel types"})
 		return
-	}
-	defer rows.Close()
-
-	fuelTypes := []models.FuelType{}
-	for rows.Next() {
-		var ft models.FuelType
-		if err := rows.Scan(&ft.ID, &ft.Name, &ft.DisplayName, &ft.Description, &ft.ColorCode, &ft.DisplayOrder); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan fuel type"})
-			return
-		}
-		fuelTypes = append(fuelTypes, ft)
 	}
 
 	c.JSON(http.StatusOK, fuelTypes)
@@ -47,16 +32,7 @@ func (h *FuelTypeHandler) GetFuelTypes(c *gin.Context) {
 func (h *FuelTypeHandler) GetFuelType(c *gin.Context) {
 	id := c.Param("id")
 
-	var ft models.FuelType
-	query := `
-		SELECT id, name, display_name, description, color_code, display_order
-		FROM fuel_types
-		WHERE id = $1`
-	
-	err := h.db.QueryRow(query, id).Scan(
-		&ft.ID, &ft.Name, &ft.DisplayName, &ft.Description, &ft.ColorCode, &ft.DisplayOrder,
-	)
-	
+	ft, err := h.fuelTypeService.GetFuelType(id)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Fuel type not found"})
 		return

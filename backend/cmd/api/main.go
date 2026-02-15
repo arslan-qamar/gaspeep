@@ -7,6 +7,8 @@ import (
 	"gaspeep/backend/internal/db"
 	"gaspeep/backend/internal/handler"
 	"gaspeep/backend/internal/middleware"
+	"gaspeep/backend/internal/repository"
+	"gaspeep/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -37,6 +39,40 @@ func main() {
 	}
 	log.Println("✓ Migrations completed")
 
+	// --- Repositories ---
+	userRepo := repository.NewPgUserRepository(database)
+	passwordResetRepo := repository.NewPgPasswordResetRepository(database)
+	stationRepo := repository.NewPgStationRepository(database)
+	fuelTypeRepo := repository.NewPgFuelTypeRepository(database)
+	fuelPriceRepo := repository.NewPgFuelPriceRepository(database)
+	priceSubmissionRepo := repository.NewPgPriceSubmissionRepository(database)
+	alertRepo := repository.NewPgAlertRepository(database)
+	broadcastRepo := repository.NewPgBroadcastRepository(database)
+	notificationRepo := repository.NewPgNotificationRepository(database)
+	stationOwnerRepo := repository.NewPgStationOwnerRepository(database)
+
+	// --- Services ---
+	stationService := service.NewStationService(stationRepo)
+	fuelTypeService := service.NewFuelTypeService(fuelTypeRepo)
+	fuelPriceService := service.NewFuelPriceService(fuelPriceRepo)
+	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo)
+	alertService := service.NewAlertService(alertRepo)
+	broadcastService := service.NewBroadcastService(broadcastRepo)
+	notificationService := service.NewNotificationService(notificationRepo)
+	stationOwnerService := service.NewStationOwnerService(stationOwnerRepo)
+
+	// --- Handlers ---
+	authHandler := handler.NewAuthHandler(userRepo, passwordResetRepo)
+	userProfileHandler := handler.NewUserProfileHandler(userRepo, passwordResetRepo)
+	stationHandler := handler.NewStationHandler(stationService)
+	fuelTypeHandler := handler.NewFuelTypeHandler(fuelTypeService)
+	fuelPriceHandler := handler.NewFuelPriceHandler(fuelPriceService)
+	priceSubmissionHandler := handler.NewPriceSubmissionHandler(priceSubmissionService)
+	alertHandler := handler.NewAlertHandler(alertService)
+	broadcastHandler := handler.NewBroadcastHandler(broadcastService)
+	notificationHandler := handler.NewNotificationHandler(notificationService)
+	stationOwnerHandler := handler.NewStationOwnerHandler(stationOwnerService)
+
 	// Create Gin router
 	router := gin.Default()
 
@@ -48,18 +84,6 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	// Initialize handlers with database
-	authHandler := handler.NewAuthHandler(database)
-	stationHandler := handler.NewStationHandler(database)
-	fuelTypeHandler := handler.NewFuelTypeHandler(database)
-	fuelPriceHandler := handler.NewFuelPriceHandler(database)
-	priceSubmissionHandler := handler.NewPriceSubmissionHandler(database)
-	alertHandler := handler.NewAlertHandler(database)
-	notificationHandler := handler.NewNotificationHandler(database)
-	stationOwnerHandler := handler.NewStationOwnerHandler(database)
-	broadcastHandler := handler.NewBroadcastHandler(database)
-	userProfileHandler := handler.NewUserProfileHandler(database)
 
 	// Auth routes
 	auth := router.Group("/api/auth")

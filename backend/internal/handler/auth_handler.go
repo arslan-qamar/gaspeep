@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
@@ -14,14 +13,14 @@ import (
 )
 
 type AuthHandler struct {
-	userRepo *repository.UserRepository
-	db       *sql.DB
+	userRepo    repository.UserRepository
+	prRepo      repository.PasswordResetRepository
 }
 
-func NewAuthHandler(db *sql.DB) *AuthHandler {
+func NewAuthHandler(userRepo repository.UserRepository, prRepo repository.PasswordResetRepository) *AuthHandler {
 	return &AuthHandler{
-		userRepo: repository.NewUserRepository(db),
-		db:       db,
+		userRepo: userRepo,
+		prRepo:   prRepo,
 	}
 }
 
@@ -53,28 +52,24 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	// Check if user already exists
 	existingUser, _ := h.userRepo.GetUserByEmail(req.Email)
 	if existingUser != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
-	// Create user
 	user, err := h.userRepo.CreateUser(req.Email, string(hashedPassword), req.DisplayName, req.Tier)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
 
-	// Generate JWT token
 	token, err := auth.GenerateToken(user.ID, user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -94,27 +89,23 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 		return
 	}
 
-	// Get user by email
 	user, err := h.userRepo.GetUserByEmail(req.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	// Get password hash
 	passwordHash, err := h.userRepo.GetPasswordHash(req.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	// Compare passwords
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	// Generate JWT token
 	token, err := auth.GenerateToken(user.ID, user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -127,9 +118,7 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 	})
 }
 
-// GetCurrentUser retrieves the authenticated user's profile
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
-	// Extract user ID from context (set by middleware)
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in context"})
@@ -145,7 +134,6 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// CheckEmailAvailability returns whether an email is available for sign up
 func (h *AuthHandler) CheckEmailAvailability(c *gin.Context) {
 	email := c.Query("email")
 	if email == "" {
@@ -166,7 +154,6 @@ type ResetPasswordRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
-// ResetPassword handles POST /api/auth/reset-password
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -174,37 +161,30 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	prRepo := repository.NewPasswordResetRepository(h.db)
-	userID, expiresAt, err := prRepo.FindByToken(req.Token)
+	userID, expiresAt, err := h.prRepo.FindByToken(req.Token)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid or expired token"})
 		return
 	}
 
 	if time.Now().After(expiresAt) {
-		// remove expired token
-		_ = prRepo.DeleteByToken(req.Token)
+		_ = h.prRepo.DeleteByToken(req.Token)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token expired"})
 		return
 	}
 
-	// Hash new password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
-	// Update user's password
 	if err := h.userRepo.UpdatePassword(userID, string(hashed)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
 		return
 	}
 
-	// Remove the token
-	_ = prRepo.DeleteByToken(req.Token)
-
-	// Token removed; optionally notify user via email in future.
+	_ = h.prRepo.DeleteByToken(req.Token)
 
 	c.JSON(http.StatusOK, gin.H{"message": "password has been reset"})
 }
