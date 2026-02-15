@@ -17,12 +17,28 @@ export default ({ mode }) => {
       '@': path.resolve(__dirname, './src'),
     },
   },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'es2020',
+      },
+    },
+    build: {
+      target: 'es2020',
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
+    },
     server: {
       host: '0.0.0.0',
       port: 3000,
       https: {
-        key: fs.readFileSync(path.resolve(__dirname, './certs/192.168.1.91-key.pem')),
-        cert: fs.readFileSync(path.resolve(__dirname, './certs/192.168.1.91-cert.pem')),
+        key: fs.readFileSync(path.resolve(__dirname, './certs/dev.gaspeep.com-key.pem')),
+        cert: fs.readFileSync(path.resolve(__dirname, './certs/dev.gaspeep.com-cert.pem')),
+      },
+      hmr: {
+        host: 'dev.gaspeep.com',
+        protocol: 'wss',
+        port: 3000,
       },
       proxy: {
         '/api': {

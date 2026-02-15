@@ -31,8 +31,15 @@ services:
       ENV: development
       JWT_SECRET: dev-secret-key
       # TLS cert/key paths (mounted from backend/certs)
-      TLS_CERT: /certs/192.168.1.91-cert.pem
-      TLS_KEY: /certs/192.168.1.91-key.pem
+      TLS_CERT: /certs/dev.gaspeep.com-cert.pem
+      TLS_KEY: /certs/dev.gaspeep.com-key.pem
+      # Override for Docker ports (3001 frontend, 8081 backend from host perspective)
+      APP_BASE_URL: https://dev.gaspeep.com:3001
+      CORS_ALLOWED_ORIGINS: https://dev.gaspeep.com:3000,https://dev.gaspeep.com:3001
+      GOOGLE_OAUTH_REDIRECT: https://dev.gaspeep.com:3001/api/auth/oauth/google/callback
+      FRONTEND_OAUTH_SUCCESS_URL: https://dev.gaspeep.com:3001/auth/oauth/success
+      AUTH_COOKIE_DOMAIN: dev.gaspeep.com
+      AUTH_COOKIE_SECURE: "true"
     ports:
       - "8081:8080"
     depends_on:

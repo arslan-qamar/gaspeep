@@ -6,7 +6,7 @@ req_extensions = req_ext
 distinguished_name = dn
 
 [dn]
-CN = 192.168.1.91
+CN = dev.gaspeep.com
 
 [req_ext]
 subjectAltName = @alt_names
@@ -18,5 +18,7 @@ keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
 
 [alt_names]
-IP.1 = 192.168.1.91
-DNS.1 = 192.168.1.91
+DNS.1 = dev.gaspeep.com
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+IP.2 = 192.168.1.91
