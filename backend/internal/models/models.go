@@ -3,13 +3,18 @@ package models
 import "time"
 
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	DisplayName  string    `json:"displayName"`
-	PasswordHash string    `json:"-"`
-	Tier         string    `json:"tier"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID           string `json:"id"`
+	Email        string `json:"email"`
+	DisplayName  string `json:"displayName"`
+	PasswordHash string `json:"-"`
+	Tier         string `json:"tier"`
+	// OAuth/provider fields
+	OAuthProvider   string    `json:"oauthProvider,omitempty"`
+	OAuthProviderID string    `json:"oauthProviderId,omitempty"`
+	AvatarURL       string    `json:"avatarUrl,omitempty"`
+	EmailVerified   bool      `json:"emailVerified,omitempty"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type Station struct {

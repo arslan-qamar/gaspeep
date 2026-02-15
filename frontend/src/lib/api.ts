@@ -14,23 +14,15 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Include credentials so cookie-based auth works across the app
+  withCredentials: true,
 })
 
-// Add authorization token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// Handle response errors
+// Handle response errors (redirect to signin on 401)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
       window.location.href = '/signin'
     }
     return Promise.reject(error)

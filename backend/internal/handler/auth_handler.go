@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"gaspeep/backend/internal/auth"
@@ -13,8 +14,8 @@ import (
 )
 
 type AuthHandler struct {
-	userRepo    repository.UserRepository
-	prRepo      repository.PasswordResetRepository
+	userRepo repository.UserRepository
+	prRepo   repository.PasswordResetRepository
 }
 
 func NewAuthHandler(userRepo repository.UserRepository, prRepo repository.PasswordResetRepository) *AuthHandler {
@@ -66,7 +67,7 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 
 	user, err := h.userRepo.CreateUser(req.Email, string(hashedPassword), req.DisplayName, req.Tier)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user error is " + err.Error()})
 		return
 	}
 
@@ -75,6 +76,34 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return
 	}
+
+	// Set cookie (HttpOnly) for session
+	cookieDomain := os.Getenv("AUTH_COOKIE_DOMAIN")
+
+	secureFlag := false
+	if os.Getenv("AUTH_COOKIE_SECURE") == "true" {
+		secureFlag = true
+	} else if os.Getenv("ENV") == "production" {
+		secureFlag = true
+	} else if c.Request.TLS != nil {
+		secureFlag = true
+	}
+
+	sameSite := http.SameSiteNoneMode
+	if os.Getenv("ENV") == "production" {
+		sameSite = http.SameSiteLaxMode
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "auth_token",
+		Value:    token,
+		Path:     "/",
+		Domain:   cookieDomain,
+		HttpOnly: true,
+		Secure:   secureFlag,
+		SameSite: sameSite,
+		MaxAge:   60 * 60 * 24 * 7,
+	})
 
 	c.JSON(http.StatusCreated, AuthResponse{
 		Token: token,
@@ -112,10 +141,59 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 		return
 	}
 
+	// Set HttpOnly cookie
+	cookieDomain := os.Getenv("AUTH_COOKIE_DOMAIN")
+	secureFlag := false
+	if os.Getenv("AUTH_COOKIE_SECURE") == "true" {
+		secureFlag = true
+	}
+	if c.Request.TLS != nil {
+		secureFlag = true
+	}
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "auth_token",
+		Value:    token,
+		Path:     "/",
+		Domain:   cookieDomain,
+		HttpOnly: true,
+		Secure:   secureFlag,
+		SameSite: http.SameSiteNoneMode,
+		MaxAge:   60 * 60 * 24 * 7,
+	})
+
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,
 		User:  user,
 	})
+}
+
+// Logout clears the auth cookie
+func (h *AuthHandler) Logout(c *gin.Context) {
+	cookieDomain := os.Getenv("AUTH_COOKIE_DOMAIN")
+
+	secureFlag := false
+	if os.Getenv("AUTH_COOKIE_SECURE") == "true" {
+		secureFlag = true
+	} else if os.Getenv("ENV") == "production" {
+		secureFlag = true
+	}
+
+	sameSite := http.SameSiteNoneMode
+	if os.Getenv("ENV") == "production" {
+		sameSite = http.SameSiteLaxMode
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		Domain:   cookieDomain,
+		HttpOnly: true,
+		Secure:   secureFlag,
+		SameSite: sameSite,
+		MaxAge:   -1,
+	})
+	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }
 
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {

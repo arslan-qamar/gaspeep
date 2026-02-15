@@ -63,6 +63,7 @@ func main() {
 
 	// --- Handlers ---
 	authHandler := handler.NewAuthHandler(userRepo, passwordResetRepo)
+	oauthHandler := handler.NewOAuthHandler(userRepo)
 	userProfileHandler := handler.NewUserProfileHandler(userRepo, passwordResetRepo)
 	stationHandler := handler.NewStationHandler(stationService)
 	fuelTypeHandler := handler.NewFuelTypeHandler(fuelTypeService)
@@ -90,6 +91,10 @@ func main() {
 	{
 		auth.POST("/signup", authHandler.SignUp)
 		auth.POST("/signin", authHandler.SignIn)
+		auth.POST("/logout", authHandler.Logout)
+		// OAuth endpoints
+		auth.GET("/oauth/google", oauthHandler.StartGoogle)
+		auth.GET("/oauth/google/callback", oauthHandler.GoogleCallback)
 		auth.GET("/check-email", authHandler.CheckEmailAvailability)
 		auth.GET("/me", middleware.AuthMiddleware(), authHandler.GetCurrentUser)
 		auth.POST("/password-reset", userProfileHandler.PasswordReset)

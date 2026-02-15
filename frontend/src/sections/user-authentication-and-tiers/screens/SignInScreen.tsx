@@ -57,13 +57,30 @@ export function SignInScreen() {
     };
 
     const handleOAuthSignIn = (provider: 'google' | 'apple') => {
-        // TODO: Implement OAuth flow
-        console.log(`Sign in with ${provider}`);
-        alert(`OAuth with ${provider} - Coming soon!`);
+        // Start OAuth flow by opening backend endpoint which redirects to provider
+        const width = 500
+        const height = 700
+        const left = window.screenX + (window.innerWidth - width) / 2
+        const top = window.screenY + (window.innerHeight - height) / 2
+        const url = `/api/auth/oauth/${provider}`
+        void window.open(url, 'oauth', `width=${width},height=${height},left=${left},top=${top}`)
+
+        // Listen for message from popup. Accept either a token or a simple success message.
+        const onMessage = async (e: MessageEvent) => {
+            if (!e.data) return
+            // Only handle cookie-based success
+            if (e.data?.type === 'oauth_success') {
+                window.removeEventListener('message', onMessage)
+                // Navigate into the app; the app will fetch current user via cookie-based session
+                navigate('/map')
+                return
+            }
+        }
+
+        window.addEventListener('message', onMessage)
     };
 
     const handleForgotPassword = () => {
-        // TODO: Implement password reset flow
         navigate('/auth/forgot-password');
     };
 

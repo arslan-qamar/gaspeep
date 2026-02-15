@@ -2,18 +2,59 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"gaspeep/backend/internal/auth"
+
+	"github.com/gin-gonic/gin"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		// Read allowlist from env var (comma-separated). If provided, only echo
+		// origins that exactly match an entry. If not provided and running in
+		// development, echo the request Origin to make local dev easier. In
+		// production you should set CORS_ALLOWED_ORIGINS to a comma-separated
+		// list of allowed origins.
+
+		origin := c.Request.Header.Get("Origin")
+		allowedList := os.Getenv("CORS_ALLOWED_ORIGINS")
+		env := os.Getenv("ENV")
+
+		allowedOrigin := ""
+		if origin != "" {
+			if allowedList != "" {
+				for _, o := range strings.Split(allowedList, ",") {
+					if strings.TrimSpace(o) == origin {
+						allowedOrigin = origin
+						break
+					}
+				}
+			} else {
+				// No allowlist configured — in development echo origin, in
+				// production prefer APP_BASE_URL if present.
+				if env == "development" {
+					allowedOrigin = origin
+				} else {
+					allowedOrigin = os.Getenv("APP_BASE_URL")
+				}
+			}
+		}
+
+		if allowedOrigin == "" {
+			// As a safe fallback when nothing matches, avoid returning a
+			// wildcard together with credentials: browsers will reject it. Use
+			// a conservative default (no Access-Control-Allow-Origin) instead.
+			// We'll still set Vary for proxies.
+			c.Writer.Header().Set("Vary", "Origin")
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			c.Writer.Header().Set("Vary", "Origin")
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		}
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -46,22 +87,28 @@ func ErrorHandlingMiddleware() gin.HandlerFunc {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Try Authorization header first, then fallback to cookie 'auth_token'
+		var tokenString string
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
+		if authHeader != "" {
+			// Extract token from "Bearer <token>"
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
+		}
+
+		if tokenString == "" {
+			if cookie, err := c.Cookie("auth_token"); err == nil {
+				tokenString = cookie
+			}
+		}
+
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization token"})
 			c.Abort()
 			return
 		}
-
-		// Extract token from "Bearer <token>"
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
 
 		// Validate JWT token
 		claims, err := auth.ValidateToken(tokenString)

@@ -7,6 +7,7 @@ import { MapPage } from '../sections/map-and-station-browsing/pages/MapPage'
 import {
   SignInScreen,
   SignUpScreen,
+  OAuthCallback,
   AccountScreen,
   TierComparisonScreen,
   ForgotPasswordScreen,
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/reset-password',
     element: <ResetPasswordScreen />,
+  },
+  {
+    path: '/auth/oauth/success',
+    element: <OAuthCallback />,
   },
   {
     path: '/signin',

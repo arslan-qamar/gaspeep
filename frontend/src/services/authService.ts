@@ -38,6 +38,7 @@ export const authService = {
   },
 
   logout(): void {
-    localStorage.removeItem('auth_token')
+    // Clear server-side cookie
+    void apiClient.post('/auth/logout')
   },
 }

@@ -38,6 +38,7 @@ export async function signUp(data: SignUpData): Promise<AuthResponse> {
             displayName: data.name,
             tier: data.selectedTier,
         }),
+        credentials: 'include',
     });
 
     if (!response.ok) {
@@ -47,8 +48,7 @@ export async function signUp(data: SignUpData): Promise<AuthResponse> {
 
     const result = await response.json();
 
-    // Store token in localStorage (use unified key expected elsewhere)
-    localStorage.setItem('auth_token', result.token);
+    // Backend sets HttpOnly cookie; frontend does not store token in localStorage.
 
     return result;
 }
@@ -63,6 +63,7 @@ export async function signIn(credentials: AuthCredentials): Promise<AuthResponse
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
+        credentials: 'include',
     });
 
     if (!response.ok) {
@@ -72,8 +73,7 @@ export async function signIn(credentials: AuthCredentials): Promise<AuthResponse
 
     const result = await response.json();
 
-    // Store token in localStorage (use unified key expected elsewhere)
-    localStorage.setItem('auth_token', result.token);
+    // Backend sets HttpOnly cookie; frontend does not store token in localStorage.
 
     return result;
 }
@@ -82,21 +82,12 @@ export async function signIn(credentials: AuthCredentials): Promise<AuthResponse
  * Get current authenticated user
  */
 export async function getCurrentUser(): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
     const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
     });
 
     if (!response.ok) {
         if (response.status === 401) {
-            localStorage.removeItem('auth_token');
             throw new Error('Session expired');
         }
         throw new Error('Failed to fetch user');
@@ -109,7 +100,8 @@ export async function getCurrentUser(): Promise<User> {
  * Sign out the current user
  */
 export function signOut(): void {
-    localStorage.removeItem('auth_token');
+    // Clear client-side state if any; server clears cookie on /auth/logout
+    void fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
 }
 
 /**
@@ -171,16 +163,8 @@ export async function resetPassword(data: PasswordResetConfirm): Promise<void> {
  * Get user profile
  */
 export async function getUserProfile(): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
     const response = await fetch(`${API_BASE_URL}/users/profile`, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
     });
 
     if (!response.ok) {
@@ -210,11 +194,7 @@ export async function getUserProfile(): Promise<User> {
  * Update user profile
  */
 export async function updateUserProfile(updates: Partial<User>): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
+    // Use cookie-based auth
 
     // Map frontend update fields to backend expected fields
     const payload: any = {};
@@ -225,9 +205,9 @@ export async function updateUserProfile(updates: Partial<User>): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(payload),
     });
 
@@ -258,21 +238,12 @@ export async function getContributionStats(): Promise<ContributionStats> {
  * Get recent submissions (mock for now)
  */
 export async function getRecentSubmissions(): Promise<RecentSubmission[]> {
-    const token = localStorage.getItem('auth_token');
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
     const resp = await fetch(`${API_BASE_URL}/price-submissions/my-submissions`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
     });
 
     if (!resp.ok) {
         if (resp.status === 401) {
-            localStorage.removeItem('auth_token');
             throw new Error('Session expired');
         }
         const err = await resp.json().catch(() => ({}));

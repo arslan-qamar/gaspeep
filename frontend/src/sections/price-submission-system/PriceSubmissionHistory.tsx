@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { apiClient } from '../../lib/api'
 import { RefreshCw, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'

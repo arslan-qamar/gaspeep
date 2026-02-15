@@ -106,6 +106,38 @@ internal/
 
 See `.env.example` for all available configuration options.
 
+## Google OAuth Setup
+
+1. Create OAuth credentials in Google Cloud Console:
+    - Go to APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application.
+    - Add an Authorized redirect URI matching `GOOGLE_OAUTH_REDIRECT` (example for local dev):
+      - `http://localhost:8080/api/auth/oauth/google/callback`
+    - Copy the Client ID and Client Secret into your `backend/.env` as `GOOGLE_OAUTH_ID` and `GOOGLE_OAUTH_SECRET`.
+
+2. Environment variables used for OAuth (set in `backend/.env`):
+    - `GOOGLE_OAUTH_ID` — Google OAuth Client ID (required).
+    - `GOOGLE_OAUTH_SECRET` — Google OAuth Client Secret (required; keep server-side only).
+    - `GOOGLE_OAUTH_REDIRECT` — The redirect URI registered in Google Console (required).
+    - `FRONTEND_OAUTH_SUCCESS_URL` — Frontend URL the backend will redirect to after exchanging tokens (optional; defaults to `${APP_BASE_URL}/auth/oauth/success`).
+
+3. Test flow locally:
+    - Start backend (`make -C backend dev`) and frontend (`npm run dev` in `frontend`).
+    - Open the Sign In page and click “Sign in with Google” — a popup will open and, on success, the backend will set an HttpOnly session cookie and notify the opener.
+
+## Cookie configuration and production notes
+
+The backend sets an HttpOnly `auth_token` cookie on successful sign-in (email/password or OAuth). Cookie attributes are configured as follows:
+
+- `AUTH_COOKIE_DOMAIN` (optional) — set to your domain (e.g. `example.com`) to share cookies across subdomains; leave empty for host-only cookies.
+- `AUTH_COOKIE_SECURE` (optional) — if set to `true`, the cookie will be marked `Secure`. If not set, the server uses `ENV=production` or TLS detection to enable `Secure` automatically in production.
+- `SameSite` policy: when `ENV=production` the server uses `SameSite=Lax` for better CSRF protection; in development the server defaults to `SameSite=None` to support OAuth popups and cross-site redirects.
+
+Recommendations:
+- In production, set `AUTH_COOKIE_SECURE=true` and serve the app over HTTPS. Also set `AUTH_COOKIE_DOMAIN` if you need cookies shared across subdomains.
+- Register production redirect URIs in Google Console using HTTPS (e.g. `https://yourdomain.com/api/auth/oauth/google/callback`).
+- Consider using short-lived JWTs and refresh tokens if you require long-lived sessions.
+
+
 ## Local Email Testing (MailHog)
 
 For local development you can capture outgoing emails with MailHog instead of sending them to real inboxes.

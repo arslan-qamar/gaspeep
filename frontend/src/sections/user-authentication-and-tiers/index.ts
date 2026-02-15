@@ -5,6 +5,7 @@ export { AccountScreen } from './screens/AccountScreen';
 export { TierComparisonScreen } from './screens/TierComparisonScreen';
 export { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
 export { ResetPasswordScreen } from './screens/ResetPasswordScreen';
+export { default as OAuthCallback } from './screens/OAuthCallback';
 
 // Components
 export { PasswordStrengthIndicator } from './components/PasswordStrengthIndicator';

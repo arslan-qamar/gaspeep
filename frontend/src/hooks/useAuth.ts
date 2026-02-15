@@ -8,9 +8,11 @@ export const useAuth = () => {
   const queryClient = useQueryClient()
 
   const fetchCurrentUser = async (): Promise<User | null> => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return null
-    return await authService.getCurrentUser()
+    try {
+      return await authService.getCurrentUser()
+    } catch (err) {
+      return null
+    }
   }
 
   const {
@@ -20,18 +22,14 @@ export const useAuth = () => {
   } = useQuery<User | null, Error>({
     queryKey: CURRENT_USER_KEY,
     queryFn: fetchCurrentUser,
-    // Only try to fetch if we have a token
-    enabled: !!localStorage.getItem('auth_token'),
+    // Try fetching current user on app load (supports cookie-based sessions)
+    enabled: true,
     // Note: keepPreviousData/onError removed for v5 types; handle error side-effects below
   })
 
-  // Clear token on query error to avoid stuck auth state
+  // Clear query cache on error to avoid stuck auth state
   if (error) {
-    try {
-      localStorage.removeItem('auth_token')
-    } catch (e) {
-      /* ignore */
-    }
+    queryClient.setQueryData(CURRENT_USER_KEY, null)
   }
 
   const signinMutation = useMutation({
@@ -39,8 +37,7 @@ export const useAuth = () => {
       return await authService.signin(email, password)
     },
     onSuccess: (data) => {
-      const { token, user } = data
-      localStorage.setItem('auth_token', token)
+      const { user } = data
       queryClient.setQueryData(CURRENT_USER_KEY, user)
     },
   })
@@ -55,7 +52,6 @@ export const useAuth = () => {
 
   const logout = useCallback(() => {
     authService.logout()
-    localStorage.removeItem('auth_token')
     queryClient.setQueryData(CURRENT_USER_KEY, null)
     queryClient.clear()
   }, [queryClient])

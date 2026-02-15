@@ -8,7 +8,7 @@ export default ({ mode }) => {
   // Load .env, .env.local, etc. so BACKEND_URL and VITE_API_URL are available
   const env = loadEnv(mode, process.cwd(), '')
 
-  const backendTarget = env.BACKEND_URL || env.VITE_API_URL || 'http://localhost:8080'
+  const backendTarget = env.BACKEND_URL || env.VITE_API_URL || 'https://localhost:8080'
 
   return defineConfig({
   plugins: [react()],
