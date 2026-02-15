@@ -104,6 +104,14 @@ type StationOwner struct {
 	CreatedAt             time.Time  `json:"createdAt"`
 }
 
+type PasswordReset struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 type Broadcast struct {
 	ID              string    `json:"id"`
 	StationOwnerID  string    `json:"stationOwnerId"`

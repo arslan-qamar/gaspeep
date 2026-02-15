@@ -1,9 +1,17 @@
 package handler
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
+
+	"gaspeep/backend/internal/repository"
+	"gaspeep/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -95,6 +103,53 @@ func (h *UserProfileHandler) PasswordReset(c *gin.Context) {
 		return
 	}
 
-	// Simulate password reset (in production, send email)
-	c.JSON(http.StatusOK, gin.H{"message": "Password reset link sent to " + req.Email})
+	// Check whether a user exists with this email. We always return 200
+	// to avoid leaking which emails are registered.
+	var userID string
+	err := h.db.QueryRow(`SELECT id FROM users WHERE email = $1`, req.Email).Scan(&userID)
+	if err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process request"})
+		return
+	}
+
+	// Generate a secure token regardless of whether the user exists.
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate reset token"})
+		return
+	}
+	token := hex.EncodeToString(b)
+	expiresAt := time.Now().Add(1 * time.Hour).UTC()
+
+	// If user exists, persist the token using the repository and attempt to send email.
+	if userID != "" {
+		repo := repository.NewPasswordResetRepository(h.db)
+		if err := repo.Create(userID, token, expiresAt); err != nil {
+			log.Printf("warning: failed to persist password reset token: %v", err)
+		}
+
+		// Build full reset URL if APP_BASE_URL is set, otherwise use relative path.
+		resetPath := "/auth/reset-password?token=" + token
+		base := os.Getenv("APP_BASE_URL")
+		var fullURL string
+		if base != "" {
+			fullURL = strings.TrimRight(base, "/") + resetPath
+		} else {
+			fullURL = resetPath
+		}
+
+		if err := service.SendPasswordReset(req.Email, fullURL); err != nil {
+			log.Printf("warning: failed to send password reset email to %s: %v", req.Email, err)
+		} else {
+			var masked string
+			if len(token) > 8 {
+				masked = token[:8] + "..."
+			} else {
+				masked = "<masked>"
+			}
+			log.Printf("password reset requested for %s; token=%s (expires %s)", req.Email, masked, expiresAt.Format(time.RFC3339))
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "If an account with that email exists, a password reset link has been sent."})
 }

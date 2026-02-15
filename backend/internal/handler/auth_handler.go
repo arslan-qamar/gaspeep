@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"gaspeep/backend/internal/auth"
 	"gaspeep/backend/internal/models"
@@ -14,11 +15,13 @@ import (
 
 type AuthHandler struct {
 	userRepo *repository.UserRepository
+	db       *sql.DB
 }
 
 func NewAuthHandler(db *sql.DB) *AuthHandler {
 	return &AuthHandler{
 		userRepo: repository.NewUserRepository(db),
+		db:       db,
 	}
 }
 
@@ -156,4 +159,52 @@ func (h *AuthHandler) CheckEmailAvailability(c *gin.Context) {
 	c.JSON(http.StatusOK, SignUpResponse{
 		Available: available,
 	})
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
+// ResetPassword handles POST /api/auth/reset-password
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	prRepo := repository.NewPasswordResetRepository(h.db)
+	userID, expiresAt, err := prRepo.FindByToken(req.Token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid or expired token"})
+		return
+	}
+
+	if time.Now().After(expiresAt) {
+		// remove expired token
+		_ = prRepo.DeleteByToken(req.Token)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "token expired"})
+		return
+	}
+
+	// Hash new password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	// Update user's password
+	if err := h.userRepo.UpdatePassword(userID, string(hashed)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
+
+	// Remove the token
+	_ = prRepo.DeleteByToken(req.Token)
+
+	// Token removed; optionally notify user via email in future.
+
+	c.JSON(http.StatusOK, gin.H{"message": "password has been reset"})
 }

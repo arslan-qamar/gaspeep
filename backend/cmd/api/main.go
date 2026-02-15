@@ -69,6 +69,7 @@ func main() {
 		auth.GET("/check-email", authHandler.CheckEmailAvailability)
 		auth.GET("/me", middleware.AuthMiddleware(), authHandler.GetCurrentUser)
 		auth.POST("/password-reset", userProfileHandler.PasswordReset)
+		auth.POST("/reset-password", authHandler.ResetPassword)
 	}
 
 	// Station routes

@@ -106,6 +106,35 @@ internal/
 
 See `.env.example` for all available configuration options.
 
+## Local Email Testing (MailHog)
+
+For local development you can capture outgoing emails with MailHog instead of sending them to real inboxes.
+
+- Run MailHog via Docker:
+
+```bash
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+```
+
+- MailHog SMTP listener: `localhost:1025`
+- MailHog web UI: http://localhost:8025
+
+- Example `.env` settings (update `backend/.env`):
+
+```dotenv
+# SMTP configuration for sending emails (e.g. password resets)
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM="Gas Peep <no-reply@gaspeep.local>"
+```
+
+- Notes:
+    - No real emails are sent when MailHog is used — messages are stored in MailHog and viewable in the web UI.
+    - Use this in development only. For staging/production, configure a real SMTP provider or transactional email service.
+
+
 ## Database
 
 Uses PostgreSQL with PostGIS extension for geographic queries.

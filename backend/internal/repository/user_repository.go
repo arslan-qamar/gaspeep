@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"gaspeep/backend/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type UserRepository struct {
@@ -95,5 +96,12 @@ func (r *UserRepository) UpdateUserTier(userID, tier string) error {
 		UPDATE users SET tier = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2
 	`, tier, userID)
 
+	return err
+}
+
+func (r *UserRepository) UpdatePassword(userID, passwordHash string) error {
+	_, err := r.db.Exec(`
+		UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2
+	`, passwordHash, userID)
 	return err
 }
