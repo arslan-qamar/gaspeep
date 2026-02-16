@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl, GeolocateControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
@@ -21,12 +21,57 @@ export const MapView: React.FC<MapViewProps> = ({
   onViewportChange,
   isFetchingMore = false,
 }) => {
+  const mapRef = useRef<any>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
   const handleMarkerClick = useCallback(
     (station: Station) => {
       onStationSelect(station);
     },
     [onStationSelect],
   );
+
+  const handleGeolocate = useCallback(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current.getMap();
+    if (!map) return;
+
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log('Position acquired:', { latitude, longitude });
+
+        // Animate map to the location
+        map.flyTo({
+          center: [longitude, latitude],
+          zoom: 14,
+          duration: 1000,
+        });
+
+        // Update parent component state
+        onViewportChange?.({
+          latitude,
+          longitude,
+          zoom: 14,
+        });
+
+        setIsLocating(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('Unable to get your location. Please check permissions.');
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  }, [onViewportChange]);
 
   const selectedStation = useMemo(
     () => selectedStationId ? stations.find((s) => s.id === selectedStationId) : undefined,
@@ -35,6 +80,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
   return (
     <Map
+      ref={mapRef}
       initialViewState={{
         latitude: userLocation.lat,
         longitude: userLocation.lng,
@@ -52,14 +98,30 @@ export const MapView: React.FC<MapViewProps> = ({
     >
       {/* Navigation Controls */}
       <NavigationControl position="top-right" showCompass showZoom />
-      <FullscreenControl position="top-right" />
-      <GeolocateControl
-        position="top-right"
-        trackUserLocation
-        positionOptions={{ enableHighAccuracy: true }}
-        showAccuracyCircle
-      />
+      <FullscreenControl position="top-right" />     
       <ScaleControl position="bottom-left" />
+
+      {/* Custom Geolocate Button */}
+      <div className=" maplibregl-ctrl-group absolute bottom-[10px] right-2 z-20">
+        <button
+          onClick={handleGeolocate}
+          disabled={isLocating}
+          className="maplibregl-ctrl-fullscreen"
+          title="Go to current location"
+          aria-label="Go to current location"
+          type="button"
+        >
+          <span className="maplibregl-ctrl-icon" aria-hidden="true">
+            {isLocating ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.5 2C9.03 2 4.5 6.53 4.5 12c0 6.5 10 15 10 15s10-8.5 10-15c0-5.47-4.53-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="#3B82F6"/>
+              </svg>
+            )}
+          </span>
+        </button>
+      </div>
 
       {/* Loading Indicator */}
       {isFetchingMore && (
