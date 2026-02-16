@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -21,6 +22,11 @@ func CORSMiddleware() gin.HandlerFunc {
 		origin := c.Request.Header.Get("Origin")
 		allowedList := os.Getenv("CORS_ALLOWED_ORIGINS")
 		env := os.Getenv("ENV")
+
+		// Debug logging
+		if origin != "" {
+			log.Printf("[CORS] Request Origin: %s, Allowed Origins: %s, ENV: %s", origin, allowedList, env)
+		}
 
 		allowedOrigin := ""
 		if origin != "" {
@@ -48,12 +54,14 @@ func CORSMiddleware() gin.HandlerFunc {
 			// a conservative default (no Access-Control-Allow-Origin) instead.
 			// We'll still set Vary for proxies.
 			c.Writer.Header().Set("Vary", "Origin")
+			log.Printf("[CORS] WARNING: No allowed origin matched for request from: %s", origin)
 		} else {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 			c.Writer.Header().Set("Vary", "Origin")
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-			c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+			c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
 			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+			c.Writer.Header().Set("Access-Control-Max-Age", "86400") // Cache preflight for 24 hours
 		}
 
 		if c.Request.Method == "OPTIONS" {

@@ -345,6 +345,323 @@ STRIPE_SECRET_KEY=
 STRIPE_PUBLISHABLE_KEY=
 ```
 
+## SSL/TLS Certificate Setup
+
+### Development: Using Self-Signed Certificates
+
+For local development, self-signed certificates are already included in `backend/certs/`:
+
+```bash
+# Current development certificates
+backend/certs/dev.gaspeep.com-cert.pem
+backend/certs/dev.gaspeep.com-key.pem
+```
+
+To run the backend with TLS in development:
+
+```bash
+cd backend
+export TLS_CERT=./certs/dev.gaspeep.com-cert.pem
+export TLS_KEY=./certs/dev.gaspeep.com-key.pem
+./bin/api
+```
+
+The backend will start on `https://localhost:8080` (browser will show certificate warning).
+
+### Production: Let's Encrypt Wildcard Certificate with Cloudflare
+
+Generate production-ready wildcard certificates that cover all subdomains (api.gaspeep.com, dev.gaspeep.com, staging.gaspeep.com, etc.).
+
+#### Prerequisites
+
+1. **Domain registered and DNS managed by Cloudflare:**
+   - Register your domain (e.g., `gaspeep.com`)
+   - Point nameservers to Cloudflare
+
+2. **Cloudflare API Token:**
+   - Log in to Cloudflare → Account → API Tokens
+   - Create token with "Zone:DNS:Edit" permissions
+   - Copy the token
+
+3. **Install Certbot with Cloudflare plugin:**
+
+```bash
+sudo apt update
+sudo apt install certbot python3-certbot-dns-cloudflare
+```
+
+#### Step 1: Create Cloudflare Credentials File
+
+```bash
+# Create credentials file
+sudo nano /etc/letsencrypt/cloudflare.ini
+```
+
+Add the following content (replace with your actual token):
+
+```ini
+dns_cloudflare_api_token = your-cloudflare-api-token-here
+```
+
+Restrict permissions:
+
+```bash
+sudo chmod 600 /etc/letsencrypt/cloudflare.ini
+```
+
+#### Step 2: Generate Wildcard Certificate
+
+A wildcard certificate `*.gaspeep.com` covers all subdomains:
+
+```bash
+sudo certbot certonly --dns-cloudflare \
+  --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
+  -d gaspeep.com \
+  -d "*.gaspeep.com"
+```
+
+Certificates will be saved to: `/etc/letsencrypt/live/gaspeep.com/`
+
+#### Step 3: Configure Backend Environment Variables
+
+Update your `.env` file:
+
+```bash
+# .env
+TLS_CERT=/etc/letsencrypt/live/gaspeep.com/fullchain.pem
+TLS_KEY=/etc/letsencrypt/live/gaspeep.com/privkey.pem
+```
+
+Ensure the backend user has read permissions:
+
+```bash
+# Give backend process access to certificates
+sudo usermod -a -G ssl-cert ubuntu
+sudo chmod g+r /etc/letsencrypt/live/gaspeep.com/privkey.pem
+```
+
+#### Step 4: Start Backend with TLS
+
+```bash
+cd backend
+./bin/api
+# Backend will start on https://localhost:8080
+```
+
+#### Step 5: Setup Automatic Certificate Renewal
+
+Let's Encrypt certificates expire after 90 days. Certbot automatically renews them 30 days before expiration:
+
+```bash
+# Test renewal process (dry-run)
+sudo certbot renew --dry-run
+
+# Enable automatic renewal via systemd timer
+sudo systemctl enable certbot.timer
+sudo systemctl start certbot.timer
+
+# Verify renewal is scheduled
+sudo systemctl status certbot.timer
+```
+
+#### Docker Deployment
+
+For Docker deployments, use volume mounts to persist and access certificates:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8081:8080"
+    environment:
+      TLS_CERT: /etc/letsencrypt/live/gaspeep.com/fullchain.pem
+      TLS_KEY: /etc/letsencrypt/live/gaspeep.com/privkey.pem
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro  # Mount certificates as read-only
+```
+
+#### Troubleshooting
+
+**Certificate generation fails**
+```bash
+# Check DNS is propagated
+nslookup gaspeep.com
+dig gaspeep.com
+
+# Verify Cloudflare is authoritative
+dig gaspeep.com @1.1.1.1
+
+# Test with verbose output
+sudo certbot certonly --dns-cloudflare \
+  --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
+  -d gaspeep.com \
+  -d "*.gaspeep.com" \
+  -v
+```
+
+**Renewal fails**
+```bash
+# Check renewal logs
+sudo journalctl -u certbot.timer -n 50
+
+# Manually trigger renewal
+sudo certbot renew -v
+
+# Ensure permissions are correct
+sudo chmod g+r /etc/letsencrypt/live/gaspeep.com/privkey.pem
+```
+
+**Certificate not trusted in browser**
+- Ensure you're using the full chain: `fullchain.pem` (not `cert.pem`)
+- Clear browser cache and restart
+- Check certificate: `openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -text -noout`
+
+#### Verify Certificate Details
+
+```bash
+# View certificate information
+sudo openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -text -noout
+
+# Check certificate expiration
+sudo openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -noout -dates
+
+# Verify it covers all domains
+sudo openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -noout -text | grep -A1 "Subject Alternative Name"
+```
+
+## HTTPS Development Setup with Nginx
+
+Once you have Let's Encrypt certificates generated, you can run the full stack locally with HTTPS and proper domain routing.
+
+### Quick Setup
+
+```bash
+# One-time setup (adds /etc/hosts entries, configures Nginx)
+make setup-https
+
+# Then start the services (in separate terminals)
+cd frontend
+npm install
+npm run dev
+
+cd backend
+go build -o bin/api cmd/api/main.go
+./bin/api
+```
+
+### What Gets Set Up
+
+The `setup-https` script configures:
+
+1. **`/etc/hosts` entries** - Maps domains to localhost:
+   ```
+   127.0.0.1  dev.gaspeep.com
+   127.0.0.1  api.gaspeep.com
+   127.0.0.1  gaspeep.com
+   ```
+
+2. **Nginx reverse proxy** - Handles HTTPS and routes by domain:
+   - `https://dev.gaspeep.com` → Frontend (localhost:3000)
+   - `https://api.gaspeep.com` → Backend (localhost:8080)
+
+3. **Certificate permissions** - Allows Nginx to read Let's Encrypt certificates
+
+### Access Your Services
+
+After setup, visit:
+
+- **Frontend**: `https://dev.gaspeep.com`
+- **Backend Health**: `https://api.gaspeep.com/health`
+- **API Base**: `https://api.gaspeep.com/api`
+
+### Docker Compose with Nginx
+
+To run the full stack in Docker with Nginx:
+
+```bash
+# With Nginx and HTTPS (requires Let's Encrypt certificates)
+docker compose -f docker-compose.https.yml up --build
+
+# Or use the Makefile
+make docker-https
+```
+
+Services will be accessible at:
+- Frontend: `https://dev.gaspeep.com`
+- Backend: `https://api.gaspeep.com`
+
+### Docker Compose without Nginx
+
+For simpler local development without Nginx:
+
+```bash
+docker compose up --build
+
+# Or use the Makefile
+make docker-dev
+```
+
+Services will be accessible at:
+- Frontend: `http://localhost:3001`
+- Backend: `http://localhost:8081`
+
+### Makefile Commands
+
+```bash
+make help              # Show all available commands
+make setup-https       # Setup Nginx and /etc/hosts for HTTPS dev
+make dev              # Run backend with hot-reload
+make docker-https     # Start full stack with Nginx (HTTPS)
+make docker-dev       # Start full stack without Nginx (HTTP)
+make down             # Stop Docker containers
+make logs             # View Docker logs
+```
+
+### Troubleshooting HTTPS Setup
+
+**Port 80 or 443 already in use:**
+```bash
+# Find what's using the port
+sudo lsof -i :80
+sudo lsof -i :443
+
+# Stop the process or change Nginx ports in nginx.conf
+```
+
+**Certificate permission denied:**
+```bash
+# Re-run the setup script
+make setup-https
+
+# Or manually fix permissions
+sudo chmod g+r /etc/letsencrypt/live/gaspeep.com/privkey.pem
+```
+
+**Nginx not starting:**
+```bash
+# Check Nginx configuration
+sudo nginx -t
+
+# View Nginx errors
+sudo systemctl status nginx
+sudo journalctl -u nginx -n 20
+```
+
+**Can't access https://dev.gaspeep.com:**
+```bash
+# Verify /etc/hosts entries
+grep gaspeep.com /etc/hosts
+
+# Verify Nginx is running
+sudo systemctl status nginx
+
+# Test Nginx locally
+curl -k https://localhost
+```
+
 ## API Documentation
 
 API endpoints are documented in `backend/README.md`.

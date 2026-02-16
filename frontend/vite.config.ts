@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import fs from 'fs'
 
 // https://vitejs.dev/config/
 export default ({ mode }) => {
@@ -31,14 +30,11 @@ export default ({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3000,
-      https: {
-        key: fs.readFileSync(path.resolve(__dirname, './certs/dev.gaspeep.com-key.pem')),
-        cert: fs.readFileSync(path.resolve(__dirname, './certs/dev.gaspeep.com-cert.pem')),
-      },
+      // Nginx handles TLS/HTTPS, Vite runs on HTTP locally
+      // HMR connects through Nginx to dev.gaspeep.com (implicit port 443 for HTTPS)
       hmr: {
         host: 'dev.gaspeep.com',
         protocol: 'wss',
-        port: 3000,
       },
       proxy: {
         '/api': {

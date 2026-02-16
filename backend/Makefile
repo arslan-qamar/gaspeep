@@ -1,6 +1,14 @@
-.PHONY: dev install-go install-air build install-dlv dlv-headless
+.PHONY: dev install-go install-air build install-dlv dlv-headless setup-https https-dev
 
 dev:
+	./scripts/dev.sh
+
+setup-https:
+	@../scripts/setup-https.sh
+
+https-dev: setup-https
+	@echo "Starting backend with HTTPS development setup..."
+	@echo "Make sure Nginx is running and /etc/hosts is configured"
 	./scripts/dev.sh
 
 install-air:
