@@ -57,12 +57,13 @@ export function SignInScreen() {
     };
 
     const handleOAuthSignIn = (provider: 'google' | 'apple') => {
-        // Start OAuth flow by opening backend endpoint which redirects to provider
+        const rawApiUrl = (import.meta.env.BACKEND_URL as string) || (import.meta.env.VITE_API_URL as string)
+
         const width = 500
         const height = 700
         const left = window.screenX + (window.innerWidth - width) / 2
         const top = window.screenY + (window.innerHeight - height) / 2
-        const url = `/api/auth/oauth/${provider}`
+        const url = `${rawApiUrl}/auth/oauth/${provider}`
         void window.open(url, 'oauth', `width=${width},height=${height},left=${left},top=${top}`)
 
         // Listen for message from popup. Accept either a token or a simple success message.
