@@ -138,9 +138,14 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
                 : '✕ Rejected'}
           </span>
           {station.verifiedAt && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              Verified: {new Date(station.verifiedAt).toLocaleDateString()}
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Verified: {new Date(station.verifiedAt).toLocaleDateString()}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Annual re-verification required
+              </p>
+            </div>
           )}
         </div>
 
@@ -471,13 +476,14 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Cancel
             </button>
@@ -501,7 +507,7 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
       </div>
 
       {isSaving && (
-        <div className="flex items-center justify-center p-4">
+        <div data-testid="loading-indicator" className="flex items-center justify-center p-4">
           <div className="animate-spin">⏳</div>
         </div>
       )}
