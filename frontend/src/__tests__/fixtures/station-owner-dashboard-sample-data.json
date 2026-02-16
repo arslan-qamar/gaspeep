@@ -18,9 +18,9 @@
       "id": "station_101",
       "ownerId": "owner_001",
       "name": "Coastal Fuel Bondi",
-      "brand": "Independent",
+      "brand": "BP",
       "brandLogo": null,
-      "address": "234 Oxford St, Bondi Junction NSW 2022",
+      "address": "Oxford Street, Bondi Junction NSW 2022",
       "latitude": -33.8918,
       "longitude": 151.2497,
       "phone": "+61 2 9555 0101",
@@ -42,15 +42,15 @@
       "verificationStatus": "verified",
       "verifiedAt": "2025-11-20T10:15:00Z",
       "claimedAt": "2025-11-18T14:30:00Z",
-      "lastBroadcastAt": "2026-02-06T09:45:00Z"
+      "lastBroadcastAt": "2026-02-09T09:45:00Z"
     },
     {
       "id": "station_102",
       "ownerId": "owner_001",
       "name": "Coastal Fuel Coogee",
-      "brand": "Independent",
+      "brand": "Caltex",
       "brandLogo": null,
-      "address": "87 Coogee Bay Rd, Coogee NSW 2034",
+      "address": "Coogee Bay Road, Coogee NSW 2034",
       "latitude": -33.9215,
       "longitude": 151.2571,
       "phone": "+61 2 9555 0102",
@@ -77,7 +77,7 @@
       "id": "station_103",
       "ownerId": "owner_001",
       "name": "Coastal Fuel Maroubra",
-      "brand": "Independent",
+      "brand": "Shell",
       "brandLogo": null,
       "address": "456 Anzac Parade, Maroubra NSW 2035",
       "latitude": -33.9503,
@@ -116,9 +116,9 @@
       "estimatedRecipients": 234,
       "actualRecipients": 234,
       "status": "active",
-      "createdAt": "2026-02-06T09:45:00Z",
+      "createdAt": "2026-02-09T09:45:00Z",
       "scheduledFor": null,
-      "sentAt": "2026-02-06T09:45:00Z",
+      "sentAt": "2026-02-09T09:45:00Z",
       "expiresAt": "2026-02-09T22:00:00Z",
       "delivered": 234,
       "opened": 128,
@@ -141,7 +141,7 @@
       "createdAt": "2026-02-05T16:20:00Z",
       "scheduledFor": null,
       "sentAt": "2026-02-05T16:20:00Z",
-      "expiresAt": "2026-02-06T22:00:00Z",
+      "expiresAt": "2026-02-09T22:00:00Z",
       "delivered": 187,
       "opened": 145,
       "clickedThrough": 67
@@ -182,7 +182,7 @@
       "estimatedRecipients": 425,
       "actualRecipients": 0,
       "status": "scheduled",
-      "createdAt": "2026-02-06T18:30:00Z",
+      "createdAt": "2026-02-09T18:30:00Z",
       "scheduledFor": "2026-02-13T06:00:00Z",
       "sentAt": null,
       "expiresAt": "2026-02-14T10:00:00Z",
@@ -226,7 +226,7 @@
       "estimatedRecipients": 0,
       "actualRecipients": 0,
       "status": "draft",
-      "createdAt": "2026-02-07T10:30:00Z",
+      "createdAt": "2026-02-04T10:30:00Z",
       "scheduledFor": null,
       "sentAt": null,
       "expiresAt": null,
@@ -238,7 +238,7 @@
   "dashboardStats": {
     "totalStations": 3,
     "verifiedStations": 2,
-    "activeBroadcasts": 2,
+    "activeBroadcasts": 1,
     "totalReachThisMonth": 1284,
     "averageEngagementRate": 58.7,
     "broadcastsThisWeek": 7,
@@ -272,7 +272,7 @@
       "latitude": -33.9573,
       "longitude": 151.2331,
       "distance": 5.8,
-      "claimStatus": "available"
+      "claimStatus": "claimed"
     },
     {
       "id": "station_203",
@@ -287,11 +287,11 @@
   ],
   "currentFuelPrices": {
     "station_101": [
-      { "fuelTypeId": "fuel_e10", "fuelTypeName": "E10", "price": 1.65, "lastUpdated": "2026-02-07T06:30:00Z" },
-      { "fuelTypeId": "fuel_u91", "fuelTypeName": "Unleaded 91", "price": 1.72, "lastUpdated": "2026-02-07T06:30:00Z" },
-      { "fuelTypeId": "fuel_diesel", "fuelTypeName": "Diesel", "price": 1.73, "lastUpdated": "2026-02-06T09:00:00Z" },
-      { "fuelTypeId": "fuel_u95", "fuelTypeName": "U95", "price": 1.89, "lastUpdated": "2026-02-07T06:30:00Z" },
-      { "fuelTypeId": "fuel_u98", "fuelTypeName": "U98", "price": 2.05, "lastUpdated": "2026-02-07T06:30:00Z" }
+      { "fuelTypeId": "fuel_e10", "fuelTypeName": "E10", "price": 1.65, "lastUpdated": "2026-02-08T06:30:00Z" },
+      { "fuelTypeId": "fuel_u91", "fuelTypeName": "Unleaded 91", "price": 1.72, "lastUpdated": "2026-02-08T06:30:00Z" },
+      { "fuelTypeId": "fuel_diesel", "fuelTypeName": "Diesel", "price": 1.73, "lastUpdated": "2026-02-09T09:00:00Z" },
+      { "fuelTypeId": "fuel_u95", "fuelTypeName": "U95", "price": 1.89, "lastUpdated": "2026-02-08T06:30:00Z" },
+      { "fuelTypeId": "fuel_u98", "fuelTypeName": "U98", "price": 2.05, "lastUpdated": "2026-02-08T06:30:00Z" }
     ],
     "station_102": [
       { "fuelTypeId": "fuel_e10", "fuelTypeName": "E10", "price": 1.62, "lastUpdated": "2026-02-05T16:00:00Z" },
@@ -300,10 +300,10 @@
       { "fuelTypeId": "fuel_u95", "fuelTypeName": "U95", "price": 1.92, "lastUpdated": "2026-02-05T16:00:00Z" }
     ],
     "station_103": [
-      { "fuelTypeId": "fuel_e10", "fuelTypeName": "E10", "price": 1.68, "lastUpdated": "2026-02-06T14:00:00Z" },
-      { "fuelTypeId": "fuel_u91", "fuelTypeName": "Unleaded 91", "price": 1.76, "lastUpdated": "2026-02-06T14:00:00Z" },
-      { "fuelTypeId": "fuel_diesel", "fuelTypeName": "Diesel", "price": 1.82, "lastUpdated": "2026-02-06T14:00:00Z" },
-      { "fuelTypeId": "fuel_premium_diesel", "fuelTypeName": "Premium Diesel", "price": 1.95, "lastUpdated": "2026-02-06T14:00:00Z" }
+      { "fuelTypeId": "fuel_e10", "fuelTypeName": "E10", "price": 1.68, "lastUpdated": "2026-02-09T14:00:00Z" },
+      { "fuelTypeId": "fuel_u91", "fuelTypeName": "Unleaded 91", "price": 1.76, "lastUpdated": "2026-02-09T14:00:00Z" },
+      { "fuelTypeId": "fuel_diesel", "fuelTypeName": "Diesel", "price": 1.82, "lastUpdated": "2026-02-09T14:00:00Z" },
+      { "fuelTypeId": "fuel_premium_diesel", "fuelTypeName": "Premium Diesel", "price": 1.95, "lastUpdated": "2026-02-09T14:00:00Z" }
     ]
   }
 }

@@ -336,10 +336,10 @@ const BroadcastItem: React.FC<BroadcastItemProps> = ({ broadcast, onClick }) => 
   };
 
   const statusLabel: Record<BroadcastStatus, string> = {
-    active: '🟢 Active',
-    scheduled: '⏰ Scheduled',
-    expired: '⏸️ Expired',
-    draft: '📝 Draft',
+    active: 'Active',
+    scheduled: 'Scheduled',
+    expired: 'Expired',
+    draft: 'Draft',
   };
 
   return (
