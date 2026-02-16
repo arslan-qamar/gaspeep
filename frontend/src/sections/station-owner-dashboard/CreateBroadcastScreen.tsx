@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ClaimedStation,
   FuelType,
@@ -34,7 +34,7 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
   editingBroadcast,
   isSubmitting,
 }) => {
-  const [stationId, setStationId] = useState(initialStationId || stations[0]?.id || '');
+  const [stationId, setStationId] = useState(initialStationId || '');
   const [title, setTitle] = useState(editingBroadcast?.title || '');
   const [message, setMessage] = useState(editingBroadcast?.message || '');
   const [promotionType, setPromotionType] = useState<PromotionType>(
@@ -48,6 +48,23 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
   const [scheduledDate, setScheduledDate] = useState(editingBroadcast?.scheduledFor || '');
   const [duration, setDuration] = useState<string>('24 hours');
   const [expiryTime, setExpiryTime] = useState(editingBroadcast?.expiresAt || '');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [dropdownOpen]);
 
   const selectedStation = stations.find((s) => s.id === stationId);
 
@@ -70,6 +87,16 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
     limited_time_offer: '⏱️',
     new_service: '⭐',
     general_announcement: '📢',
+  };
+
+  const hasUnsavedChanges = title.trim() || message.trim();
+
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      setShowCancelConfirm(true);
+    } else {
+      onCancel();
+    }
   };
 
   const handleToggleFuelType = (fuelTypeId: string) => {
@@ -146,19 +173,35 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
         <label className="block text-sm font-medium text-slate-900 dark:text-white">
           Select Station
         </label>
-        <select
-          value={stationId}
-          onChange={(e) => setStationId(e.target.value)}
-          data-testid="station-dropdown"
-          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">-- Select a station --</option>
-          {stations.map((station) => (
-            <option key={station.id} value={station.id}>
-              {station.name}
-            </option>
-          ))}
-        </select>
+        <div ref={dropdownRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            data-testid="station-dropdown"
+            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
+          >
+            <span>{selectedStation?.name || '-- Select a station --'}</span>
+            <span className="text-slate-500">▼</span>
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg">
+              {stations.map((station) => (
+                <button
+                  key={station.id}
+                  type="button"
+                  onClick={() => {
+                    setStationId(station.id);
+                    setDropdownOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-900 dark:text-white first:rounded-t-lg last:rounded-b-lg transition-colors"
+                >
+                  {station.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {selectedStation && (
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
             <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -453,10 +496,10 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
           disabled={!isFormValid || isSubmitting}
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
         >
-          {isSubmitting ? 'Sending...' : editingBroadcast ? 'Update Broadcast' : 'Send Broadcast'}
+          {editingBroadcast ? 'Update Broadcast' : 'Send Broadcast'}
         </button>
         <button
-          onClick={onCancel}
+          onClick={handleCancel}
           className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg font-medium transition-colors"
         >
           Cancel
@@ -469,6 +512,37 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
           className="flex items-center justify-center p-4"
         >
           <div className="animate-spin">⏳</div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm space-y-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Discard Draft?
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400">
+              You have unsaved changes to your broadcast. Do you want to discard them?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  onCancel();
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

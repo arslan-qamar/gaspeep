@@ -37,7 +37,6 @@ You are implementing the **[SECTION_NAME]** section of Gas Peep, a fuel price mo
 
 **Implementation Requirements:**
 - Verify a related test exist before implementation code
-- Each commit makes exactly one test pass
 - Write TypeScript with strict mode enabled
 - Use component-based architecture (React)
 - Props-based data flow (no global imports of section data)

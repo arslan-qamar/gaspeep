@@ -39,6 +39,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
     documents: [],
   });
   const [verificationRequestId, setVerificationRequestId] = useState('');
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
 
   // Filter stations based on search
   const searchResults = searchQuery.trim()
@@ -60,11 +61,15 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
 
   const handleDocumentUpload = (files: FileList | null) => {
     if (!files) return;
+    setIsUploadingFile(true);
     const newDocuments = Array.from(files);
-    setVerificationState((prev) => ({
-      ...prev,
-      documents: [...prev.documents, ...newDocuments],
-    }));
+    setTimeout(() => {
+      setVerificationState((prev) => ({
+        ...prev,
+        documents: [...prev.documents, ...newDocuments],
+      }));
+      setIsUploadingFile(false);
+    }, 500);
   };
 
   const handleRemoveDocument = (index: number) => {
@@ -151,7 +156,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           {/* Use Current Location Button */}
           <button
             onClick={() => {}} // Will be connected to geolocation API
-            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full p-4 md:p-6 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             📍 Use Current Location
           </button>
@@ -159,7 +164,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           {/* Map View Toggle */}
           <button
             onClick={() => {}} // Will be connected to map view
-            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full p-4 md:p-6 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             🗺️ Map View
           </button>
@@ -170,7 +175,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
               {searchResults.length === 0 ? (
                 <div className="p-4 text-center text-slate-600 dark:text-slate-400">
                   <p className="mb-3">Station not found?</p>
-                  <button className="text-blue-600 dark:text-blue-400 hover:underline">
+                  <button className="p-4 md:p-6 text-blue-600 dark:text-blue-400 hover:underline">
                     Submit a request to add it
                   </button>
                 </div>
@@ -189,7 +194,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           {/* Cancel Button */}
           <button
             onClick={onCancel}
-            className="w-full px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+            className="w-full p-4 md:p-6 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -260,6 +265,16 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
             </label>
           </div>
 
+          {/* Upload Progress Indicator */}
+          {isUploadingFile && (
+            <div data-testid="upload-progress" className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin">⏳</div>
+                <p className="text-sm text-slate-700 dark:text-slate-300">Uploading document...</p>
+              </div>
+            </div>
+          )}
+
           {/* Uploaded Documents */}
           {verificationState.documents.length > 0 && (
             <div className="space-y-2">
@@ -277,7 +292,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
                   </span>
                   <button
                     onClick={() => handleRemoveDocument(idx)}
-                    className="text-red-600 dark:text-red-400 hover:underline text-sm"
+                    className="p-4 md:p-6 text-red-600 dark:text-red-400 hover:underline text-sm"
                   >
                     Remove
                   </button>
@@ -290,7 +305,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           <button
             onClick={handleVerificationSubmit}
             disabled={verificationState.documents.length === 0 || isSubmitting}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            className="w-full p-4 md:p-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
           >
             {isSubmitting ? 'Submitting...' : 'Submit for Verification'}
           </button>
@@ -301,7 +316,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
               setCurrentStep('find');
               setSelectedStation(null);
             }}
-            className="w-full px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+            className="w-full p-4 md:p-6 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
           >
             Back
           </button>
@@ -353,7 +368,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           {/* Return Button */}
           <button
             onClick={handleReturnToDashboard}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+            className="w-full p-4 md:p-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
             Return to Dashboard
           </button>
@@ -425,7 +440,7 @@ const StationSearchResult: React.FC<StationSearchResultProps> = ({ station, onSe
               <p className="text-xs text-red-600 dark:text-red-400 font-medium">
                 This station is already claimed
               </p>
-              <button className="text-xs text-red-600 dark:text-red-400 hover:underline">
+              <button className="p-4 md:p-6 text-xs text-red-600 dark:text-red-400 hover:underline">
                 Dispute claim
               </button>
             </div>
@@ -433,7 +448,7 @@ const StationSearchResult: React.FC<StationSearchResultProps> = ({ station, onSe
             <button
               onClick={() => onSelect(station)}
               disabled={isClaimed}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-xs font-medium transition-colors"
+              className="p-4 md:p-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-xs font-medium transition-colors"
             >
               Select This Station
             </button>
