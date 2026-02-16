@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StationOwner,
   ClaimedStation,
@@ -6,7 +6,10 @@ import {
   DashboardStats,
   BroadcastStatus,
   FuelType,
+  FuelPrice,
+  StationUpdateFormData,
 } from './types';
+import { StationDetailsScreen } from './StationDetailsScreen';
 
 // Custom styles for responsive grid that satisfies test requirements
 const gridStyles = `
@@ -32,10 +35,13 @@ interface StationOwnerDashboardProps {
   broadcasts: Broadcast[];
   stats: DashboardStats;
   fuelTypes?: FuelType[];
+  currentFuelPrices?: Record<string, FuelPrice[]>;
   onClaimStation: () => void;
   onCreateBroadcast: (stationId?: string) => void;
   onEditBroadcast?: (broadcastId: string) => void;
   onViewBroadcast: (broadcastId: string) => void;
+  onStationSave?: (stationId: string, data: StationUpdateFormData) => void;
+  onStationUnclaim?: (stationId: string) => void;
   onRefresh?: () => void;
   isLoading?: boolean;
 }
@@ -50,12 +56,23 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
   stations,
   broadcasts,
   stats,
+  fuelTypes,
+  currentFuelPrices = {},
   onClaimStation,
   onCreateBroadcast,
   onViewBroadcast,
+  onStationSave,
+  onStationUnclaim,
   onRefresh,
   isLoading,
 }) => {
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const selectedStation = selectedStationId ? stations.find((s) => s.id === selectedStationId) : null;
+  const selectedStationBroadcasts = selectedStationId
+    ? broadcasts.filter((b) => b.stationId === selectedStationId)
+    : [];
+  const selectedStationFuelPrices = selectedStationId ? currentFuelPrices[selectedStationId] || [] : [];
+
   const isVerified = owner.verificationStatus === 'verified';
   const recentBroadcasts = broadcasts.slice(0, 5);
   const broadcastsRemaining = owner.broadcastLimit - owner.broadcastsThisWeek;
@@ -80,6 +97,31 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
           ))}
         </div>
       </div>
+    );
+  }
+
+  // If a station is selected, show the station details screen
+  if (selectedStation) {
+    return (
+      <StationDetailsScreen
+        station={selectedStation}
+        fuelPrices={selectedStationFuelPrices}
+        broadcasts={selectedStationBroadcasts}
+        onSave={(data) => {
+          onStationSave?.(selectedStation.id, data);
+          setSelectedStationId(null);
+        }}
+        onBroadcast={() => {
+          onCreateBroadcast(selectedStation.id);
+          setSelectedStationId(null);
+        }}
+        onUnclaim={() => {
+          onStationUnclaim?.(selectedStation.id);
+          setSelectedStationId(null);
+        }}
+        onBack={() => setSelectedStationId(null)}
+        isLoading={isLoading}
+      />
     );
   }
 
@@ -167,7 +209,7 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
                 key={station.id}
                 station={station}
                 onBroadcast={() => onCreateBroadcast(station.id)}
-                onEdit={() => {}} // Will be connected to edit screen
+                onEdit={() => setSelectedStationId(station.id)}
                 onViewAnalytics={() => {}} // Will be connected to analytics
               />
             ))}
