@@ -200,7 +200,7 @@ export const MapPage: React.FC = () => {
           <Search size={20} className="text-slate-400" />
           <input
             type="text"
-            placeholder="Search stations..."
+            placeholder="Filter stations by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
