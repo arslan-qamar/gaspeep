@@ -1,3 +1,5 @@
+import { apiClient } from '@/lib/api'
+
 // intentionally no local utils required
 
 export type NearbyParams = {
@@ -8,23 +10,24 @@ export type NearbyParams = {
   maxPrice?: number
 }
 
-export async function fetchNearbyStations(params: NearbyParams, signal?: AbortSignal) {
-  const response = await fetch('/api/stations/nearby', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-    signal,
-  })
 
-  if (!response.ok) throw new Error('Failed to fetch nearby stations')
-  return response.json()
+export async function fetchNearbyStations(params: NearbyParams, signal?: AbortSignal) {
+  try {
+    const config: Record<string, any> = {}
+    if (signal) config.signal = signal
+    const resp = await apiClient.post('/stations/nearby', params, config)
+    return resp.data
+  } catch (e) {
+    throw new Error('Failed to fetch nearby stations')
+  }
 }
 
 export async function searchStations(q: string, _location: { lat: number; lng: number }, _zoom: number, filters: any, signal?: AbortSignal) {
-  const response = await fetch(`/api/stations/search?q=${encodeURIComponent(q)}`, { signal })
-  if (!response.ok) throw new Error('Failed to search stations')
-
-  const results = await response.json()
+  try {
+    const config: Record<string, any> = { params: { q } }
+    if (signal) config.signal = signal
+    const resp = await apiClient.get('/stations/search', config)
+    const results = resp.data
 
   // Apply simple client-side filtering similar to previous implementation
   const matchesFuelType = (station: any) => {
@@ -43,8 +46,11 @@ export async function searchStations(q: string, _location: { lat: number; lng: n
     })
   }
 
-  return (results as any[])
+    return (results as any[])
     .map((station) => ({ station, distance: 0 /* caller will recalc */ }))
     .filter((item) => matchesFuelType(item.station) && matchesMaxPrice(item.station))
     .map((item) => item.station)
+  } catch (e) {
+    throw new Error('Failed to search stations')
+  }
 }
