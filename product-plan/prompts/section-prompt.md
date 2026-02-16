@@ -28,7 +28,16 @@ You are implementing the **[SECTION_NAME]** section of Gas Peep, a fuel price mo
 4. Review sample data structure
 5. Reference test specifications for acceptance criteria
 
+**Testing Requirements:**
+- Analyze the test specifications and list all test cases needed
+- Write failing unit, integration, e2e tests only at this stage
+- NO implementation files (.ts, .go) are allowed in this phase
+- Write tests that assume these interfaces exist but are unimplmented.
+- Wait for my approval signal "APPROVE_TESTS" before moving to implementation
+
 **Implementation Requirements:**
+- Verify a related test exist before implementation code
+- Each commit makes exactly one test pass
 - Write TypeScript with strict mode enabled
 - Use component-based architecture (React)
 - Props-based data flow (no global imports of section data)
@@ -37,6 +46,9 @@ You are implementing the **[SECTION_NAME]** section of Gas Peep, a fuel price mo
 - Follow the design system colors and typography
 - Include comprehensive error handling and loading states
 - Add comprehensive comments explaining complex logic
+
+**Code Review Requirements:**
+- refactor and clean up code using best practices for the tech stack while keeping tests green
 
 **Key Screens to Implement:**
 [See section spec for screen list and requirements]

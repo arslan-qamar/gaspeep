@@ -884,7 +884,7 @@ export default TierSelectionPage;
 - [ ] Login page with email/password
 - [ ] Register page with validation
 - [ ] Token stored in localStorage
-- [ ] OAuth buttons UI (Google/Apple - implementation in phase 8)
+- [ ] OAuth buttons UI 
 - [ ] Tier selection page
 - [ ] Upgrade endpoint working
 - [ ] Protected routes gated by auth
