@@ -119,7 +119,7 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
               Created
             </p>
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
-              {new Date(broadcast.createdAt).toLocaleDateString()}
+              {new Date(broadcast.createdAt).toISOString().split('T')[0]}
             </p>
           </div>
 
@@ -129,7 +129,7 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
                 Sent
               </p>
               <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                {new Date(broadcast.sentAt).toLocaleDateString()}
+                {new Date(broadcast.sentAt).toISOString().split('T')[0]}
               </p>
             </div>
           )}
