@@ -137,6 +137,11 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
                 ? '⏳ Pending Verification'
                 : '✕ Rejected'}
           </span>
+          {station.verifiedAt && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              Verified: {new Date(station.verifiedAt).toLocaleDateString()}
+            </p>
+          )}
         </div>
 
         {!isEditing && (
@@ -193,6 +198,32 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
           <>
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Contact Information
+              </p>
+              <div className="space-y-2 mt-3">
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Phone</p>
+                  <p className="text-slate-700 dark:text-slate-300">{station.phone}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Website</p>
+                  <a
+                    href={station.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {station.website}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+        {!isEditing && (
+          <>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Brand
               </p>
               <p className="text-lg font-semibold text-slate-900 dark:text-white mt-1">
@@ -209,30 +240,6 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                  Phone
-                </p>
-                <p className="text-slate-700 dark:text-slate-300 mt-1">
-                  {station.phone}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                  Website
-                </p>
-                <a
-                  href={station.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline mt-1"
-                >
-                  {station.website}
-                </a>
-              </div>
-            </div>
           </>
         )}
       </div>
@@ -364,7 +371,10 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
           ))}
         </div>
 
-        <button className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-4">
+        <button
+          onClick={() => {}}
+          className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-4"
+        >
           Report Incorrect Price
         </button>
       </div>
