@@ -32,8 +32,8 @@ make install-air                   # install air watcher
 ```bash
 cd frontend
 npm install
-npm run dev                        # starts on https://localhost:3000
-BACKEND_URL=http://localhost:8080 npm run dev  # custom backend target
+npm run dev                        # starts on https://dev.gaspeep.com
+BACKEND_URL=https://api.gaspeep.com npm run dev  # custom backend target
 ```
 
 ### Tests
@@ -93,3 +93,49 @@ cd backend && make build           # go build ./...
 ### Key Environment Variables
 - Backend: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT`, `JWT_SECRET`, `TLS_CERT`, `TLS_KEY`
 - Frontend: `VITE_API_URL` (direct API base), `BACKEND_URL` (Vite proxy target)
+
+## Phase 3 Implementation - Station Owner Dashboard
+
+### Current Status (Feb 17, 2026)
+- **Working**: 6/8 endpoints (75% coverage)
+- **Issue**: POST `/broadcasts` and POST `/broadcasts/draft` returning 500 FK constraint violations
+
+### Key Changes Made
+1. **Service Layer Refactoring** (`internal/service/broadcast_service.go`)
+   - Modified `CreateBroadcast()` to accept `userID` instead of `stationOwnerID`
+   - Service now performs user→station_owner lookup via `stationOwnerRepo.GetByUserID()`
+   - Added comprehensive logging at each step for debugging
+
+2. **Error Handling Improvements** (`internal/service/station_owner_service.go`)
+   - `GetProfile()` returns graceful default response instead of 500 error
+   - Prevents crashes when station owner profile missing
+
+3. **API Response Enhancement** (`internal/handler/broadcast_handler.go`)
+   - Broadcast creation endpoints now return error details for debugging
+   - Format: `{"error": "user message", "details": "technical error"}`
+
+4. **Dependency Injection** (`cmd/api/main.go`)
+   - `broadcastService` now receives `stationOwnerRepo` for lookups
+
+### Testing Approach
+- **Local Testing**: Use `cd backend && ./bin/api` to run without Docker
+- **No Docker for API tests**: Test against local server directly on `:8080`
+- **Log Monitoring**: Check stdout/stderr for `[CreateBroadcast]` log messages
+- **Database**: Use local PostgreSQL connection for manual verification
+
+### Known Test Data
+```sql
+-- Station owners created for testing:
+INSERT INTO station_owners (id, user_id, business_name, verification_status, created_at)
+VALUES
+  ('2726d50d-423b-4c73-a850-62f798556bb0', '9f8b4ad7-3ce3-4387-8503-8b33ecba8113', 'Test Station 1', 'verified', NOW()),
+  ('4b928b78-bbf0-413d-aad8-49fd859dcf24', '56fa2f35-893f-40ec-b9a7-ca68538b2cb3', 'Test Station 2', 'verified', NOW()),
+  ('9ca3dafe-c2e9-4e81-8f9d-444f84f6af79', 'cac6e8a8-9151-41bd-bcd6-dc0686b1a647', 'Test Station 3', 'verified', NOW());
+```
+
+### Debugging Strategy
+1. Run backend locally: `cd backend && go build -o bin/api cmd/api/main.go && ./bin/api`
+2. Test endpoints directly against `:8080`
+3. Monitor logs for `[CreateBroadcast]` messages to trace execution flow
+4. Verify FK constraint by checking actual station_owner ID in database
+5. Confirm user→owner lookup is returning correct ID before DB insert

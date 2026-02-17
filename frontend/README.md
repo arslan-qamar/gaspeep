@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at `https://dev.gaspeep.com`
 
 ### Build
 
@@ -70,7 +70,7 @@ src/
 Create a `.env.local` file:
 
 ```
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=https://api.gaspeep.com/api
 ```
 
 ## Key Dependencies

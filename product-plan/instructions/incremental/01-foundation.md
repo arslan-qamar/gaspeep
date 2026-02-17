@@ -336,7 +336,7 @@ cd cmd/api
 go run main.go
 
 # Should print: "Starting server on :8080"
-# Visit http://localhost:8080/health
+# Visit https://api.gaspeep.com/health
 # Should return: {"status":"ok"}
 ```
 
@@ -548,7 +548,7 @@ cd cmd/api
 go run main.go
 
 # In another terminal
-curl http://localhost:8080/health
+curl https://api.gaspeep.com/health
 # Should return: {"status":"ok"}
 ```
 

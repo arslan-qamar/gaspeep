@@ -61,15 +61,14 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
 
   const handleDocumentUpload = (files: FileList | null) => {
     if (!files) return;
-    setIsUploadingFile(true);
     const newDocuments = Array.from(files);
-    setTimeout(() => {
-      setVerificationState((prev) => ({
-        ...prev,
-        documents: [...prev.documents, ...newDocuments],
-      }));
-      setIsUploadingFile(false);
-    }, 500);
+    setVerificationState((prev) => ({
+      ...prev,
+      documents: [...prev.documents, ...newDocuments],
+    }));
+    // Show upload progress indicator briefly
+    setIsUploadingFile(true);
+    setTimeout(() => setIsUploadingFile(false), 500);
   };
 
   const handleRemoveDocument = (index: number) => {
@@ -91,6 +90,9 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
     const requestId = `VR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setVerificationRequestId(requestId);
     setCurrentStep('confirm');
+
+    // Call the callback to indicate successful claim
+    onStationClaimed(selectedStation.id);
   };
 
   const handleReturnToDashboard = () => {
@@ -221,16 +223,11 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           {/* Verification Instructions */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-3">
             <h3 className="font-semibold text-slate-900 dark:text-white">
-              Upload Business Documentation
+              Upload Documents
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Please upload one of the following:
+              Please upload one of the following: Business license, Lease agreement, or Proof of ownership
             </p>
-            <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-disc list-inside">
-              <li>Business license</li>
-              <li>Lease agreement</li>
-              <li>Proof of ownership</li>
-            </ul>
           </div>
 
           {/* Document Upload Area */}
@@ -432,7 +429,7 @@ const StationSearchResult: React.FC<StationSearchResultProps> = ({ station, onSe
                   : 'bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200'
             }`}
           >
-            {isClaimed ? '❌ Claimed' : isPending ? '⏳ Pending' : '✅ Available'}
+            {isClaimed ? '❌ Owned' : isPending ? '⏳ Pending' : '✅ Available'}
           </span>
 
           {isClaimed ? (

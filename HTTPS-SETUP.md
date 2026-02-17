@@ -76,7 +76,7 @@ This script will:
 cd frontend
 npm install
 npm run dev
-# Runs on http://localhost:3000 (Nginx serves it as https://dev.gaspeep.com)
+# Runs on https://dev.gaspeep.com (Nginx serves it as https://dev.gaspeep.com)
 ```
 
 **Terminal 2 - Backend:**
@@ -84,7 +84,7 @@ npm run dev
 cd backend
 go build -o bin/api cmd/api/main.go
 ./bin/api
-# Runs on http://localhost:8080 (Nginx serves it as https://api.gaspeep.com)
+# Runs on https://api.gaspeep.com (Nginx serves it as https://api.gaspeep.com)
 ```
 
 **Nginx** - Already started by `make setup-https`, runs in background:
@@ -225,7 +225,7 @@ This is expected for the first visit. The certificate is valid but:
 
 ### Frontend Can't Connect to Backend
 1. Check Nginx logs: `sudo journalctl -u nginx -f`
-2. Verify backend is running: `curl http://localhost:8080/health`
+2. Verify backend is running: `curl https://api.gaspeep.com/health`
 3. Check frontend VITE_API_URL environment variable
 4. Verify CORS configuration in backend
 

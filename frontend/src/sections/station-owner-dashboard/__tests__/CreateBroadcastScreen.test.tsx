@@ -327,11 +327,11 @@ describe('CreateBroadcastScreen', () => {
       render(
         <CreateBroadcastScreen {...defaultProps} selectedStationId={mockStations[0].id} />
       );
-      expect(screen.getByLabelText(/1 hour/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/4 hours/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/24 hours/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/3 days/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/7 days/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^\s*1 hour\s*$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^\s*4 hours\s*$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^\s*24 hours\s*$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^\s*3 days\s*$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^\s*7 days\s*$/i)).toBeInTheDocument();
     });
 
     it('should display expiry timestamp when duration selected', async () => {

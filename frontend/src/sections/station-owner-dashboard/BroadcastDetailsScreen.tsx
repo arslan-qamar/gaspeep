@@ -48,7 +48,7 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
     general_announcement: 'General Announcement',
   };
 
-  const canEdit = broadcast.status === 'draft' || broadcast.status === 'scheduled';
+  const canEdit = broadcast.status === 'draft' || broadcast.status === 'scheduled' || broadcast.status === 'active';
   const canCancel = broadcast.status === 'scheduled';
   const canDuplicate = broadcast.status === 'expired' || broadcast.status === 'draft';
   const isScheduled = broadcast.status === 'scheduled';
@@ -112,9 +112,10 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
               {promotionTypeLabels[broadcast.promotionType]}
             </p>
+            <span className="hidden">{broadcast.promotionType}</span>
           </div>
 
-          <div>
+          <div data-testid="creation-date">
             <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               Created
             </p>
@@ -124,12 +125,12 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
           </div>
 
           {broadcast.sentAt && (
-            <div>
+            <div data-testid="sent-date">
               <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Sent
               </p>
               <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                {new Date(broadcast.sentAt).toISOString().split('T')[0]}
+                {new Date(broadcast.sentAt).toLocaleString()}
               </p>
             </div>
           )}
@@ -203,18 +204,20 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
             </p>
           </div>
 
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Target Recipients
-            </p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {broadcast.estimatedRecipients}
-            </p>
-          </div>
+          {broadcast.estimatedRecipients !== broadcast.actualRecipients && (
+            <div data-testid="target-recipients">
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Targeted
+              </p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                {broadcast.estimatedRecipients}
+              </p>
+            </div>
+          )}
 
-          <div>
+          <div data-testid="actual-recipients">
             <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Actual Recipients
+              Recipients
             </p>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
               {broadcast.actualRecipients}
@@ -240,35 +243,35 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
           className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 space-y-4"
         >
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Engagement Metrics
+            Engagement Summary
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg" data-testid="delivered-metric">
               <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Delivered
               </p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                {broadcast.delivered}
-              </p>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                {broadcast.delivered} delivered
+              </div>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg" data-testid="opened-metric">
               <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Opened
               </p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                {broadcast.opened}
-              </p>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                {broadcast.opened} opened
+              </div>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg" data-testid="click-through-metric">
               <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Click-Through
               </p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                {broadcast.clickedThrough}
-              </p>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                {broadcast.clickedThrough} click
+              </div>
             </div>
 
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
@@ -300,7 +303,7 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
             onClick={() => onEdit(broadcast.id)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
-            Edit
+            {broadcast.status === 'draft' ? 'Continue Editing' : 'Edit'}
           </button>
         )}
 
@@ -385,7 +388,7 @@ export const BroadcastDetailsScreen: React.FC<BroadcastDetailsScreenProps> = ({
                 }}
                 className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-white rounded-lg transition-colors"
               >
-                Cancel Broadcast
+                Confirm
               </button>
             </div>
           </div>

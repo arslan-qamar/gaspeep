@@ -48,7 +48,7 @@ psql gas_peep -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 go run cmd/api/main.go
 ```
 
-The API will be available at `http://localhost:8080`
+The API will be available at `https://api.gaspeep.com`
 
 ### Building
 
@@ -111,7 +111,7 @@ See `.env.example` for all available configuration options.
 1. Create OAuth credentials in Google Cloud Console:
     - Go to APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application.
     - Add an Authorized redirect URI matching `GOOGLE_OAUTH_REDIRECT` (example for local dev):
-      - `http://localhost:8080/api/auth/oauth/google/callback`
+      - `https://api.gaspeep.com/api/auth/oauth/google/callback`
     - Copy the Client ID and Client Secret into your `backend/.env` as `GOOGLE_OAUTH_ID` and `GOOGLE_OAUTH_SECRET`.
 
 2. Environment variables used for OAuth (set in `backend/.env`):

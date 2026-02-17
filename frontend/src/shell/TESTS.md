@@ -465,7 +465,7 @@
 
 ### Manual Testing
 1. Start dev server: `npm run dev`
-2. Open browser to `http://localhost:3000`
+2. Open browser to `https://dev.gaspeep.com`
 3. Walk through each test scenario above
 4. Test on different viewport sizes using browser dev tools
 5. Test with different user states (logged out, free, premium)

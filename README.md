@@ -65,8 +65,8 @@ docker compose up --build
 ```
 
 3. Access the applications:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8080
+   - Frontend: https://dev.gaspeep.com
+   - Backend API: https://api.gaspeep.com
    - Database: localhost:5432
 
 ### Local Development (Without Docker)
@@ -366,7 +366,7 @@ export TLS_KEY=./certs/dev.gaspeep.com-key.pem
 ./bin/api
 ```
 
-The backend will start on `https://localhost:8080` (browser will show certificate warning).
+The backend will start on `https://api.gaspeep.com` (browser will show certificate warning).
 
 ### Production: Let's Encrypt Wildcard Certificate with Cloudflare
 
@@ -445,7 +445,7 @@ sudo chmod g+r /etc/letsencrypt/live/gaspeep.com/privkey.pem
 ```bash
 cd backend
 ./bin/api
-# Backend will start on https://localhost:8080
+# Backend will start on https://api.gaspeep.com
 ```
 
 #### Step 5: Setup Automatic Certificate Renewal
@@ -532,7 +532,7 @@ sudo openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -noout -dates
 sudo openssl x509 -in /etc/letsencrypt/live/gaspeep.com/cert.pem -noout -text | grep -A1 "Subject Alternative Name"
 ```
 
-## HTTPS Development Setup with Nginx
+## HTTPS Development Setup with Nginx (This is Preferred over Docker based)
 
 Once you have Let's Encrypt certificates generated, you can run the full stack locally with HTTPS and proper domain routing.
 
@@ -564,8 +564,8 @@ The `setup-https` script configures:
    ```
 
 2. **Nginx reverse proxy** - Handles HTTPS and routes by domain:
-   - `https://dev.gaspeep.com` → Frontend (localhost:3000)
-   - `https://api.gaspeep.com` → Backend (localhost:8080)
+   - `https://dev.gaspeep.com` → Frontend 
+   - `https://api.gaspeep.com` → Backend 
 
 3. **Certificate permissions** - Allows Nginx to read Let's Encrypt certificates
 
@@ -593,20 +593,6 @@ Services will be accessible at:
 - Frontend: `https://dev.gaspeep.com`
 - Backend: `https://api.gaspeep.com`
 
-### Docker Compose without Nginx
-
-For simpler local development without Nginx:
-
-```bash
-docker compose up --build
-
-# Or use the Makefile
-make docker-dev
-```
-
-Services will be accessible at:
-- Frontend: `http://localhost:3001`
-- Backend: `http://localhost:8081`
 
 ### Makefile Commands
 
@@ -667,7 +653,7 @@ curl -k https://localhost
 API endpoints are documented in `backend/README.md`.
 
 ### Base URL
-- Development: `http://localhost:8080/api`
+- Development: `https://api.gaspeep.com/api`
 - Production: `https://api.gaspeep.com/api`
 
 ### Authentication

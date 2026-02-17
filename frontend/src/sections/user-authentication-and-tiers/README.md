@@ -191,7 +191,7 @@ PUT    /api/users/profile            # Update user profile
 Add to your `.env` file:
 
 ```
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=https://api.gaspeep.com
 ```
 
 ## 🧪 Testing

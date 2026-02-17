@@ -596,7 +596,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      VITE_API_URL: http://localhost:8080
+      VITE_API_URL: https://api.gaspeep.com
       VITE_MAPBOX_ACCESS_TOKEN: ${MAPBOX_ACCESS_TOKEN}
     depends_on:
       - backend

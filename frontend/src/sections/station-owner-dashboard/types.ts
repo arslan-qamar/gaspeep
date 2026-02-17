@@ -150,6 +150,7 @@ export interface CreateBroadcastFormData {
 
 export interface StationUpdateFormData {
   name: string;
+  address?: string;
   phone: string;
   website: string;
   operatingHours: Record<DayOfWeek, OperatingHours>;

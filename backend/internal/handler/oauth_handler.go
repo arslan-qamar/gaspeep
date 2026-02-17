@@ -121,7 +121,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	if frontendSuccess == "" {
 		frontendSuccess = os.Getenv("APP_BASE_URL")
 		if frontendSuccess == "" {
-			frontendSuccess = "https://localhost:3000"
+			frontendSuccess = "https://dev.gaspeep.com"
 		}
 		frontendSuccess = frontendSuccess + "/auth/oauth/success"
 	}

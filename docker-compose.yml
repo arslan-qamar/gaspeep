@@ -30,42 +30,66 @@ services:
       PORT: 8080
       ENV: development
       JWT_SECRET: dev-secret-key
-      # TLS cert/key paths (Let's Encrypt wildcard certificate)
-      TLS_CERT: /etc/letsencrypt/live/gaspeep.com/fullchain.pem
-      TLS_KEY: /etc/letsencrypt/live/gaspeep.com/privkey.pem
-      # Override for Docker ports (3001 frontend, 8081 backend from host perspective)
+      # Backend runs on HTTP (Nginx handles TLS)
       APP_BASE_URL: https://api.gaspeep.com
       CORS_ALLOWED_ORIGINS: https://dev.gaspeep.com,https://api.gaspeep.com
       GOOGLE_OAUTH_REDIRECT: https://api.gaspeep.com/api/auth/oauth/google/callback
       FRONTEND_OAUTH_SUCCESS_URL: https://dev.gaspeep.com/auth/oauth/success
       AUTH_COOKIE_DOMAIN: gaspeep.com
       AUTH_COOKIE_SECURE: "true"
-    ports:
-      - "8081:8080"
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     command: ./api
+    networks:
+      - gaspeep_network
 
   frontend:
-    image: node:18-alpine
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: gas_peep_frontend
-    working_dir: /app
-    command: sh -c "npm install && npm run dev"
-    ports:
-      - "3001:3000"
+    environment:
+      VITE_API_URL: https://api.gaspeep.com/api
+      BACKEND_URL: http://backend:8080
+    expose:
+      - "3000"
     depends_on:
       - backend
-    environment:
-      - VITE_API_URL=/api
-      # Ensure the dev server proxy forwards to the backend over HTTPS
-      - BACKEND_URL=https://backend:8080
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    networks:
+      - gaspeep_network
+
+  nginx:
+    image: nginx:latest
+    container_name: gas_peep_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - gaspeep_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+
+networks:
+  gaspeep_network:
+    driver: bridge

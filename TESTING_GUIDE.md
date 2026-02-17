@@ -13,7 +13,7 @@ docker compose up
 
 ### 1. Health Check
 ```bash
-curl http://localhost:8080/health
+curl https://api.gaspeep.com/health
 ```
 
 ✅ Expected: `{"status":"ok"}`
@@ -23,7 +23,7 @@ curl http://localhost:8080/health
 ### 2. User Registration (SignUp)
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/signup \
+curl -X POST https://api.gaspeep.com/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice@example.com",
@@ -54,7 +54,7 @@ curl -X POST http://localhost:8080/api/auth/signup \
 ### 3. User Login (SignIn)
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/signin \
+curl -X POST https://api.gaspeep.com/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice@example.com",
@@ -71,7 +71,7 @@ curl -X POST http://localhost:8080/api/auth/signin \
 Replace `YOUR_TOKEN_HERE` with the token from step 2 or 3:
 
 ```bash
-curl -X GET http://localhost:8080/api/auth/me \
+curl -X GET https://api.gaspeep.com/api/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
@@ -92,7 +92,7 @@ curl -X GET http://localhost:8080/api/auth/me \
 ### 5. Test Token Validation (Invalid Token)
 
 ```bash
-curl -X GET http://localhost:8080/api/auth/me \
+curl -X GET https://api.gaspeep.com/api/auth/me \
   -H "Authorization: Bearer invalid.token.here"
 ```
 
@@ -103,7 +103,7 @@ curl -X GET http://localhost:8080/api/auth/me \
 ### 6. Test Missing Auth Header
 
 ```bash
-curl -X GET http://localhost:8080/api/auth/me
+curl -X GET https://api.gaspeep.com/api/auth/me
 ```
 
 ❌ Expected: `401 Unauthorized` with error: `missing authorization header`
@@ -113,7 +113,7 @@ curl -X GET http://localhost:8080/api/auth/me
 ### 7. Test Duplicate Email
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/signup \
+curl -X POST https://api.gaspeep.com/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice@example.com",
@@ -129,7 +129,7 @@ curl -X POST http://localhost:8080/api/auth/signup \
 ### 8. Test Invalid Password
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/signin \
+curl -X POST https://api.gaspeep.com/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice@example.com",
@@ -144,7 +144,7 @@ curl -X POST http://localhost:8080/api/auth/signin \
 ### 9. Test Short Password
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/signup \
+curl -X POST https://api.gaspeep.com/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "bob@example.com",
@@ -187,7 +187,7 @@ cd frontend
 npm run dev
 ```
 
-Navigate to `http://localhost:3000`
+Navigate to `https://dev.gaspeep.com`
 
 - ✅ Unauthenticated users redirected to `/signin`
 - ✅ After login, can access `/` (map), `/submit`, `/alerts`
@@ -214,7 +214,7 @@ Navigate to `http://localhost:3000`
 
 ### Frontend still redirects to signin
 - Check token stored in localStorage: Open DevTools → Application → Storage
-- Check API proxy: `http://localhost:8080/api` should be reachable
+- Check API proxy: `https://api.gaspeep.com/api` should be reachable
 - Check Vite proxy in `frontend/vite.config.ts`
 
 ---

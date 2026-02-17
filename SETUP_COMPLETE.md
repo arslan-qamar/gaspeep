@@ -39,7 +39,7 @@ frontend/
 - `npm run test:coverage` - Generate coverage report
 
 **Key Features:**
-- ✅ Vite proxy configured for API calls (`/api` → `http://localhost:8080/api`)
+- ✅ Vite proxy configured for API calls (`/api` → `https://api.gaspeep.com/api`)
 - ✅ Tailwind CSS with dark mode support
 - ✅ TypeScript path alias `@/*` for cleaner imports
 - ✅ Axios HTTP client with JWT token interceptors
@@ -161,8 +161,8 @@ psql gas_peep -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 ```bash
 docker compose up --build
 ```
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8080
+- Frontend: https://dev.gaspeep.com
+- Backend: https://api.gaspeep.com
 - Database: localhost:5432
 
 **Option B: Local Development**

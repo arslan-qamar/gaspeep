@@ -13,4 +13,9 @@ type CreateOwnerVerificationInput struct {
 type StationOwnerRepository interface {
 	CreateVerificationRequest(userID string, input CreateOwnerVerificationInput) (*models.StationOwner, error)
 	GetStationsByOwnerUserID(userID string) ([]map[string]interface{}, error)
+	GetByUserID(userID string) (*models.StationOwner, error)
+	GetStationByID(userID, stationID string) (map[string]interface{}, error)
+	GetStationWithPrices(userID, stationID string) (map[string]interface{}, error)
+	SearchAvailableStations(userID, query, lat, lon, radius string) ([]map[string]interface{}, error)
+	GetFuelPricesForOwner(userID string) (map[string]interface{}, error)
 }

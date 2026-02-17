@@ -104,7 +104,7 @@ type StationOwner struct {
 	BusinessName          string     `json:"businessName"`
 	VerificationStatus    string     `json:"verificationStatus"`
 	VerificationDocuments []string   `json:"verificationDocuments"`
-	ContactInfo           string     `json:"contactInfo"`
+	ContactInfo           *string    `json:"contactInfo"`
 	VerifiedAt            *time.Time `json:"verifiedAt"`
 	CreatedAt             time.Time  `json:"createdAt"`
 }
@@ -127,7 +127,7 @@ type Broadcast struct {
 	StartDate       time.Time `json:"startDate"`
 	EndDate         time.Time `json:"endDate"`
 	BroadcastStatus string    `json:"broadcastStatus"`
-	TargetFuelTypes []string  `json:"targetFuelTypes"`
+	TargetFuelTypes *string   `json:"targetFuelTypes"`
 	CreatedAt       time.Time `json:"createdAt"`
 	Views           int       `json:"views"`
 	Clicks          int       `json:"clicks"`

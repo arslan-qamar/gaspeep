@@ -57,7 +57,7 @@ func main() {
 	fuelPriceService := service.NewFuelPriceService(fuelPriceRepo)
 	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo)
 	alertService := service.NewAlertService(alertRepo)
-	broadcastService := service.NewBroadcastService(broadcastRepo)
+	broadcastService := service.NewBroadcastService(broadcastRepo, stationOwnerRepo)
 	notificationService := service.NewNotificationService(notificationRepo)
 	stationOwnerService := service.NewStationOwnerService(stationOwnerRepo)
 
@@ -160,8 +160,18 @@ func main() {
 	stationOwners := router.Group("/api/station-owners")
 	stationOwners.Use(middleware.AuthMiddleware())
 	{
+		stationOwners.GET("/profile", stationOwnerHandler.GetProfile)
+		stationOwners.GET("/stats", stationOwnerHandler.GetStats)
+		stationOwners.GET("/fuel-prices", stationOwnerHandler.GetFuelPrices)
+		stationOwners.GET("/search-stations", stationOwnerHandler.SearchStations)
 		stationOwners.POST("/verify", stationOwnerHandler.VerifyOwnership)
+		stationOwners.POST("/claim-station", stationOwnerHandler.ClaimStation)
 		stationOwners.GET("/stations", stationOwnerHandler.GetStations)
+		stationOwners.GET("/stations/:id", stationOwnerHandler.GetStationDetails)
+		stationOwners.PUT("/stations/:id", stationOwnerHandler.UpdateStation)
+		stationOwners.POST("/stations/:id/photos", stationOwnerHandler.UploadPhotos)
+		stationOwners.POST("/stations/:id/unclaim", stationOwnerHandler.UnclaimStation)
+		stationOwners.POST("/stations/:id/reverify", stationOwnerHandler.ReVerifyStation)
 	}
 
 	// Broadcast routes
@@ -170,7 +180,16 @@ func main() {
 	{
 		broadcasts.POST("", broadcastHandler.CreateBroadcast)
 		broadcasts.GET("", broadcastHandler.GetBroadcasts)
+		broadcasts.GET("/estimate-recipients", broadcastHandler.EstimateRecipients)
+		broadcasts.POST("/draft", broadcastHandler.SaveDraft)
+		broadcasts.GET("/:id", broadcastHandler.GetBroadcast)
 		broadcasts.PUT("/:id", broadcastHandler.UpdateBroadcast)
+		broadcasts.GET("/:id/engagement", broadcastHandler.GetBroadcastEngagement)
+		broadcasts.POST("/:id/send", broadcastHandler.SendBroadcast)
+		broadcasts.POST("/:id/schedule", broadcastHandler.ScheduleBroadcast)
+		broadcasts.POST("/:id/cancel", broadcastHandler.CancelBroadcast)
+		broadcasts.DELETE("/:id", broadcastHandler.DeleteBroadcast)
+		broadcasts.POST("/:id/duplicate", broadcastHandler.DuplicateBroadcast)
 	}
 
 	// User profile routes

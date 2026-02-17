@@ -515,7 +515,7 @@ Ensure `src/index.css` includes Tailwind directives:
 ```bash
 npm run dev
 
-# Visit http://localhost:3000
+# Visit https://dev.gaspeep.com
 # Should see:
 # - Header with Gas Peep logo and user name
 # - Bottom nav on mobile or sidebar on desktop

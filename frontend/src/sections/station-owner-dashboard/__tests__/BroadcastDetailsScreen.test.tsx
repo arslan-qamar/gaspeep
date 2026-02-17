@@ -102,7 +102,8 @@ describe('BroadcastDetailsScreen', () => {
 
     it('should display recipient count', () => {
       render(<BroadcastDetailsScreen {...defaultProps} />);
-      expect(screen.getByText(new RegExp(mockActiveBroadcast.actualRecipients.toString()))).toBeInTheDocument();
+      const recipientsLabel = screen.getByText(/recipients/i).closest('div');
+      expect(recipientsLabel).toHaveTextContent(mockActiveBroadcast.actualRecipients.toString());
     });
   });
 
@@ -164,7 +165,8 @@ describe('BroadcastDetailsScreen', () => {
       render(
         <BroadcastDetailsScreen {...defaultProps} broadcast={mockScheduledBroadcast} />
       );
-      expect(screen.getByText(/scheduled/i)).toBeInTheDocument();
+      const statusBadge = screen.getByTestId('status-badge');
+      expect(statusBadge).toHaveTextContent(/scheduled/i);
     });
 
     it('should display scheduled time', () => {

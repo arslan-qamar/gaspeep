@@ -836,7 +836,7 @@ export interface MapViewport {
 ```bash
 npm run dev
 
-# Visit http://localhost:3000/map
+# Visit https://dev.gaspeep.com/map
 # Should see:
 # - Interactive MapLibre map with OpenStreetMap tiles
 # - Station markers with prices

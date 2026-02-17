@@ -32,4 +32,6 @@ type BroadcastRepository interface {
 	Create(stationOwnerID string, input CreateBroadcastInput) (*models.Broadcast, error)
 	GetByOwnerID(stationOwnerID string) ([]models.Broadcast, error)
 	Update(id, ownerID string, input UpdateBroadcastInput) (string, error)
+	GetByID(id, ownerID string) (*models.Broadcast, error)
+	Delete(id, ownerID string) error
 }

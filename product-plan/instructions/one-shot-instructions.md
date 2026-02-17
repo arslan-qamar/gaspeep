@@ -444,7 +444,7 @@ func (r *UserRepository) GetUserByID(id string) (*User, error) {
 - [ ] Go project initialized with dependencies
 - [ ] Environment variables configured
 - [ ] Database connection working
-- [ ] Health check endpoint responds (test with curl: `curl http://localhost:8080/health`)
+- [ ] Health check endpoint responds (test with curl: `curl https://api.gaspeep.com/health`)
 - [ ] Basic error handling middleware in place
 
 **Note:** For backend API verification, curl is appropriate. For frontend verification, always use Playwright MCP tools.
@@ -750,7 +750,7 @@ export const router = createBrowserRouter([
 ```typescript
 // Example verification workflow:
 // 1. Navigate to the application
-mcp_playwright_browser_navigate({ url: 'http://localhost:3000' })
+mcp_playwright_browser_navigate({ url: 'https://dev.gaspeep.com' })
 
 // 2. Take accessibility snapshot to verify UI rendered
 mcp_playwright_browser_snapshot({})
@@ -823,8 +823,8 @@ Each section follows similar patterns. Reference the section-specific instructio
 
 **Use curl only for backend API verification:**
 
-- Backend health checks: `curl http://localhost:8080/health`
-- API endpoint responses: `curl http://localhost:8080/api/stations`
+- Backend health checks: `curl https://api.gaspeep.com/health`
+- API endpoint responses: `curl https://api.gaspeep.com/api/stations`
 - Direct database queries: Use SQL client
 
 **Key principle:** If it involves UI, user interaction, or visual verification → use Playwright MCP. If it's pure backend API testing → use curl.
@@ -951,7 +951,7 @@ export const AdBanner: React.FC = () => {
 
 ```typescript
 // 1. Start by navigating to the app
-mcp_playwright_browser_navigate({ url: 'http://localhost:3000' })
+mcp_playwright_browser_navigate({ url: 'https://dev.gaspeep.com' })
 
 // 2. Verify page loaded without errors
 mcp_playwright_browser_console_messages({ level: 'error' })
