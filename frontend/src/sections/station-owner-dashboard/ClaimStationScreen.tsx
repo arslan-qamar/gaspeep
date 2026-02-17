@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AvailableStation, VerificationMethod } from './types';
 import { MapView } from '../map-and-station-browsing/components/MapView';
 
@@ -50,9 +50,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
   const [verificationRequestId, setVerificationRequestId] = useState('');
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [claimErrorState, setClaimErrorState] = useState<string | null>(null);
-  const [showMapView, setShowMapView] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
   const [lastFetchedLocation, setLastFetchedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Filter stations based on search (show all if no search query)
@@ -65,13 +63,13 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
       )
     : availableStations;
 
-  const handleUseCurrentLocation = useCallback(() => {
+  // Request user's geolocation on component mount
+  useEffect(() => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      console.warn('Geolocation is not supported by your browser');
       return;
     }
 
-    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -83,24 +81,16 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
             await onRefreshStations(latitude, longitude, 14);
           } catch (error) {
             console.error('Failed to refresh stations:', error);
-            // Still keep the location even if refresh fails
           }
         }
-
-        setIsLocating(false);
       },
       (error) => {
         console.error('Geolocation error:', error);
-        alert('Unable to get your location. Please check permissions.');
-        setIsLocating(false);
+        // Continue with default location if geolocation fails
       },
       { enableHighAccuracy: true }
     );
   }, [onRefreshStations]);
-
-  const handleMapViewToggle = useCallback(() => {
-    setShowMapView(!showMapView);
-  }, [showMapView]);
 
   const handleMapViewportChange = useCallback(
     (viewport: { latitude: number; longitude: number; zoom: number }) => {
@@ -253,51 +243,28 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
             />
           </div>
 
-          {/* Use Current Location Button */}
-          <button
-            onClick={handleUseCurrentLocation}
-            disabled={isLocating}
-            className="w-full p-4 md:p-6 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLocating ? '⏳ Locating...' : '📍 Use Current Location'}
-          </button>
-
-          {/* Map View Toggle */}
-          <button
-            onClick={handleMapViewToggle}
-            className={`w-full p-4 md:p-6 border rounded-lg transition-colors ${
-              showMapView
-                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            🗺️ {showMapView ? 'Hide' : 'Show'} Map View
-          </button>
-
-          {/* Map View */}
-          {showMapView && (
-            <div className="h-96 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600">
-              <MapView
-                stations={searchResults.map((station) => ({
-                  id: station.id,
-                  name: station.name,
-                  brand: station.brand,
-                  address: station.address,
-                  latitude: station.latitude,
-                  longitude: station.longitude,
-                  prices: [],
-                }))}
-                onStationSelect={(mapStation) => {
-                  const station = searchResults.find((s) => s.id === mapStation.id);
-                  if (station) {
-                    handleStationSelect(station);
-                  }
-                }}
-                userLocation={userLocation || undefined}
-                onViewportChange={handleMapViewportChange}
-              />
-            </div>
-          )}
+          {/* Map View - Always Visible */}
+          <div className="h-96 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600">
+            <MapView
+              stations={searchResults.map((station) => ({
+                id: station.id,
+                name: station.name,
+                brand: station.brand,
+                address: station.address,
+                latitude: station.latitude,
+                longitude: station.longitude,
+                prices: [],
+              }))}
+              onStationSelect={(mapStation) => {
+                const station = searchResults.find((s) => s.id === mapStation.id);
+                if (station) {
+                  handleStationSelect(station);
+                }
+              }}
+              userLocation={userLocation || undefined}
+              onViewportChange={handleMapViewportChange}
+            />
+          </div>
 
           {/* Search Results / Available Stations */}
           <div className="space-y-2">

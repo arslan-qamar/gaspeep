@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '../shell/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -75,13 +75,33 @@ const StationOwnerDashboardPage = () => {
     refetch()
   }
 
+  // Request user geolocation on mount to set initial coordinates
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      console.warn('Geolocation not supported')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentSearchLat(position.coords.latitude)
+        setCurrentSearchLng(position.coords.longitude)
+      },
+      (error) => {
+        console.warn('Geolocation error:', error)
+        // Keep default coordinates if geolocation fails
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    )
+  }, [])
+
   // Load available stations when entering claim view
   useEffect(() => {
     if (currentView === 'claim' && availableStations.length === 0 && !isSearchingStations) {
       const loadStations = async () => {
         setIsSearchingStations(true)
         try {
-          const radius = 25 // km
+          const radius = 50 // km
           const stations = await searchAvailableStations('', currentSearchLat, currentSearchLng, radius)
           setAvailableStations(stations)
         } catch (err) {
@@ -112,7 +132,7 @@ const StationOwnerDashboardPage = () => {
   }
 
   // Handle station refresh when user uses geolocation
-  const handleRefreshStations = async (lat: number, lng: number, zoom: number = 14) => {
+  const handleRefreshStations = useCallback(async (lat: number, lng: number, zoom: number = 14) => {
     setCurrentSearchLat(lat)
     setCurrentSearchLng(lng)
     setIsSearchingStations(true)
@@ -125,7 +145,7 @@ const StationOwnerDashboardPage = () => {
     } finally {
       setIsSearchingStations(false)
     }
-  }
+  }, [])
 
   if (currentView === 'claim') {
     return (
