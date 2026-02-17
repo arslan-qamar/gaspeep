@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"gaspeep/backend/internal/models"
 	"gaspeep/backend/internal/repository"
 )
@@ -125,10 +127,22 @@ func (s *stationOwnerService) SavePhotos(userID, stationID string, photoURLs []s
 }
 
 func (s *stationOwnerService) UnclaimStation(userID, stationID string) error {
-	// TODO: Implement in repository
-	// Set station.owner_id to NULL
-	// Create an audit log of the unclaim action
 	// Verify ownership first
+	station, err := s.stationOwnerRepo.GetStationByID(userID, stationID)
+	if err != nil {
+		return err
+	}
+	if station == nil {
+		return fmt.Errorf("station not found or user is not the owner")
+	}
+
+	// Set station.owner_id to NULL
+	if err := s.stationOwnerRepo.UnclaimStation(userID, stationID); err != nil {
+		return err
+	}
+
+	// TODO: Create an audit log of the unclaim action
+
 	return nil
 }
 

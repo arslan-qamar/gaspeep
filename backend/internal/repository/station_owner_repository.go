@@ -18,5 +18,6 @@ type StationOwnerRepository interface {
 	GetStationWithPrices(userID, stationID string) (map[string]interface{}, error)
 	SearchAvailableStations(userID, query, lat, lon, radius string) ([]map[string]interface{}, error)
 	ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (map[string]interface{}, error)
+	UnclaimStation(userID, stationID string) error
 	GetFuelPricesForOwner(userID string) (map[string]interface{}, error)
 }

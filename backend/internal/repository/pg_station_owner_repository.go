@@ -412,4 +412,30 @@ func (r *PgStationOwnerRepository) GetFuelPricesForOwner(userID string) (map[str
 	}, nil
 }
 
+// UnclaimStation removes the owner claim from a station by setting owner_id to NULL
+func (r *PgStationOwnerRepository) UnclaimStation(userID, stationID string) error {
+	query := `
+		UPDATE stations
+		SET owner_id = NULL
+		WHERE id = $1 AND owner_id IN (
+			SELECT so.id FROM station_owners so WHERE so.user_id = $2
+		)`
+
+	result, err := r.db.Exec(query, stationID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to unclaim station: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("station not found or user is not the owner")
+	}
+
+	return nil
+}
+
 var _ StationOwnerRepository = (*PgStationOwnerRepository)(nil)

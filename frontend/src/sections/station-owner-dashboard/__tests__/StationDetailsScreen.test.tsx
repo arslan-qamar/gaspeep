@@ -16,7 +16,7 @@ describe('StationDetailsScreen', () => {
     broadcasts: sampleData.broadcasts.filter((b) => b.stationId === mockStation.id),
     onSave: jest.fn(),
     onBroadcast: jest.fn(),
-    onUnclaim: jest.fn(),
+    onUnclaim: jest.fn().mockResolvedValue(undefined),
     isLoading: false,
     isSaving: false,
   };
@@ -397,7 +397,7 @@ describe('StationDetailsScreen', () => {
 
     it('should call onUnclaim when confirmed', async () => {
       const user = userEvent.setup();
-      const mockOnUnclaim = jest.fn();
+      const mockOnUnclaim = jest.fn().mockResolvedValue(undefined);
       render(
         <StationDetailsScreen {...defaultProps} onUnclaim={mockOnUnclaim} />
       );
@@ -408,7 +408,9 @@ describe('StationDetailsScreen', () => {
       const confirmButton = screen.getByRole('button', { name: /confirm|unclaim/i });
       await user.click(confirmButton);
 
-      expect(mockOnUnclaim).toHaveBeenCalledWith(mockStation.id);
+      await waitFor(() => {
+        expect(mockOnUnclaim).toHaveBeenCalledWith(mockStation.id);
+      });
     });
   });
 

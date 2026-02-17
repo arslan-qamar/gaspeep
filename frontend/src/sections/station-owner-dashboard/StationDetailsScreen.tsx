@@ -7,7 +7,7 @@ interface StationDetailsScreenProps {
   broadcasts: Broadcast[];
   onSave: (data: StationUpdateFormData) => void;
   onBroadcast: (stationId: string) => void;
-  onUnclaim: (stationId: string) => void;
+  onUnclaim: (stationId: string) => Promise<void>;
   onBack?: () => void;
   isLoading?: boolean;
   isSaving?: boolean;
@@ -35,6 +35,17 @@ const amenityLabels: Record<string, string> = {
   loyaltyProgram: 'Loyalty Program',
 };
 
+// Default operating hours for all days
+const defaultOperatingHours: Record<DayOfWeek, OperatingHours> = {
+  monday: { open: '09:00', close: '17:00', is24Hour: false },
+  tuesday: { open: '09:00', close: '17:00', is24Hour: false },
+  wednesday: { open: '09:00', close: '17:00', is24Hour: false },
+  thursday: { open: '09:00', close: '17:00', is24Hour: false },
+  friday: { open: '09:00', close: '17:00', is24Hour: false },
+  saturday: { open: '09:00', close: '17:00', is24Hour: false },
+  sunday: { open: '09:00', close: '17:00', is24Hour: false },
+};
+
 /**
  * StationDetailsScreen Component
  * View and edit claimed station information, operating hours, amenities, and broadcast history.
@@ -53,6 +64,8 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(initialIsEditing || false);
   const [showUnclaimConfirm, setShowUnclaimConfirm] = useState(false);
+  const [isUnclaiming, setIsUnclaiming] = useState(false);
+  const [unclaimError, setUnclaimError] = useState<string | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
   // Form state
@@ -61,8 +74,11 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
     phone: station.phone,
     website: station.website,
     address: station.address,
-    operatingHours: station.operatingHours,
-    amenities: station.amenities,
+    operatingHours: {
+      ...defaultOperatingHours,
+      ...(station.operatingHours || {}),
+    },
+    amenities: Array.isArray(station.amenities) ? station.amenities : [],
   });
 
   const handleInputChange = (field: 'name' | 'address' | 'phone' | 'website', value: string) => {
@@ -444,7 +460,7 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
         </p>
 
         <div className="space-y-2">
-          {fuelPrices.map((price) => (
+          {Array.isArray(fuelPrices) && fuelPrices.map((price) => (
             <div key={price.fuelTypeId} className="flex justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded">
               <span className="text-slate-700 dark:text-slate-300">
                 {price.fuelTypeName}
@@ -470,7 +486,7 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
           Station Photos
         </h2>
 
-        {station.photos.length === 0 ? (
+        {!station.photos || station.photos.length === 0 ? (
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             No photos yet
           </p>
@@ -565,7 +581,7 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
           Broadcast History
         </h2>
 
-        {broadcasts.length === 0 ? (
+        {!Array.isArray(broadcasts) || broadcasts.length === 0 ? (
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             No broadcasts yet
           </p>
@@ -659,21 +675,39 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
             <p className="text-slate-600 dark:text-slate-400">
               Are you sure you want to unclaim this station? You will lose access to manage broadcasts and station details.
             </p>
+            {unclaimError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-sm text-red-700 dark:text-red-200">
+                {unclaimError}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
-                onClick={() => setShowUnclaimConfirm(false)}
-                className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                onClick={() => {
+                  setShowUnclaimConfirm(false);
+                  setUnclaimError(null);
+                }}
+                disabled={isUnclaiming}
+                className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  onUnclaim(station.id);
-                  setShowUnclaimConfirm(false);
+                onClick={async () => {
+                  setIsUnclaiming(true);
+                  setUnclaimError(null);
+                  try {
+                    await onUnclaim(station.id);
+                    setShowUnclaimConfirm(false);
+                  } catch (err) {
+                    setUnclaimError(err instanceof Error ? err.message : 'Failed to unclaim station');
+                  } finally {
+                    setIsUnclaiming(false);
+                  }
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg transition-colors"
+                disabled={isUnclaiming}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >
-                Unclaim It
+                {isUnclaiming ? '⏳ Unclaiming...' : 'Unclaim It'}
               </button>
             </div>
           </div>

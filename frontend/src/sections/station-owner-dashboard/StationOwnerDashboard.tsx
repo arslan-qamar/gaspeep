@@ -41,7 +41,7 @@ interface StationOwnerDashboardProps {
   onEditBroadcast?: (broadcastId: string) => void;
   onViewBroadcast: (broadcastId: string) => void;
   onStationSave?: (stationId: string, data: StationUpdateFormData) => void;
-  onStationUnclaim?: (stationId: string) => void;
+  onStationUnclaim?: (stationId: string) => Promise<void>;
   onRefresh?: () => void;
   isLoading?: boolean;
 }
@@ -115,8 +115,8 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
           onCreateBroadcast(selectedStation.id);
           setSelectedStationId(null);
         }}
-        onUnclaim={() => {
-          onStationUnclaim?.(selectedStation.id);
+        onUnclaim={async (stationId: string) => {
+          await onStationUnclaim?.(stationId);
           setSelectedStationId(null);
         }}
         onBack={() => setSelectedStationId(null)}

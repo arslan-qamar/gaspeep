@@ -35,14 +35,9 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-50 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 h-16">
       <div className="flex items-center justify-between h-full px-4 max-w-8xl mx-auto">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">         
           <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-50">
-            Gas Peep
+            ⛽ Gas Peep
           </h1>
         </Link>
 

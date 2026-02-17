@@ -47,6 +47,8 @@ const StationOwnerDashboardPage = () => {
   const [dismissedError, setDismissedError] = useState(false)
   const [availableStations, setAvailableStations] = useState<any[]>([])
   const [isSearchingStations, setIsSearchingStations] = useState(false)
+  const [currentSearchLat, setCurrentSearchLat] = useState<number>(-33.8688)
+  const [currentSearchLng, setCurrentSearchLng] = useState<number>(151.2093)
 
   const {
     owner,
@@ -79,13 +81,8 @@ const StationOwnerDashboardPage = () => {
       const loadStations = async () => {
         setIsSearchingStations(true)
         try {
-          // Get user's location (simplified - using defaults for now)
-          // In a real app, you'd use geolocation API
-          const userLat = -33.8688
-          const userLng = 151.2093
-          const radius = 50 // km
-
-          const stations = await searchAvailableStations('', userLat, userLng, radius)
+          const radius = 25 // km
+          const stations = await searchAvailableStations('', currentSearchLat, currentSearchLng, radius)
           setAvailableStations(stations)
         } catch (err) {
           console.error('Failed to load available stations:', err)
@@ -97,7 +94,38 @@ const StationOwnerDashboardPage = () => {
 
       loadStations()
     }
-  }, [currentView])
+  }, [currentView, currentSearchLat, currentSearchLng])
+
+  // Calculate radius based on zoom level (higher zoom = smaller radius)
+  const getRadiusForZoom = (zoom: number): number => {
+    // Zoom level to radius mapping:
+    // Zoom 1-8: 50km (regional view)
+    // Zoom 9-11: 40km
+    // Zoom 12-13: 30km
+    // Zoom 14-15: 20km
+    // Zoom 16+: 10km (street level)
+    if (zoom <= 8) return 50
+    if (zoom <= 11) return 40
+    if (zoom <= 13) return 30
+    if (zoom <= 15) return 20
+    return 10
+  }
+
+  // Handle station refresh when user uses geolocation
+  const handleRefreshStations = async (lat: number, lng: number, zoom: number = 14) => {
+    setCurrentSearchLat(lat)
+    setCurrentSearchLng(lng)
+    setIsSearchingStations(true)
+    try {
+      const radius = getRadiusForZoom(zoom)
+      const stations = await searchAvailableStations('', lat, lng, radius)
+      setAvailableStations(stations)
+    } catch (err) {
+      console.error('Failed to refresh available stations:', err)
+    } finally {
+      setIsSearchingStations(false)
+    }
+  }
 
   if (currentView === 'claim') {
     return (
@@ -106,6 +134,7 @@ const StationOwnerDashboardPage = () => {
         isLoading={isSearchingStations}
         isSubmitting={isClaimingStation}
         claimError={claimStationError?.message || null}
+        onRefreshStations={handleRefreshStations}
         onClaim={async (stationId, verificationMethod, documentUrls) => {
           await claimStation({
             stationId,
@@ -209,9 +238,10 @@ const StationOwnerDashboardPage = () => {
               setSelectedStationId(selectedStationId)
               setCurrentView('create')
             }}
-            onUnclaim={async () => {
+            onUnclaim={async (stationId: string) => {
               try {
-                await unclaimStation(selectedStationId)
+                await unclaimStation(stationId)
+                await refetch()
                 setCurrentView('dashboard')
               } catch (err) {
                 console.error('Failed to unclaim station:', err)
@@ -257,6 +287,7 @@ const StationOwnerDashboardPage = () => {
         onStationUnclaim={async (stationId) => {
           try {
             await unclaimStation(stationId)
+            await refetch()
           } catch (err) {
             console.error('Failed to unclaim station:', err)
           }
