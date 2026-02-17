@@ -33,6 +33,18 @@ func NewBroadcastService(broadcastRepo repository.BroadcastRepository, stationOw
 	return &broadcastService{broadcastRepo: broadcastRepo, stationOwnerRepo: stationOwnerRepo}
 }
 
+// Helper function to get owner ID from user ID
+func (s *broadcastService) getOwnerID(userID string) (string, error) {
+	owner, err := s.stationOwnerRepo.GetByUserID(userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to find station owner: %w", err)
+	}
+	if owner == nil {
+		return "", fmt.Errorf("user does not have a station owner profile")
+	}
+	return owner.ID, nil
+}
+
 func (s *broadcastService) CreateBroadcast(userID string, input repository.CreateBroadcastInput) (*models.Broadcast, error) {
 	log.Printf("[CreateBroadcast] Starting with userID=%s, stationID=%s", userID, input.StationID)
 
@@ -87,21 +99,50 @@ func (s *broadcastService) CreateBroadcast(userID string, input repository.Creat
 	return broadcast, nil
 }
 
-func (s *broadcastService) GetBroadcasts(stationOwnerID string) ([]models.Broadcast, error) {
-	return s.broadcastRepo.GetByOwnerID(stationOwnerID)
+func (s *broadcastService) GetBroadcasts(userID string) ([]models.Broadcast, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return []models.Broadcast{}, nil
+	}
+
+	broadcasts, err := s.broadcastRepo.GetByOwnerID(ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return empty array instead of nil so JSON marshals to [] instead of null
+	if broadcasts == nil {
+		return []models.Broadcast{}, nil
+	}
+
+	return broadcasts, nil
 }
 
-func (s *broadcastService) UpdateBroadcast(id, ownerID string, input repository.UpdateBroadcastInput) (string, error) {
+func (s *broadcastService) UpdateBroadcast(id, userID string, input repository.UpdateBroadcastInput) (string, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return "", err
+	}
 	return s.broadcastRepo.Update(id, ownerID, input)
 }
 
-func (s *broadcastService) GetBroadcast(id, ownerID string) (*models.Broadcast, error) {
+func (s *broadcastService) GetBroadcast(id, userID string) (*models.Broadcast, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	return s.broadcastRepo.GetByID(id, ownerID)
 }
 
-func (s *broadcastService) GetEngagement(id, ownerID string) ([]map[string]interface{}, error) {
+func (s *broadcastService) GetEngagement(id, userID string) ([]map[string]interface{}, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Verify ownership first
-	_, err := s.broadcastRepo.GetByID(id, ownerID)
+	_, err = s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +218,12 @@ func (s *broadcastService) SaveDraft(userID string, input repository.CreateBroad
 	return s.broadcastRepo.GetByID(broadcast.ID, owner.ID)
 }
 
-func (s *broadcastService) SendBroadcast(id, ownerID string) (*models.Broadcast, error) {
+func (s *broadcastService) SendBroadcast(id, userID string) (*models.Broadcast, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the broadcast to update
 	broadcast, err := s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
@@ -211,7 +257,12 @@ func (s *broadcastService) SendBroadcast(id, ownerID string) (*models.Broadcast,
 	return s.broadcastRepo.GetByID(id, ownerID)
 }
 
-func (s *broadcastService) ScheduleBroadcast(id, ownerID string, scheduledFor time.Time) (*models.Broadcast, error) {
+func (s *broadcastService) ScheduleBroadcast(id, userID string, scheduledFor time.Time) (*models.Broadcast, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the broadcast to update
 	broadcast, err := s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
@@ -244,7 +295,12 @@ func (s *broadcastService) ScheduleBroadcast(id, ownerID string, scheduledFor ti
 	return s.broadcastRepo.GetByID(id, ownerID)
 }
 
-func (s *broadcastService) CancelBroadcast(id, ownerID string) error {
+func (s *broadcastService) CancelBroadcast(id, userID string) error {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return err
+	}
+
 	// Get the broadcast to verify it exists and is owned by the user
 	broadcast, err := s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
@@ -281,7 +337,12 @@ func (s *broadcastService) CancelBroadcast(id, ownerID string) error {
 	return nil
 }
 
-func (s *broadcastService) DeleteBroadcast(id, ownerID string) error {
+func (s *broadcastService) DeleteBroadcast(id, userID string) error {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return err
+	}
+
 	// Get the broadcast to verify it exists and is owned by the user
 	broadcast, err := s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
@@ -296,7 +357,12 @@ func (s *broadcastService) DeleteBroadcast(id, ownerID string) error {
 	return s.broadcastRepo.Delete(id, ownerID)
 }
 
-func (s *broadcastService) DuplicateBroadcast(id, ownerID string) (*models.Broadcast, error) {
+func (s *broadcastService) DuplicateBroadcast(id, userID string) (*models.Broadcast, error) {
+	ownerID, err := s.getOwnerID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the original broadcast
 	original, err := s.broadcastRepo.GetByID(id, ownerID)
 	if err != nil {
