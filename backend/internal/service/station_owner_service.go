@@ -102,18 +102,7 @@ func (s *stationOwnerService) GetStationDetails(userID, stationID string) (map[s
 }
 
 func (s *stationOwnerService) SearchAvailableStations(query, lat, lon, radius string) ([]map[string]interface{}, error) {
-	// TODO: Implement search in repository
-	// This should query stations that:
-	// 1. Are not owned by this user (NOT IN owned stations)
-	// 2. Match search query (by name or brand)
-	// 3. Are within the specified radius of lat/lon (using PostGIS ST_DistanceSphere)
-	// SELECT s.* FROM stations s WHERE s.id NOT IN (
-	//   SELECT DISTINCT s.id FROM stations s
-	//   INNER JOIN station_owners so ON so.id = s.owner_id
-	//   WHERE so.user_id = $userID)
-	// AND (s.name ILIKE $query OR s.brand ILIKE $query)
-	// AND ST_DistanceSphere(ST_Point(s.longitude, s.latitude), ST_Point($lon, $lat)) / 1000 <= $radius
-	return []map[string]interface{}{}, nil
+	return s.stationOwnerRepo.SearchAvailableStations("", query, lat, lon, radius)
 }
 
 func (s *stationOwnerService) ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (map[string]interface{}, error) {

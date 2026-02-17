@@ -11,11 +11,6 @@ import {
   StationUpdateFormData,
   FuelPrice,
   BroadcastEngagementMetric,
-  VerificationStatus,
-  BroadcastStatus,
-  PromotionType,
-  DayOfWeek,
-  OperatingHours,
 } from '../sections/station-owner-dashboard/types'
 
 /**

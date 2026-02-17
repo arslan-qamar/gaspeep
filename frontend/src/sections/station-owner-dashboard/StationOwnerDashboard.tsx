@@ -30,10 +30,10 @@ if (typeof document !== 'undefined' && !document.getElementById('station-grid-st
 }
 
 interface StationOwnerDashboardProps {
-  owner: StationOwner;
+  owner: StationOwner | undefined;
   stations: ClaimedStation[];
   broadcasts: Broadcast[];
-  stats: DashboardStats;
+  stats: DashboardStats | undefined;
   fuelTypes?: FuelType[];
   currentFuelPrices?: Record<string, FuelPrice[]>;
   onClaimStation: () => void;
@@ -73,9 +73,9 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
     : [];
   const selectedStationFuelPrices = selectedStationId ? currentFuelPrices[selectedStationId] || [] : [];
 
-  const isVerified = owner.verificationStatus === 'verified';
+  const isVerified = owner?.verificationStatus === 'verified';
   const recentBroadcasts = broadcasts.slice(0, 5);
-  const broadcastsRemaining = owner.broadcastLimit - owner.broadcastsThisWeek;
+  const broadcastsRemaining = owner ? owner.broadcastLimit - owner.broadcastsThisWeek : 0;
 
   // Render skeleton loader for content
   if (isLoading) {
@@ -132,7 +132,7 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Welcome, {owner.businessName}
+              Welcome, {owner?.businessName || 'Station Owner'}
             </h1>
             <div className="flex items-center gap-3">
               <span
@@ -219,10 +219,10 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
 
       {/* Statistics Cards */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard label="Total Stations" value={stats.totalStations} />
-        <StatCard label="Approved Stations" value={stats.verifiedStations} />
-        <StatCard label="Active Broadcasts" value={stats.activeBroadcasts} />
-        <StatCard label="Total Reach (This Month)" value={stats.totalReachThisMonth} />
+        <StatCard label="Total Stations" value={stats?.totalStations ?? 0} />
+        <StatCard label="Approved Stations" value={stats?.verifiedStations ?? 0} />
+        <StatCard label="Active Broadcasts" value={stats?.activeBroadcasts ?? 0} />
+        <StatCard label="Total Reach (This Month)" value={stats?.totalReachThisMonth ?? 0} />
       </section>
 
       {/* Recent Broadcasts Section */}
@@ -272,7 +272,7 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
       {/* Broadcast Limit Info */}
       <section className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4" data-testid="broadcast-limit-section">
         <p className="text-slate-700 dark:text-slate-300">
-          {owner.broadcastsThisWeek} of {owner.broadcastLimit} broadcasts remaining this week
+          {owner?.broadcastsThisWeek ?? 0} of {owner?.broadcastLimit ?? 0} broadcasts remaining this week
           {broadcastsRemaining <= 3 && (
             <span className="ml-2 text-orange-600 dark:text-orange-400">⚠️ Nearing limit</span>
           )}

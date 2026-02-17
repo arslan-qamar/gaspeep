@@ -131,7 +131,33 @@ func (h *StationOwnerHandler) SearchStations(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, stations)
+	// Transform repository response to match frontend expectations
+	type availableStationResponse struct {
+		ID        string  `json:"id"`
+		Name      string  `json:"name"`
+		Brand     string  `json:"brand"`
+		Address   string  `json:"address"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Distance  float64 `json:"distance"`
+		ClaimStatus string `json:"claimStatus"`
+	}
+
+	var response []availableStationResponse
+	for _, station := range stations {
+		response = append(response, availableStationResponse{
+			ID:        station["id"].(string),
+			Name:      station["name"].(string),
+			Brand:     station["brand"].(string),
+			Address:   station["address"].(string),
+			Latitude:  station["latitude"].(float64),
+			Longitude: station["longitude"].(float64),
+			Distance:  station["distanceKm"].(float64),
+			ClaimStatus: "available",
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ClaimStation handles POST /api/station-owners/claim-station

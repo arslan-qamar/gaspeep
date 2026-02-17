@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '../shell/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -35,20 +35,73 @@ import {
   StationDetailsScreen,
 } from '../sections/station-owner-dashboard'
 
-// Sample data for station owner dashboard
-import sampleData from '../__tests__/fixtures/station-owner-dashboard-sample-data.json'
+import { useStationOwner } from '../hooks/useStationOwner'
+import { ErrorBanner } from '../sections/station-owner-dashboard/ErrorBanner'
+import { searchAvailableStations } from '../services/stationOwnerService'
 
-// Dashboard page wrapper with sample data
+// Dashboard page wrapper with API integration
 const StationOwnerDashboardPage = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'claim' | 'create' | 'details' | 'station-details'>('dashboard')
   const [selectedBroadcastId, setSelectedBroadcastId] = useState<string | null>(null)
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
+  const [dismissedError, setDismissedError] = useState(false)
+  const [availableStations, setAvailableStations] = useState<any[]>([])
+  const [isSearchingStations, setIsSearchingStations] = useState(false)
+
+  const {
+    owner,
+    stations,
+    broadcasts,
+    stats,
+    fuelTypes,
+    currentFuelPrices,
+    isLoading,
+    error,
+    refetch,
+    unclaimStation,
+    updateStation,
+    createBroadcast,
+    deleteBroadcast,
+    duplicateBroadcast,
+  } = useStationOwner()
+
+  const handleRetry = () => {
+    setDismissedError(false)
+    refetch()
+  }
+
+  // Load available stations when entering claim view
+  useEffect(() => {
+    if (currentView === 'claim' && availableStations.length === 0 && !isSearchingStations) {
+      const loadStations = async () => {
+        setIsSearchingStations(true)
+        try {
+          // Get user's location (simplified - using defaults for now)
+          // In a real app, you'd use geolocation API
+          const userLat = -33.8688
+          const userLng = 151.2093
+          const radius = 50 // km
+
+          const stations = await searchAvailableStations('', userLat, userLng, radius)
+          setAvailableStations(stations)
+        } catch (err) {
+          console.error('Failed to load available stations:', err)
+          setAvailableStations([])
+        } finally {
+          setIsSearchingStations(false)
+        }
+      }
+
+      loadStations()
+    }
+  }, [currentView])
 
   if (currentView === 'claim') {
     return (
       <ClaimStationScreen
-        availableStations={sampleData.claimedStations}
-        onStationClaimed={(stationId) => {
+        availableStations={availableStations}
+        isLoading={isSearchingStations}
+        onStationClaimed={(_stationId) => {
           setCurrentView('dashboard')
         }}
         onCancel={() => setCurrentView('dashboard')}
@@ -59,20 +112,25 @@ const StationOwnerDashboardPage = () => {
   if (currentView === 'create') {
     return (
       <CreateBroadcastScreen
-        stations={sampleData.claimedStations}
-        fuelTypes={sampleData.fuelTypes}
+        stations={stations}
+        fuelTypes={fuelTypes}
         selectedStationId={selectedStationId || undefined}
-        onSubmit={(data) => {
-          setCurrentView('dashboard')
+        onSubmit={async (data) => {
+          try {
+            await createBroadcast(data)
+            setCurrentView('dashboard')
+          } catch (_err) {
+            console.error('Failed to create broadcast:', _err)
+          }
         }}
         onCancel={() => setCurrentView('dashboard')}
-        owner={sampleData.stationOwner}
+        owner={owner}
       />
     )
   }
 
   if (currentView === 'details' && selectedBroadcastId) {
-    const broadcast = sampleData.broadcasts.find(b => b.id === selectedBroadcastId)
+    const broadcast = broadcasts.find(b => b.id === selectedBroadcastId)
     if (broadcast) {
       return (
         <div>
@@ -88,13 +146,22 @@ const StationOwnerDashboardPage = () => {
               setSelectedBroadcastId(id)
               setCurrentView('create')
             }}
-            onDuplicate={(id) => {
-              setCurrentView('create')
+            onDuplicate={async (id) => {
+              try {
+                await duplicateBroadcast(id)
+              } catch (err) {
+                console.error('Failed to duplicate broadcast:', err)
+              }
             }}
-            onDelete={(id) => {
-              setCurrentView('dashboard')
+            onDelete={async (id) => {
+              try {
+                await deleteBroadcast(id)
+                setCurrentView('dashboard')
+              } catch (err) {
+                console.error('Failed to delete broadcast:', err)
+              }
             }}
-            onCancel={(id) => {
+            onCancel={() => {
               setCurrentView('dashboard')
             }}
           />
@@ -104,9 +171,9 @@ const StationOwnerDashboardPage = () => {
   }
 
   if (currentView === 'station-details' && selectedStationId) {
-    const station = sampleData.claimedStations.find(s => s.id === selectedStationId)
+    const station = stations.find(s => s.id === selectedStationId)
     if (station) {
-      const fuelPrices = (sampleData.currentFuelPrices as Record<string, any>)[selectedStationId] || []
+      const fuelPrices = currentFuelPrices[selectedStationId] || []
       return (
         <div>
           <button
@@ -118,10 +185,26 @@ const StationOwnerDashboardPage = () => {
           <StationDetailsScreen
             station={station}
             fuelPrices={fuelPrices}
-            broadcasts={sampleData.broadcasts.filter(b => b.stationId === selectedStationId)}
-            onSave={(data) => {}}
-            onBroadcast={() => setCurrentView('create')}
-            onUnclaim={() => setCurrentView('dashboard')}
+            broadcasts={broadcasts.filter(b => b.stationId === selectedStationId)}
+            onSave={async (data) => {
+              try {
+                await updateStation({ stationId: selectedStationId, data })
+              } catch (err) {
+                console.error('Failed to update station:', err)
+              }
+            }}
+            onBroadcast={() => {
+              setSelectedStationId(selectedStationId)
+              setCurrentView('create')
+            }}
+            onUnclaim={async () => {
+              try {
+                await unclaimStation(selectedStationId)
+                setCurrentView('dashboard')
+              } catch (err) {
+                console.error('Failed to unclaim station:', err)
+              }
+            }}
           />
         </div>
       )
@@ -129,22 +212,46 @@ const StationOwnerDashboardPage = () => {
   }
 
   return (
-    <StationOwnerDashboard
-      owner={sampleData.stationOwner}
-      stations={sampleData.claimedStations}
-      broadcasts={sampleData.broadcasts}
-      stats={sampleData.dashboardStats}
-      fuelTypes={sampleData.fuelTypes}
-      onClaimStation={() => setCurrentView('claim')}
-      onCreateBroadcast={(stationId) => {
-        setSelectedStationId(stationId || null)
-        setCurrentView('create')
-      }}
-      onViewBroadcast={(broadcastId) => {
-        setSelectedBroadcastId(broadcastId)
-        setCurrentView('details')
-      }}
-    />
+    <>
+      <ErrorBanner
+        error={dismissedError ? null : error}
+        onRetry={handleRetry}
+        onDismiss={() => setDismissedError(true)}
+      />
+      <StationOwnerDashboard
+        owner={owner}
+        stations={stations}
+        broadcasts={broadcasts}
+        stats={stats}
+        fuelTypes={fuelTypes}
+        currentFuelPrices={currentFuelPrices}
+        isLoading={isLoading}
+        onClaimStation={() => setCurrentView('claim')}
+        onCreateBroadcast={(stationId) => {
+          setSelectedStationId(stationId || null)
+          setCurrentView('create')
+        }}
+        onViewBroadcast={(broadcastId) => {
+          setSelectedBroadcastId(broadcastId)
+          setCurrentView('details')
+        }}
+        onStationSave={async (stationId, data) => {
+          try {
+            await updateStation({ stationId, data })
+          } catch (err) {
+            console.error('Failed to update station:', err)
+          }
+        }}
+        onStationUnclaim={async (stationId) => {
+          try {
+            await unclaimStation(stationId)
+          } catch (err) {
+            console.error('Failed to unclaim station:', err)
+          }
+        }}
+        onRefresh={refetch}
+      />
+    </>
   )
 }
 

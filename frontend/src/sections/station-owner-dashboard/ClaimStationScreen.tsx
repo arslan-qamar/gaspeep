@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { AvailableStation, ClaimStatus, VerificationMethod } from './types';
+import { AvailableStation, ClaimStatus, VerificationMethod, ClaimedStation } from './types';
 
 interface ClaimStationScreenProps {
-  availableStations: AvailableStation[];
+  availableStations: AvailableStation[] | ClaimedStation[];
   onStationClaimed: (stationId: string) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  isLoading?: boolean;
 }
 
 type ClaimStep = 'find' | 'verify' | 'confirm';
@@ -30,6 +31,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
   onStationClaimed,
   onCancel,
   isSubmitting,
+  isLoading,
 }) => {
   const [currentStep, setCurrentStep] = useState<ClaimStep>('find');
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +43,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
   const [verificationRequestId, setVerificationRequestId] = useState('');
   const [isUploadingFile, setIsUploadingFile] = useState(false);
 
-  // Filter stations based on search
+  // Filter stations based on search (show all if no search query)
   const searchResults = searchQuery.trim()
     ? availableStations.filter(
         (station) =>
@@ -49,7 +51,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
           station.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
           station.brand.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : [];
+    : availableStations;
 
   const handleStationSelect = (station: AvailableStation) => {
     if (station.claimStatus === 'claimed') {
@@ -171,27 +173,31 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
             🗺️ Map View
           </button>
 
-          {/* Search Results */}
-          {searchQuery.trim() && (
-            <div className="space-y-2">
-              {searchResults.length === 0 ? (
-                <div className="p-4 text-center text-slate-600 dark:text-slate-400">
-                  <p className="mb-3">Station not found?</p>
+          {/* Search Results / Available Stations */}
+          <div className="space-y-2">
+            {isLoading ? (
+              <div className="p-4 text-center text-slate-600 dark:text-slate-400">
+                <p>Loading available stations...</p>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="p-4 text-center text-slate-600 dark:text-slate-400">
+                <p className="mb-3">{searchQuery.trim() ? 'Station not found?' : 'No stations available'}</p>
+                {searchQuery.trim() && (
                   <button className="p-4 md:p-6 text-blue-600 dark:text-blue-400 hover:underline">
                     Submit a request to add it
                   </button>
-                </div>
-              ) : (
-                searchResults.map((station) => (
-                  <StationSearchResult
-                    key={station.id}
-                    station={station}
-                    onSelect={handleStationSelect}
-                  />
-                ))
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            ) : (
+              searchResults.map((station) => (
+                <StationSearchResult
+                  key={station.id}
+                  station={station}
+                  onSelect={handleStationSelect}
+                />
+              ))
+            )}
+          </div>
 
           {/* Cancel Button */}
           <button
