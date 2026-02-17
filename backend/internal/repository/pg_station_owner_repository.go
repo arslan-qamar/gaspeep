@@ -46,10 +46,12 @@ func (r *PgStationOwnerRepository) CreateVerificationRequest(userID string, inpu
 
 func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]map[string]interface{}, error) {
 	query := `
-		SELECT s.id, s.name, s.brand, s.address, s.latitude, s.longitude, s.operating_hours, s.amenities, s.last_verified_at
+		SELECT s.id, s.name, s.brand, s.address, s.latitude, s.longitude, s.operating_hours, s.amenities, s.last_verified_at, cv.verification_status, cv.verified_at
 		FROM stations s
 		INNER JOIN station_owners so ON so.id = s.owner_id
-		WHERE so.user_id = $1`
+		LEFT JOIN claim_verifications cv ON cv.station_id = s.id AND cv.station_owner_id = so.id
+		WHERE so.user_id = $1
+		ORDER BY s.created_at DESC`
 
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
@@ -61,25 +63,35 @@ func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]ma
 	for rows.Next() {
 		var (
 			id, name, brand, address, operatingHours string
-			latitude, longitude                      float64
-			amenities                                string
-			lastVerifiedAt                           time.Time
+			verificationStatus                        *string
+			latitude, longitude                       float64
+			amenities                                 string
+			lastVerifiedAt                            time.Time
+			verifiedAt                                *time.Time
 		)
 
-		if err := rows.Scan(&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &amenities, &lastVerifiedAt); err != nil {
+		if err := rows.Scan(&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &amenities, &lastVerifiedAt, &verificationStatus, &verifiedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan station: %w", err)
 		}
 
+		// Default to unverified if no claim verification exists
+		status := "unverified"
+		if verificationStatus != nil {
+			status = *verificationStatus
+		}
+
 		station := map[string]interface{}{
-			"id":             id,
-			"name":           name,
-			"brand":          brand,
-			"address":        address,
-			"latitude":       latitude,
-			"longitude":      longitude,
-			"operatingHours": operatingHours,
-			"amenities":      amenities,
-			"lastVerifiedAt": lastVerifiedAt,
+			"id":                 id,
+			"name":               name,
+			"brand":              brand,
+			"address":            address,
+			"latitude":           latitude,
+			"longitude":          longitude,
+			"operatingHours":     operatingHours,
+			"amenities":          amenities,
+			"lastVerifiedAt":     lastVerifiedAt,
+			"verificationStatus": status,
+			"verifiedAt":         verifiedAt,
 		}
 		stations = append(stations, station)
 	}
@@ -117,20 +129,23 @@ func (r *PgStationOwnerRepository) GetByUserID(userID string) (*models.StationOw
 
 func (r *PgStationOwnerRepository) GetStationByID(userID, stationID string) (map[string]interface{}, error) {
 	query := `
-		SELECT s.id, s.name, s.brand, s.address, s.latitude, s.longitude, s.operating_hours, s.amenities, s.last_verified_at
+		SELECT s.id, s.name, s.brand, s.address, s.latitude, s.longitude, s.operating_hours, s.amenities, s.last_verified_at, cv.verification_status, cv.verified_at
 		FROM stations s
 		INNER JOIN station_owners so ON so.id = s.owner_id
+		LEFT JOIN claim_verifications cv ON cv.station_id = s.id AND cv.station_owner_id = so.id
 		WHERE so.user_id = $1 AND s.id = $2`
 
 	var (
 		id, name, brand, address, operatingHours string
-		latitude, longitude                      float64
-		amenities                                string
-		lastVerifiedAt                           time.Time
+		verificationStatus                        *string
+		latitude, longitude                       float64
+		amenities                                 string
+		lastVerifiedAt                            time.Time
+		verifiedAt                                *time.Time
 	)
 
 	err := r.db.QueryRow(query, userID, stationID).Scan(
-		&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &amenities, &lastVerifiedAt,
+		&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &amenities, &lastVerifiedAt, &verificationStatus, &verifiedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -139,16 +154,24 @@ func (r *PgStationOwnerRepository) GetStationByID(userID, stationID string) (map
 		return nil, fmt.Errorf("failed to query station: %w", err)
 	}
 
+	// Default to unverified if no claim verification exists
+	status := "unverified"
+	if verificationStatus != nil {
+		status = *verificationStatus
+	}
+
 	station := map[string]interface{}{
-		"id":             id,
-		"name":           name,
-		"brand":          brand,
-		"address":        address,
-		"latitude":       latitude,
-		"longitude":      longitude,
-		"operatingHours": operatingHours,
-		"amenities":      amenities,
-		"lastVerifiedAt": lastVerifiedAt,
+		"id":                 id,
+		"name":               name,
+		"brand":              brand,
+		"address":            address,
+		"latitude":           latitude,
+		"longitude":          longitude,
+		"operatingHours":     operatingHours,
+		"amenities":          amenities,
+		"lastVerifiedAt":     lastVerifiedAt,
+		"verificationStatus": status,
+		"verifiedAt":         verifiedAt,
 	}
 
 	return station, nil

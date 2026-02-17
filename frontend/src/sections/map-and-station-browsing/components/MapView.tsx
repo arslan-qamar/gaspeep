@@ -4,6 +4,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
 import { Loader2 } from 'lucide-react';
 
+const getBrandIconUrl = (brand: string | undefined): string | null => {
+  if (!brand) return null;
+  return `/icons-svg/${brand}.svg`;
+};
+
 interface MapViewProps {
   stations: Station[];
   onStationSelect: (station: Station) => void;
@@ -148,17 +153,37 @@ export const MapView: React.FC<MapViewProps> = ({
             latitude={station.latitude}
             onClick={() => handleMarkerClick(station)}
           >
-            <button
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all cursor-pointer ${
-                selectedStationId === station.id
-                  ? 'bg-blue-600 shadow-lg scale-110'
-                  : 'bg-blue-500 hover:bg-blue-600'
-              }`}
-            >
-              {Array.isArray(station.prices) && station.prices.length > 0
-                ? `$${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}`
-                : '?'}
-            </button>
+            <div className="relative">
+              {/* Brand Icon */}
+              <button
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all cursor-pointer shadow-md border-2 border-white ${
+                  selectedStationId === station.id
+                    ? 'scale-125 ring-2 ring-blue-500'
+                    : 'hover:scale-110'
+                }`}
+
+                title={station.brand || 'Gas Station'}
+              >
+                {getBrandIconUrl(station.brand) ? (
+                  <img
+                    src={getBrandIconUrl(station.brand)!}
+                    alt={station.brand || 'Gas Station'}
+                    className="w-8 h-8"
+                  />
+                ) : (
+                  <span>⛽</span>
+                )}
+              </button>
+              {/* Price Badge */}
+              {Array.isArray(station.prices) && station.prices.length > 0 && (
+                <div
+                  className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
+                  title="Lowest fuel price"
+                >
+                  ${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}
+                </div>
+              )}
+            </div>
           </Marker>
         ))}
 
