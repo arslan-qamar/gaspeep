@@ -106,14 +106,7 @@ func (s *stationOwnerService) SearchAvailableStations(query, lat, lon, radius st
 }
 
 func (s *stationOwnerService) ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (map[string]interface{}, error) {
-	// TODO: Implement in repository
-	// This should:
-	// 1. Get or create station_owner record for user
-	// 2. Update station.owner_id to point to the station_owner
-	// 3. Create a claim_verification record with the method and documents
-	// 4. Set station verification_status to "pending"
-	// 5. Return the claim details
-	return map[string]interface{}{}, nil
+	return s.stationOwnerRepo.ClaimStation(userID, stationID, verificationMethod, documentUrls, phoneNumber, email)
 }
 
 func (s *stationOwnerService) UpdateStation(userID, stationID string, data interface{}) (map[string]interface{}, error) {

@@ -258,6 +258,105 @@ func (r *PgStationOwnerRepository) SearchAvailableStations(userID, query, lat, l
 	return stations, nil
 }
 
+func (r *PgStationOwnerRepository) ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (map[string]interface{}, error) {
+	// Start transaction
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 1. Get or create station_owner record for user
+	var ownerID string
+	ownerQuery := `SELECT id FROM station_owners WHERE user_id = $1 LIMIT 1`
+	err = tx.QueryRow(ownerQuery, userID).Scan(&ownerID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Create new station owner
+			ownerID = uuid.New().String()
+			createOwnerQuery := `
+				INSERT INTO station_owners (id, user_id, business_name, verification_status, created_at)
+				VALUES ($1, $2, '', 'unverified', NOW())
+				RETURNING id`
+			err = tx.QueryRow(createOwnerQuery, ownerID, userID).Scan(&ownerID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create station owner: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to get station owner: %w", err)
+		}
+	}
+
+	// 2. Update station.owner_id and set verification_status to pending
+	updateStationQuery := `
+		UPDATE stations
+		SET owner_id = $1, verification_status = 'pending'
+		WHERE id = $2
+		RETURNING id, name, address`
+
+	var stationName, address string
+	err = tx.QueryRow(updateStationQuery, ownerID, stationID).Scan(&stationID, &stationName, &address)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("station not found")
+		}
+		return nil, fmt.Errorf("failed to update station: %w", err)
+	}
+
+	// 3. Create claim_verification record
+	verificationID := uuid.New().String()
+
+	// Convert document URLs to JSON array format if provided
+	var documentsJSON *string
+	if len(documentUrls) > 0 {
+		// Store as JSON array
+		docs := "["
+		for i, url := range documentUrls {
+			if i > 0 {
+				docs += ","
+			}
+			// Simple JSON encoding of URL string
+			docs += "\"" + url + "\""
+		}
+		docs += "]"
+		documentsJSON = &docs
+	}
+
+	createVerificationQuery := `
+		INSERT INTO claim_verifications (
+			id, station_id, station_owner_id, verification_method, verification_documents,
+			phone_number, email, verification_status
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+		RETURNING id, verification_status, created_at`
+
+	var verificationStatus string
+	var createdAt time.Time
+	err = tx.QueryRow(
+		createVerificationQuery,
+		verificationID, stationID, ownerID,
+		verificationMethod, documentsJSON,
+		phoneNumber, email,
+	).Scan(&verificationID, &verificationStatus, &createdAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create verification request: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return map[string]interface{}{
+		"id":                   verificationID,
+		"stationId":            stationID,
+		"stationName":          stationName,
+		"ownerId":              ownerID,
+		"verificationMethod":   verificationMethod,
+		"verificationStatus":   verificationStatus,
+		"createdAt":            createdAt,
+	}, nil
+}
+
 func (r *PgStationOwnerRepository) GetFuelPricesForOwner(userID string) (map[string]interface{}, error) {
 	// Get all fuel prices for all stations owned by this user
 	query := `

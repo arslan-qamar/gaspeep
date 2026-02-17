@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { AvailableStation, ClaimStatus, VerificationMethod, ClaimedStation } from './types';
+import { AvailableStation, VerificationMethod } from './types';
 
 interface ClaimStationScreenProps {
-  availableStations: AvailableStation[] | ClaimedStation[];
+  availableStations: AvailableStation[];
   onStationClaimed: (stationId: string) => void;
   onCancel: () => void;
+  onClaim?: (stationId: string, verificationMethod: VerificationMethod, documentUrls: string[]) => Promise<void>;
   isSubmitting?: boolean;
   isLoading?: boolean;
+  claimError?: string | null;
 }
 
 type ClaimStep = 'find' | 'verify' | 'confirm';
@@ -30,8 +32,10 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
   availableStations,
   onStationClaimed,
   onCancel,
+  onClaim,
   isSubmitting,
   isLoading,
+  claimError,
 }) => {
   const [currentStep, setCurrentStep] = useState<ClaimStep>('find');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +46,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
   });
   const [verificationRequestId, setVerificationRequestId] = useState('');
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [claimErrorState, setClaimErrorState] = useState<string | null>(null);
 
   // Filter stations based on search (show all if no search query)
   const searchResults = searchQuery.trim()
@@ -85,16 +90,39 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
       return;
     }
 
-    // Simulate verification submission
     if (isSubmitting) return;
 
-    // Generate a mock request ID
-    const requestId = `VR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setVerificationRequestId(requestId);
-    setCurrentStep('confirm');
+    setClaimErrorState(null);
 
-    // Call the callback to indicate successful claim
-    onStationClaimed(selectedStation.id);
+    try {
+      // Convert files to data URLs for submission
+      const documentUrls: string[] = [];
+      for (const file of verificationState.documents) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        documentUrls.push(dataUrl);
+      }
+
+      // Call the claim mutation
+      if (onClaim) {
+        await onClaim(selectedStation.id, verificationState.method || 'document', documentUrls);
+      }
+
+      // Generate request ID and show confirmation
+      const requestId = `VR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setVerificationRequestId(requestId);
+      setCurrentStep('confirm');
+
+      // Call the callback to indicate successful claim
+      onStationClaimed(selectedStation.id);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit claim. Please try again.';
+      setClaimErrorState(errorMessage);
+    }
   };
 
   const handleReturnToDashboard = () => {
@@ -126,7 +154,7 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
 
       {/* Step Indicator */}
       <div className="flex gap-2">
-        {steps.map((step, idx) => (
+        {steps.map((step) => (
           <div
             key={step.number}
             className={`flex-1 h-2 rounded-full transition-colors ${
@@ -212,6 +240,15 @@ export const ClaimStationScreen: React.FC<ClaimStationScreenProps> = ({
       {/* Step 2: Verify Ownership */}
       {currentStep === 'verify' && selectedStation && (
         <div className="space-y-4">
+          {/* Error Message */}
+          {(claimErrorState || claimError) && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                {claimErrorState || claimError}
+              </p>
+            </div>
+          )}
+
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
             Verify Ownership
           </h2>

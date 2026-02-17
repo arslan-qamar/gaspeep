@@ -58,6 +58,9 @@ const StationOwnerDashboardPage = () => {
     isLoading,
     error,
     refetch,
+    claimStation,
+    isClaimingStation,
+    claimStationError,
     unclaimStation,
     updateStation,
     createBroadcast,
@@ -101,6 +104,15 @@ const StationOwnerDashboardPage = () => {
       <ClaimStationScreen
         availableStations={availableStations}
         isLoading={isSearchingStations}
+        isSubmitting={isClaimingStation}
+        claimError={claimStationError?.message || null}
+        onClaim={async (stationId, verificationMethod, documentUrls) => {
+          await claimStation({
+            stationId,
+            verificationMethod,
+            documentUrls,
+          })
+        }}
         onStationClaimed={(_stationId) => {
           setCurrentView('dashboard')
         }}
