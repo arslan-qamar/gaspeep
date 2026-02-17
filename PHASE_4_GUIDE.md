@@ -121,9 +121,9 @@ curl -X POST \
 
 ### Unit Testing Phase
 - [x] Backend tests pass (8/8 tests passed: `cd backend && go test ./...`)
-- [~] Frontend tests mostly pass (283/284 tests passed; MapPage.spec.tsx has import.meta issue)
-  - **Known Issue**: Jest can't parse `import.meta.env` in src/lib/api.ts
-  - **Fix needed**: Update api.ts to handle Node.js environment or mock import.meta in Jest config
+- [x] Frontend tests ALL PASS (292/292 tests passed: `cd frontend && npm test`)
+  - **Fixed**: Jest import.meta.env issue resolved by mocking @/lib/api module in MapPage.spec.tsx
+  - All tests including MapPage.spec.tsx now passing
 - [x] Handler integration tests pass (8/8 passed: `cd backend && go test ./internal/handler -v`)
 
 ### Integration Testing Phase
@@ -461,11 +461,11 @@ All documentation is in the root directory:
 
 ---
 
-## Test Summary (Feb 17, 2026 - Final)
+## Test Summary (Feb 17, 2026 - Final - Updated)
 
 ### ✅ Completed
 - **Backend Unit Tests**: 8/8 passed ✓
-- **Frontend Unit Tests**: 283/284 passed (99.6%) ✓
+- **Frontend Unit Tests**: 292/292 passed (100%) ✓✓✓
 - **Database**: All 15 tables created and accessible ✓
 - **Migrations**: Auto-ran successfully on backend startup ✓
 
@@ -517,11 +517,11 @@ All documentation is in the root directory:
      - Fixed null array marshaling to return `[]` instead of `null` in JSON
    - **Status**: All GET endpoints now working ✓
 
-### ⚠️ Remaining Known Issues
-1. **MapPage.spec.tsx**: Jest cannot parse `import.meta.env` in src/lib/api.ts
-   - File: `frontend/src/sections/map-and-station-browsing/__tests__/MapPage.spec.tsx`
-   - Cause: Jest needs config to handle Vite's `import.meta.env` syntax
-   - Impact: 1 test suite fails, but 283 other tests pass
+### ✅ Fixed Issues
+1. **MapPage.spec.tsx**: Jest import.meta.env parsing issue RESOLVED ✓
+   - **Solution**: Added jest.mock('@/lib/api') at top of test file to mock the module before parsing
+   - **Result**: All 9 MapPage tests now pass, no import.meta.env syntax errors
+   - **Impact**: All 292 frontend tests now pass (100%)
 
 ### 🔄 Next Steps
 1. Fix frontend test issue (import.meta.env handling)

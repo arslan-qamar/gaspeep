@@ -1,5 +1,17 @@
 import '@testing-library/jest-dom';
 
+// Mock import.meta.env for Jest (Vite uses import.meta.env at runtime)
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_API_URL: process.env.VITE_API_URL || '',
+      },
+    },
+  },
+  writable: true,
+});
+
 // Mock react-map-gl/maplibre to avoid ESM dynamic import issues in Jest and
 // to prevent test noise from the real MapLibre implementation.
 jest.mock('react-map-gl/maplibre', () => {
