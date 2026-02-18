@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 
 // Mock import.meta.env for Jest (Vite uses import.meta.env at runtime)
+// Note: React is not imported here as we use the automatic JSX runtime
 Object.defineProperty(globalThis, 'import', {
   value: {
     meta: {
@@ -17,9 +18,10 @@ Object.defineProperty(globalThis, 'import', {
 jest.mock('react-map-gl/maplibre', () => {
   const React = require('react');
 
-  const MapMock: React.FC<any> = ({ children }) => {
-    return React.createElement('div', { 'data-testid': 'map-mock' }, children);
-  };
+  const MapMock = React.forwardRef(({ children }: { children: any }, ref: any) => {
+    return React.createElement('div', { 'data-testid': 'map-mock', ref }, children);
+  });
+  MapMock.displayName = 'MapMock';
 
   const Marker: React.FC<any> = ({ children }) => {
     return React.createElement('div', { 'data-testid': 'marker-mock' }, children);
@@ -34,6 +36,8 @@ jest.mock('react-map-gl/maplibre', () => {
   const FullscreenControl = () => React.createElement('div', { 'data-testid': 'fullscreen-mock' });
   const GeolocateControl = () => React.createElement('div', { 'data-testid': 'geolocate-mock' });
   const ScaleControl = () => React.createElement('div', { 'data-testid': 'scale-mock' });
+  const Source: React.FC<any> = ({ children }) => React.createElement('div', { 'data-testid': 'source-mock' }, children);
+  const Layer: React.FC<any> = () => React.createElement('div', { 'data-testid': 'layer-mock' });
 
   return {
     __esModule: true,
@@ -45,6 +49,8 @@ jest.mock('react-map-gl/maplibre', () => {
     FullscreenControl,
     GeolocateControl,
     ScaleControl,
+    Source,
+    Layer,
   };
 });
 

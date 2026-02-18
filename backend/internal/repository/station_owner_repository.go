@@ -9,11 +9,20 @@ type CreateOwnerVerificationInput struct {
 	ContactInfo           string
 }
 
+// UpdateOwnerProfileInput holds the fields that may be updated via PATCH /profile.
+type UpdateOwnerProfileInput struct {
+	BusinessName string
+	ContactName  string
+	ContactEmail string
+	ContactPhone string
+}
+
 // StationOwnerRepository defines data-access operations for station owners.
 type StationOwnerRepository interface {
 	CreateVerificationRequest(userID string, input CreateOwnerVerificationInput) (*models.StationOwner, error)
 	GetStationsByOwnerUserID(userID string) ([]map[string]interface{}, error)
 	GetByUserID(userID string) (*models.StationOwner, error)
+	UpdateProfile(userID string, input UpdateOwnerProfileInput) (*models.StationOwner, error)
 	GetStationByID(userID, stationID string) (map[string]interface{}, error)
 	GetStationWithPrices(userID, stationID string) (map[string]interface{}, error)
 	SearchAvailableStations(userID, query, lat, lon, radius string) ([]map[string]interface{}, error)

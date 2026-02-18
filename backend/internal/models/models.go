@@ -105,6 +105,10 @@ type StationOwner struct {
 	VerificationStatus    string     `json:"verificationStatus"`
 	VerificationDocuments []string   `json:"verificationDocuments"`
 	ContactInfo           *string    `json:"contactInfo"`
+	ContactName           *string    `json:"contactName"`
+	ContactEmail          *string    `json:"contactEmail"`
+	ContactPhone          *string    `json:"contactPhone"`
+	Plan                  string     `json:"plan"`
 	VerifiedAt            *time.Time `json:"verifiedAt"`
 	CreatedAt             time.Time  `json:"createdAt"`
 }

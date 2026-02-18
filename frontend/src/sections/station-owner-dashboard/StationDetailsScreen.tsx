@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ClaimedStation, FuelPrice, Broadcast, StationUpdateFormData, DayOfWeek, OperatingHours } from './types';
+import { StationLocationMap } from './StationLocationMap';
 
 interface StationDetailsScreenProps {
   station: ClaimedStation;
@@ -212,6 +213,24 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
         )}
       </div>
 
+      {/* Pending Approval Banner */}
+      {station.verificationStatus === 'pending' && (
+        <div
+          data-testid="pending-approval-banner"
+          className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4"
+        >
+          <span className="text-yellow-500 text-lg leading-none mt-0.5" aria-hidden="true">⏳</span>
+          <div>
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+              Ownership approval pending
+            </p>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-0.5">
+              Full editing access will be available once your station ownership is approved.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Station Information Card */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 space-y-4">
         {isEditing ? (
@@ -310,10 +329,12 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
               </p>
             </div>
 
-            <div data-testid="location-map" className="w-full h-48 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center">
-              <span className="text-slate-500 dark:text-slate-400">
-                Map visualization for {station.latitude}, {station.longitude}
-              </span>
+            <div data-testid="location-map" className="w-full h-48 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+              <StationLocationMap
+                latitude={station.latitude}
+                longitude={station.longitude}
+                stationName={station.name}
+              />
             </div>
           </>
         )}
@@ -610,11 +631,16 @@ export const StationDetailsScreen: React.FC<StationDetailsScreenProps> = ({
           <>
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || station.verificationStatus === 'pending'}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             >
               {isSaving ? '⏳ ' : ''}Save Changes
             </button>
+            {station.verificationStatus === 'pending' && (
+              <span className="text-xs text-yellow-700 dark:text-yellow-300">
+                Awaiting approval
+              </span>
+            )}
             <button
               onClick={() => setIsEditing(false)}
               disabled={isSaving}

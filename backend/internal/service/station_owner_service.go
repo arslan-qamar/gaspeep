@@ -12,6 +12,7 @@ type StationOwnerService interface {
 	// Profile & Verification
 	VerifyOwnership(userID string, input repository.CreateOwnerVerificationInput) (*models.StationOwner, error)
 	GetProfile(userID string) (map[string]interface{}, error)
+	UpdateProfile(userID string, input repository.UpdateOwnerProfileInput) (map[string]interface{}, error)
 	GetStats(userID string) (map[string]interface{}, error)
 
 	// Stations
@@ -50,13 +51,31 @@ func (s *stationOwnerService) GetProfile(userID string) (map[string]interface{},
 		return map[string]interface{}{
 			"userId":             userID,
 			"businessName":       "",
-			"verificationStatus": "unverified",
+			"contactName":        "",
+			"email":              "",
+			"phone":              "",
+			"verificationStatus": "not_verified",
 			"verifiedAt":         nil,
+			"plan":               "basic",
 			"accountCreatedAt":   nil,
 			"broadcastsThisWeek": 0,
-			"broadcastLimit":     0,
+			"broadcastLimit":     20,
 			"notice":             "Complete your business profile to start broadcasting",
 		}, nil
+	}
+
+	// Safe dereference of nullable pointer fields
+	contactName := ""
+	if owner.ContactName != nil {
+		contactName = *owner.ContactName
+	}
+	contactEmail := ""
+	if owner.ContactEmail != nil {
+		contactEmail = *owner.ContactEmail
+	}
+	contactPhone := ""
+	if owner.ContactPhone != nil {
+		contactPhone = *owner.ContactPhone
 	}
 
 	// TODO: Fetch additional fields from user table (email, contact info, etc.)
@@ -65,16 +84,57 @@ func (s *stationOwnerService) GetProfile(userID string) (map[string]interface{},
 		"id":                 owner.ID,
 		"userId":             owner.UserID,
 		"businessName":       owner.BusinessName,
+		"contactName":        contactName,
+		"email":              contactEmail,
+		"phone":              contactPhone,
 		"verificationStatus": owner.VerificationStatus,
 		"verifiedAt":         owner.VerifiedAt,
+		"plan":               owner.Plan,
 		"accountCreatedAt":   owner.CreatedAt,
 		"broadcastsThisWeek": 0, // TODO: Count from broadcasts table
 		"broadcastLimit":     20, // TODO: Get from plan table
 	}, nil
 }
 
+func (s *stationOwnerService) UpdateProfile(userID string, input repository.UpdateOwnerProfileInput) (map[string]interface{}, error) {
+	owner, err := s.stationOwnerRepo.UpdateProfile(userID, input)
+	if err != nil {
+		return nil, err
+	}
+
+	// Safe dereference of nullable pointer fields
+	contactName := ""
+	if owner.ContactName != nil {
+		contactName = *owner.ContactName
+	}
+	contactEmail := ""
+	if owner.ContactEmail != nil {
+		contactEmail = *owner.ContactEmail
+	}
+	contactPhone := ""
+	if owner.ContactPhone != nil {
+		contactPhone = *owner.ContactPhone
+	}
+
+	return map[string]interface{}{
+		"id":                 owner.ID,
+		"userId":             owner.UserID,
+		"businessName":       owner.BusinessName,
+		"contactName":        contactName,
+		"email":              contactEmail,
+		"phone":              contactPhone,
+		"verificationStatus": owner.VerificationStatus,
+		"verifiedAt":         owner.VerifiedAt,
+		"plan":               owner.Plan,
+		"accountCreatedAt":   owner.CreatedAt,
+		"broadcastsThisWeek": 0,
+		"broadcastLimit":     20,
+	}, nil
+}
+
 func (s *stationOwnerService) GetStats(userID string) (map[string]interface{}, error) {
 	// Calculate stats based on stations and broadcasts
+	owner, _ := s.stationOwnerRepo.GetByUserID(userID)
 	stations, _ := s.stationOwnerRepo.GetStationsByOwnerUserID(userID)
 
 	verifiedCount := 0
@@ -84,6 +144,12 @@ func (s *stationOwnerService) GetStats(userID string) (map[string]interface{}, e
 		}
 	}
 
+	plan := "basic"
+	broadcastLimit := 20
+	if owner != nil {
+		plan = owner.Plan
+	}
+
 	return map[string]interface{}{
 		"totalStations":        len(stations),
 		"verifiedStations":     verifiedCount,
@@ -91,7 +157,8 @@ func (s *stationOwnerService) GetStats(userID string) (map[string]interface{}, e
 		"totalReachThisMonth":  0, // TODO: calculate from broadcasts
 		"averageEngagementRate": 0, // TODO: calculate from analytics
 		"broadcastsThisWeek":   0, // TODO: count from broadcasts
-		"broadcastLimit":       20, // TODO: get from plan table
+		"broadcastLimit":       broadcastLimit, // TODO: get from plan table
+		"plan":                 plan,
 	}, nil
 }
 

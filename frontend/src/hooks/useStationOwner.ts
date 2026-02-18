@@ -10,6 +10,7 @@ import {
   StationUpdateFormData,
   CreateBroadcastFormData,
 } from '../sections/station-owner-dashboard/types'
+import { AccountSettingsFormData } from '../sections/station-owner-dashboard/AccountSettingsScreen'
 
 const DASHBOARD_KEY = ['station-owner', 'dashboard']
 
@@ -290,6 +291,32 @@ export const useStationOwner = () => {
     },
   })
 
+  /**
+   * Update profile mutation
+   */
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: AccountSettingsFormData) =>
+      stationOwnerService.updateStationOwnerProfile(data),
+    onSuccess: (updatedOwner) => {
+      queryClient.setQueryData<DashboardData | undefined>(DASHBOARD_KEY, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          owner: {
+            ...old.owner,
+            businessName: updatedOwner.businessName,
+            contactName: updatedOwner.contactName,
+            email: updatedOwner.email,
+            phone: updatedOwner.phone,
+          },
+        }
+      })
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY })
+    },
+  })
+
   return {
     // Data
     dashboardData: dashboardData || { owner: undefined, stations: [], broadcasts: [], stats: undefined, fuelTypes: [], currentFuelPrices: {} },
@@ -317,6 +344,7 @@ export const useStationOwner = () => {
     scheduleBroadcast: scheduleBroadcastMutation.mutateAsync,
     cancelBroadcast: cancelBroadcastMutation.mutateAsync,
     duplicateBroadcast: duplicateBroadcastMutation.mutateAsync,
+    updateProfile: updateProfileMutation.mutateAsync,
 
     // Mutation states
     isClaimingStation: claimStationMutation.isPending,
@@ -329,6 +357,7 @@ export const useStationOwner = () => {
     isSchedulingBroadcast: scheduleBroadcastMutation.isPending,
     isCancelingBroadcast: cancelBroadcastMutation.isPending,
     isDuplicatingBroadcast: duplicateBroadcastMutation.isPending,
+    isUpdatingProfile: updateProfileMutation.isPending,
 
     // Mutation errors
     claimStationError: claimStationMutation.error,
@@ -341,5 +370,6 @@ export const useStationOwner = () => {
     scheduleBroadcastError: scheduleBroadcastMutation.error,
     cancelBroadcastError: cancelBroadcastMutation.error,
     duplicateBroadcastError: duplicateBroadcastMutation.error,
+    updateProfileError: updateProfileMutation.error,
   }
 }

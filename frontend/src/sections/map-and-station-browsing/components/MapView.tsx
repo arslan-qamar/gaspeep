@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, GeolocateControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
 import { Loader2 } from 'lucide-react';
@@ -18,14 +18,14 @@ interface MapViewProps {
   isFetchingMore?: boolean;
 }
 
-export const MapView: React.FC<MapViewProps> = ({
+export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
   stations,
   onStationSelect,
   selectedStationId,
   userLocation = { lat: 40.7128, lng: -74.006 },
   onViewportChange,
   isFetchingMore = false,
-}) => {
+}, _ref) => {
   const mapRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState(false);
 
@@ -175,12 +175,19 @@ export const MapView: React.FC<MapViewProps> = ({
                 )}
               </button>
               {/* Price Badge */}
-              {Array.isArray(station.prices) && station.prices.length > 0 && (
+              {Array.isArray(station.prices) && station.prices.length > 0 ? (
                 <div
                   className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
                   title="Lowest fuel price"
                 >
                   ${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}
+                </div>
+              ) : (
+                <div
+                  className="absolute -bottom-2 -right-2 bg-gray-400 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
+                  title="No price data available"
+                >
+                  ?
                 </div>
               )}
             </div>
@@ -203,6 +210,8 @@ export const MapView: React.FC<MapViewProps> = ({
       )}
     </Map>
   );
-};
+});
+
+MapView.displayName = 'MapView';
 
 export default MapView;

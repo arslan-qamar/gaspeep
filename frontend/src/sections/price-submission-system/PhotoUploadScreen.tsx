@@ -6,9 +6,10 @@ type Parsed = { station: { id: string; name: string }; fuelType: string; price: 
 interface PhotoUploadScreenProps {
   onParsed: (p: Parsed) => void
   onCancel: () => void
+  isModal?: boolean
 }
 
-export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, onCancel }) => {
+export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, onCancel, isModal = false }) => {
   const [preview, setPreview] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isUsingCamera, setIsUsingCamera] = useState(false)
@@ -96,24 +97,26 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex items-center gap-2">
-        <button
-          onClick={() => {
-            stopCamera()
-            onCancel()
-          }}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-        >
-          <ChevronLeft size={24} className="text-slate-900 dark:text-white" />
-        </button>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Photo Submission</h1>
-      </div>
+    <div className={isModal ? '' : 'min-h-screen bg-slate-50 dark:bg-slate-950'}>
+      {/* Header - only show if not in modal */}
+      {!isModal && (
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex items-center gap-2">
+          <button
+            onClick={() => {
+              stopCamera()
+              onCancel()
+            }}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <ChevronLeft size={24} className="text-slate-900 dark:text-white" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Photo Submission</h1>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="max-w-md mx-auto p-6">
-        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+      <div className={isModal ? '' : 'max-w-md mx-auto p-6'}>
+        <div className={isModal ? 'p-0' : 'bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6'}>
           {preview ? (
             // Photo preview with analysis
             <div className="space-y-4">

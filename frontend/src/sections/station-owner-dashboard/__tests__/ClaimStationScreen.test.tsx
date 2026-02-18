@@ -1,13 +1,14 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { ClaimStationScreen } from '../ClaimStationScreen';
 import * as sampleData from '../../../__tests__/fixtures/station-owner-dashboard-sample-data.json';
-import { AvailableStation, ClaimStatus } from '../types';
+import { AvailableStation } from '../types';
 
 describe('ClaimStationScreen', () => {
-  const mockAvailableStations: AvailableStation[] = sampleData.availableStationsForClaim;
+  const mockAvailableStations: AvailableStation[] = sampleData.availableStationsForClaim as AvailableStation[];
 
   const defaultProps = {
     availableStations: mockAvailableStations,
@@ -264,7 +265,6 @@ describe('ClaimStationScreen', () => {
 
     it('should accept document files (pdf, jpg, png)', async () => {
       const user = userEvent.setup();
-      const file = new File(['test'], 'license.pdf', { type: 'application/pdf' });
 
       render(<ClaimStationScreen {...defaultProps} />);
       const searchInput = screen.getByPlaceholderText(/search by name or address/i);

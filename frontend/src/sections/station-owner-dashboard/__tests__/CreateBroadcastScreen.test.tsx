@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
@@ -7,14 +8,12 @@ import * as sampleData from '../../../__tests__/fixtures/station-owner-dashboard
 import {
   ClaimedStation,
   Broadcast,
-  PromotionType,
   FuelType,
-  CreateBroadcastFormData,
 } from '../types';
 
 describe('CreateBroadcastScreen', () => {
-  const mockStations: ClaimedStation[] = sampleData.claimedStations;
-  const mockFuelTypes: FuelType[] = sampleData.fuelTypes;
+  const mockStations: ClaimedStation[] = sampleData.claimedStations as ClaimedStation[];
+  const mockFuelTypes: FuelType[] = sampleData.fuelTypes as FuelType[];
 
   const defaultProps = {
     stations: mockStations,
@@ -194,7 +193,6 @@ describe('CreateBroadcastScreen', () => {
     });
 
     it('should prevent form submission without title', async () => {
-      const user = userEvent.setup();
       render(
         <CreateBroadcastScreen {...defaultProps} selectedStationId={mockStations[0].id} />
       );
@@ -460,7 +458,7 @@ describe('CreateBroadcastScreen', () => {
     });
 
     it('should show broadcasts used and limit', () => {
-      const owner = sampleData.stationOwner;
+      const owner = sampleData.stationOwner as any;
       render(
         <CreateBroadcastScreen {...defaultProps} selectedStationId={mockStations[0].id} owner={owner} />
       );
@@ -572,7 +570,7 @@ describe('CreateBroadcastScreen', () => {
 
   // === Edit Mode ===
   describe('Edit Mode', () => {
-    const mockBroadcast: Broadcast = sampleData.broadcasts[0];
+    const mockBroadcast: Broadcast = sampleData.broadcasts[0] as Broadcast;
 
     it('should pre-fill form with broadcast data when editing', () => {
       render(

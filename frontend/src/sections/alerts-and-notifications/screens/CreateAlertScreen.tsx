@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, MapPin, Loader } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader } from 'lucide-react';
 import { StepIndicator } from '../components/StepIndicator';
+import { LocationPicker } from '../components/LocationPicker';
 import { CreateAlertForm, FuelType, PriceContext } from '../types';
 import {
   createAlert,
@@ -159,29 +160,6 @@ export const CreateAlertScreen: React.FC = () => {
     }
   };
 
-  const useCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          // In a real app, we'd reverse geocode to get the address
-          setFormData({
-            ...formData,
-            location: {
-              address: 'Current Location',
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          alert('Unable to get current location. Please enter manually.');
-        }
-      );
-    } else {
-      alert('Geolocation is not supported by your browser');
-    }
-  };
 
   // Check if current step is valid before allowing next
   const canProceedToNextStep = () => {
@@ -272,38 +250,10 @@ export const CreateAlertScreen: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Location
                 </label>
-                {formData.location ? (
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-900 dark:text-white">
-                        {formData.location.address}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        {formData.location.latitude.toFixed(4)}, {formData.location.longitude.toFixed(4)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setFormData({ ...formData, location: null })}
-                      className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      Change
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <button
-                      onClick={useCurrentLocation}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <MapPin className="w-5 h-5" />
-                      Use Current Location
-                    </button>
-                    <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-                      Manual address entry and map picker coming soon
-                    </p>
-                  </div>
-                )}
+                <LocationPicker
+                  value={formData.location}
+                  onChange={(location) => setFormData({ ...formData, location })}
+                />
               </div>
 
               {/* Radius slider */}

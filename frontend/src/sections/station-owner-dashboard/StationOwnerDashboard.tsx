@@ -43,6 +43,7 @@ interface StationOwnerDashboardProps {
   onStationSave?: (stationId: string, data: StationUpdateFormData) => void;
   onStationUnclaim?: (stationId: string) => Promise<void>;
   onRefresh?: () => void;
+  onAccountSettings?: () => void;
   isLoading?: boolean;
 }
 
@@ -56,7 +57,6 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
   stations,
   broadcasts,
   stats,
-  fuelTypes,
   currentFuelPrices = {},
   onClaimStation,
   onCreateBroadcast,
@@ -64,6 +64,7 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
   onStationSave,
   onStationUnclaim,
   onRefresh,
+  onAccountSettings,
   isLoading,
 }) => {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
@@ -144,9 +145,12 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
               >
                 {isVerified ? '✓ Verified' : '⏳ Pending Verification'}
               </span>
-              <a href="#account" className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+              <button
+                onClick={() => onAccountSettings?.()}
+                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+              >
                 Account Settings
-              </a>
+              </button>
             </div>
           </div>
           {onRefresh && (
@@ -155,7 +159,7 @@ export const StationOwnerDashboard: React.FC<StationOwnerDashboardProps> = ({
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
               aria-label="Refresh dashboard"
             >
-              ↻ Refresh
+              ↻
             </button>
           )}
         </div>

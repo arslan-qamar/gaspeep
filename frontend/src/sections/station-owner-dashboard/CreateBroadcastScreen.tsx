@@ -152,8 +152,6 @@ export const CreateBroadcastScreen: React.FC<CreateBroadcastScreenProps> = ({
   };
 
   const isFormValid = stationId && title.trim() && message.trim();
-  const broadcastsRemaining =
-    owner ? owner.broadcastLimit - owner.broadcastsThisWeek : 0;
   const maxRadius = 25;
 
   return (

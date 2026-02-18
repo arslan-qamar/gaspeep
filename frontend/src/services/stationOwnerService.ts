@@ -12,6 +12,7 @@ import {
   FuelPrice,
   BroadcastEngagementMetric,
 } from '../sections/station-owner-dashboard/types'
+import { AccountSettingsFormData } from '../sections/station-owner-dashboard/AccountSettingsScreen'
 
 /**
  * Station Owner Dashboard API Service
@@ -77,6 +78,21 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 export const getStationOwnerProfile = async (): Promise<StationOwner> => {
   const { data } = await apiClient.get('/station-owners/profile')
   return data
+}
+
+/**
+ * Update station owner profile (account settings)
+ */
+export const updateStationOwnerProfile = async (
+  data: AccountSettingsFormData
+): Promise<StationOwner> => {
+  const { data: responseData } = await apiClient.patch('/station-owners/profile', {
+    businessName: data.businessName,
+    contactName: data.contactName,
+    email: data.email,
+    phone: data.phone,
+  })
+  return responseData
 }
 
 /**
@@ -385,6 +401,7 @@ export const stationOwnerService = {
 
   // Owner Profile
   getStationOwnerProfile,
+  updateStationOwnerProfile,
   submitVerification,
   reVerifyStation,
 

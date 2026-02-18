@@ -161,6 +161,7 @@ func main() {
 	stationOwners.Use(middleware.AuthMiddleware())
 	{
 		stationOwners.GET("/profile", stationOwnerHandler.GetProfile)
+		stationOwners.PATCH("/profile", stationOwnerHandler.UpdateProfile)
 		stationOwners.GET("/stats", stationOwnerHandler.GetStats)
 		stationOwners.GET("/fuel-prices", stationOwnerHandler.GetFuelPrices)
 		stationOwners.GET("/search-stations", stationOwnerHandler.SearchStations)

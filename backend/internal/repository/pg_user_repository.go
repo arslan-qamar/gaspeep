@@ -105,8 +105,8 @@ func (r *PgUserRepository) UpdateUserOAuth(userID, provider, providerID, avatarU
 func (r *PgUserRepository) GetUserByEmail(email string) (*models.User, error) {
 	user := &models.User{}
 	err := r.db.QueryRow(`
-		SELECT id, email, display_name, tier, created_at, updated_at FROM users WHERE email = $1
-	`, email).Scan(&user.ID, &user.Email, &user.DisplayName, &user.Tier, &user.CreatedAt, &user.UpdatedAt)
+		SELECT id, email, display_name, tier, created_at, updated_at, COALESCE(oauth_provider, ''), COALESCE(oauth_provider_id, ''), COALESCE(avatar_url, ''), COALESCE(email_verified, false) FROM users WHERE email = $1
+	`, email).Scan(&user.ID, &user.Email, &user.DisplayName, &user.Tier, &user.CreatedAt, &user.UpdatedAt, &user.OAuthProvider, &user.OAuthProviderID, &user.AvatarURL, &user.EmailVerified)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -121,8 +121,8 @@ func (r *PgUserRepository) GetUserByEmail(email string) (*models.User, error) {
 func (r *PgUserRepository) GetUserByID(id string) (*models.User, error) {
 	user := &models.User{}
 	err := r.db.QueryRow(`
-		SELECT id, email, display_name, tier, created_at, updated_at FROM users WHERE id = $1
-	`, id).Scan(&user.ID, &user.Email, &user.DisplayName, &user.Tier, &user.CreatedAt, &user.UpdatedAt)
+		SELECT id, email, display_name, tier, created_at, updated_at, COALESCE(oauth_provider, ''), COALESCE(oauth_provider_id, ''), COALESCE(avatar_url, ''), COALESCE(email_verified, false) FROM users WHERE id = $1
+	`, id).Scan(&user.ID, &user.Email, &user.DisplayName, &user.Tier, &user.CreatedAt, &user.UpdatedAt, &user.OAuthProvider, &user.OAuthProviderID, &user.AvatarURL, &user.EmailVerified)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

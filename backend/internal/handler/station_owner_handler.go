@@ -2,12 +2,63 @@ package handler
 
 import (
 	"net/http"
+	"regexp"
+	"strings"
 
 	"gaspeep/backend/internal/repository"
 	"gaspeep/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+var (
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	phoneRegex = regexp.MustCompile(`^[\d\s\+\-\(\)]+$`)
+)
+
+// validateProfileInput validates the request fields for UpdateProfile.
+// Returns a map of field name → error message, or nil if valid.
+func validateProfileInput(businessName, contactName, email, phone string) map[string]string {
+	errors := make(map[string]string)
+
+	// businessName: required, 2–255 chars
+	trimmedBusiness := strings.TrimSpace(businessName)
+	if trimmedBusiness == "" {
+		errors["businessName"] = "Business name is required"
+	} else if len(trimmedBusiness) < 2 {
+		errors["businessName"] = "Business name must be at least 2 characters"
+	} else if len(trimmedBusiness) > 255 {
+		errors["businessName"] = "Business name must be 255 characters or fewer"
+	}
+
+	// contactName: optional, max 255 chars
+	if len(strings.TrimSpace(contactName)) > 255 {
+		errors["contactName"] = "Contact name must be 255 characters or fewer"
+	}
+
+	// email: optional, but if present must be valid format
+	if trimmedEmail := strings.TrimSpace(email); trimmedEmail != "" {
+		if len(trimmedEmail) > 255 {
+			errors["email"] = "Email must be 255 characters or fewer"
+		} else if !emailRegex.MatchString(trimmedEmail) {
+			errors["email"] = "Please enter a valid email address"
+		}
+	}
+
+	// phone: optional, but if present must match allowed characters
+	if trimmedPhone := strings.TrimSpace(phone); trimmedPhone != "" {
+		if len(trimmedPhone) > 50 {
+			errors["phone"] = "Phone must be 50 characters or fewer"
+		} else if !phoneRegex.MatchString(trimmedPhone) {
+			errors["phone"] = "Phone must contain only digits, spaces, +, -, (, )"
+		}
+	}
+
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
 
 // StationOwnerHandler handles station owner endpoints
 type StationOwnerHandler struct {
@@ -78,6 +129,45 @@ func (h *StationOwnerHandler) GetProfile(c *gin.Context) {
 	profile, err := h.stationOwnerService.GetProfile(userID.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
+}
+
+// UpdateProfile handles PATCH /api/station-owners/profile
+func (h *StationOwnerHandler) UpdateProfile(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	var req struct {
+		BusinessName string `json:"businessName"`
+		ContactName  string `json:"contactName"`
+		Email        string `json:"email"`
+		Phone        string `json:"phone"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if validationErrors := validateProfileInput(req.BusinessName, req.ContactName, req.Email, req.Phone); validationErrors != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
+		return
+	}
+
+	profile, err := h.stationOwnerService.UpdateProfile(userID.(string), repository.UpdateOwnerProfileInput{
+		BusinessName: req.BusinessName,
+		ContactName:  req.ContactName,
+		ContactEmail: req.Email,
+		ContactPhone: req.Phone,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
 		return
 	}
 

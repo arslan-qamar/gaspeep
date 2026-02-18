@@ -33,6 +33,7 @@ import {
   CreateBroadcastScreen,
   BroadcastDetailsScreen,
   StationDetailsScreen,
+  AccountSettingsScreen,
 } from '../sections/station-owner-dashboard'
 
 import { useStationOwner } from '../hooks/useStationOwner'
@@ -41,7 +42,7 @@ import { searchAvailableStations } from '../services/stationOwnerService'
 
 // Dashboard page wrapper with API integration
 const StationOwnerDashboardPage = () => {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'claim' | 'create' | 'details' | 'station-details'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'claim' | 'create' | 'details' | 'station-details' | 'account-settings'>('dashboard')
   const [selectedBroadcastId, setSelectedBroadcastId] = useState<string | null>(null)
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
   const [dismissedError, setDismissedError] = useState(false)
@@ -68,6 +69,8 @@ const StationOwnerDashboardPage = () => {
     createBroadcast,
     deleteBroadcast,
     duplicateBroadcast,
+    updateProfile,
+    isUpdatingProfile,
   } = useStationOwner()
 
   const handleRetry = () => {
@@ -273,6 +276,20 @@ const StationOwnerDashboardPage = () => {
     }
   }
 
+  if (currentView === 'account-settings' && owner) {
+    return (
+      <AccountSettingsScreen
+        owner={owner}
+        onBack={() => setCurrentView('dashboard')}
+        isSaving={isUpdatingProfile}
+        onSave={async (data) => {
+          await updateProfile(data)
+          setCurrentView('dashboard')
+        }}
+      />
+    )
+  }
+
   return (
     <>
       <ErrorBanner
@@ -313,6 +330,7 @@ const StationOwnerDashboardPage = () => {
           }
         }}
         onRefresh={refetch}
+        onAccountSettings={() => setCurrentView('account-settings')}
       />
     </>
   )
@@ -434,6 +452,16 @@ export const router = createBrowserRouter([
   },
   {
     path: '/profile',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <AccountScreen />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/settings',
     element: (
       <ProtectedRoute>
         <AppShell>

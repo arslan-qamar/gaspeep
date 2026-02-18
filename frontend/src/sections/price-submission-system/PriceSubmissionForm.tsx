@@ -15,6 +15,7 @@ export const PriceSubmissionForm: React.FC = () => {
   const [fuelType, setFuelType] = useState<string>('')
   const [price, setPrice] = useState<string>('')
   const [method, setMethod] = useState<'text' | 'voice' | 'photo'>('text')
+  const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState<any>(null)
@@ -133,35 +134,6 @@ export const PriceSubmissionForm: React.FC = () => {
 
   if (confirmed) return <SubmissionConfirmation submission={confirmed} onDone={() => setConfirmed(null)} />
 
-  // Method selection screen
-  if (method === 'voice') {
-    return (
-      <VoiceInputScreen
-        onParsed={(data) => {
-          setStation(data.station)
-          setFuelType(data.fuelType)
-          setPrice(String(data.price))
-          setMethod('text')
-        }}
-        onCancel={() => setMethod('text')}
-      />
-    )
-  }
-
-  if (method === 'photo') {
-    return (
-      <PhotoUploadScreen
-        onParsed={(data) => {
-          setStation(data.station)
-          setFuelType(data.fuelType)
-          setPrice(String(data.price))
-          setMethod('text')
-        }}
-        onCancel={() => setMethod('text')}
-      />
-    )
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="max-w-2xl mx-auto p-4 md:p-6">
@@ -170,39 +142,33 @@ export const PriceSubmissionForm: React.FC = () => {
           Help the community by sharing current prices
         </p>
 
-        {/* Method Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <button
-            onClick={() => setMethod('text')}
-            className="p-6 border-2 border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-700 rounded-lg transition-all text-center space-y-2"
-          >
-            <div className="text-3xl">📝</div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Manual Entry</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Type the price directly</p>
-          </button>
-
-          <button
-            onClick={() => setMethod('voice')}
-            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
-          >
-            <div className="text-3xl">🎤</div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Voice Entry</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Speak the price</p>
-          </button>
-
-          <button
-            onClick={() => setMethod('photo')}
-            className="p-6 border-2 border-slate-200 dark:border-slate-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-center space-y-2"
-          >
-            <div className="text-3xl">📸</div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">Photo Upload</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Photo of pump/receipt</p>
-          </button>
-        </div>
-
         {/* Manual Entry Form */}
         <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-          <h2 className="text-xl font-semibold mb-6 text-slate-900 dark:text-white">Enter Price Details</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Enter Price Details</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setMethod('voice')
+                  setShowModal(true)
+                }}
+                title="Voice Entry"
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <span className="text-lg">🎤</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMethod('photo')
+                  setShowModal(true)
+                }}
+                title="Photo Upload"
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <span className="text-lg">📸</span>
+              </button>
+            </div>
+          </div>
 
           {/* Station Search */}
           <div className="mb-6 relative" ref={suggestionRef}>
@@ -342,6 +308,66 @@ export const PriceSubmissionForm: React.FC = () => {
         {/* Recent Submissions */}
         <PriceSubmissionHistory />
       </div>
+
+      {/* Modal Overlay for Voice/Photo */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {method === 'voice' ? 'Voice Entry' : 'Photo Upload'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setMethod('text')
+                }}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <span className="text-xl">✕</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {method === 'voice' && (
+                <VoiceInputScreen
+                  onParsed={(data) => {
+                    setStation(data.station)
+                    setFuelType(data.fuelType)
+                    setPrice(String(data.price))
+                    setMethod('text')
+                    setShowModal(false)
+                  }}
+                  onCancel={() => {
+                    setShowModal(false)
+                    setMethod('text')
+                  }}
+                  isModal={true}
+                />
+              )}
+
+              {method === 'photo' && (
+                <PhotoUploadScreen
+                  onParsed={(data) => {
+                    setStation(data.station)
+                    setFuelType(data.fuelType)
+                    setPrice(String(data.price))
+                    setMethod('text')
+                    setShowModal(false)
+                  }}
+                  onCancel={() => {
+                    setShowModal(false)
+                    setMethod('text')
+                  }}
+                  isModal={true}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

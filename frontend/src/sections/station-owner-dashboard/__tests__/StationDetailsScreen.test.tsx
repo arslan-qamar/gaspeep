@@ -1,19 +1,20 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { StationDetailsScreen } from '../StationDetailsScreen';
 import * as sampleData from '../../../__tests__/fixtures/station-owner-dashboard-sample-data.json';
-import { ClaimedStation, StationUpdateFormData } from '../types';
+import { ClaimedStation } from '../types';
 
 describe('StationDetailsScreen', () => {
-  const mockStation: ClaimedStation = sampleData.claimedStations[0];
-  const mockFuelPrices = sampleData.currentFuelPrices['station_101'];
+  const mockStation: ClaimedStation = sampleData.claimedStations[0] as ClaimedStation;
+  const mockFuelPrices = sampleData.currentFuelPrices['station_101'] as any;
 
   const defaultProps = {
     station: mockStation,
     fuelPrices: mockFuelPrices,
-    broadcasts: sampleData.broadcasts.filter((b) => b.stationId === mockStation.id),
+    broadcasts: (sampleData.broadcasts as any[]).filter((b) => b.stationId === mockStation.id),
     onSave: jest.fn(),
     onBroadcast: jest.fn(),
     onUnclaim: jest.fn().mockResolvedValue(undefined),
@@ -96,8 +97,9 @@ describe('StationDetailsScreen', () => {
 
     it('should display email', () => {
       render(<StationDetailsScreen {...defaultProps} />);
-      const email = mockStation.operatingHours ? screen.getByText(/contact/i) : null;
-      // Email might be displayed in contact section
+      if (mockStation.operatingHours) {
+        expect(screen.getByText(/contact/i)).toBeInTheDocument();
+      }
     });
 
     it('should display amenities section', () => {
@@ -119,7 +121,7 @@ describe('StationDetailsScreen', () => {
 
     it('should show all fuel type prices', () => {
       render(<StationDetailsScreen {...defaultProps} />);
-      mockFuelPrices.forEach((price) => {
+      mockFuelPrices.forEach((price: any) => {
         expect(screen.getByText(price.fuelTypeName)).toBeInTheDocument();
       });
     });
@@ -235,7 +237,6 @@ describe('StationDetailsScreen', () => {
     });
 
     it('should allow editing operating hours', async () => {
-      const user = userEvent.setup();
       render(<StationDetailsScreen {...defaultProps} isEditing={true} />);
       const operatingHoursInputs = screen.getAllByDisplayValue(/06:00/);
 
@@ -431,6 +432,46 @@ describe('StationDetailsScreen', () => {
       render(<StationDetailsScreen {...defaultProps} station={pendingStation} />);
       const reVerifyButton = screen.queryByRole('button', { name: /re-verify|verify/i });
       expect(reVerifyButton).toBeInTheDocument();
+    });
+
+    it('should show pending approval banner', () => {
+      render(<StationDetailsScreen {...defaultProps} station={pendingStation} />);
+      expect(screen.getByTestId('pending-approval-banner')).toBeInTheDocument();
+    });
+
+    it('should display pending approval message in banner', () => {
+      render(<StationDetailsScreen {...defaultProps} station={pendingStation} />);
+      expect(screen.getByText(/ownership approval pending/i)).toBeInTheDocument();
+      expect(screen.getByText(/full editing access will be available once your station ownership is approved/i)).toBeInTheDocument();
+    });
+
+    it('should disable Save button when station is pending', () => {
+      render(<StationDetailsScreen {...defaultProps} station={pendingStation} isEditing={true} />);
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      expect(saveButton).toBeDisabled();
+    });
+
+    it('should show awaiting approval hint next to Save when pending', () => {
+      render(<StationDetailsScreen {...defaultProps} station={pendingStation} isEditing={true} />);
+      expect(screen.getByText(/awaiting approval/i)).toBeInTheDocument();
+    });
+
+    it('should allow entering edit mode but prevent saving when pending', async () => {
+      const user = userEvent.setup();
+      const mockOnSave = jest.fn();
+      render(
+        <StationDetailsScreen {...defaultProps} station={pendingStation} onSave={mockOnSave} />
+      );
+      const editButton = screen.getByRole('button', { name: /edit/i });
+
+      await user.click(editButton);
+
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      expect(saveButton).toBeDisabled();
+
+      // Ensure clicking the disabled button doesn't trigger the save
+      await user.click(saveButton);
+      expect(mockOnSave).not.toHaveBeenCalled();
     });
   });
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-void React;
+
 import '@testing-library/jest-dom'
 
 jest.mock('../../../lib/api', () => {

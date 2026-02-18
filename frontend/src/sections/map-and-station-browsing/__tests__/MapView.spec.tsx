@@ -1,22 +1,30 @@
-
 import React from 'react';
+
 import '@testing-library/jest-dom';
-void React;
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapView from '../components/MapView';
 import { Station } from '../types';
 
-jest.mock('react-map-gl/maplibre', () => ({
-	__esModule: true,
-	default: ({ children }: any) => <div data-testid="mock-map">{children}</div>,
-	Marker: ({ children, ...props }: any) => <div data-testid="mock-marker" {...props}>{children}</div>,
-	Popup: ({ children, ...props }: any) => <div data-testid="mock-popup" {...props}>{children}</div>,
-	NavigationControl: () => <div data-testid="mock-nav-control" />,
-	FullscreenControl: () => <div data-testid="mock-fullscreen-control" />,
-	GeolocateControl: () => <div data-testid="mock-geolocate-control" />,
-	ScaleControl: () => <div data-testid="mock-scale-control" />,
-}));
+jest.mock('react-map-gl/maplibre', () => {
+	const React = require('react');
+	const MapMock = React.forwardRef(({ children }: { children: any }, ref: any) => (
+		<div data-testid="mock-map" ref={ref}>{children}</div>
+	));
+	MapMock.displayName = 'MapMock';
+
+	return {
+		__esModule: true,
+		default: MapMock,
+		Map: MapMock,
+		Marker: ({ children, ...props }: any) => <div data-testid="mock-marker" {...props}>{children}</div>,
+		Popup: ({ children, ...props }: any) => <div data-testid="mock-popup" {...props}>{children}</div>,
+		NavigationControl: () => <div data-testid="mock-nav-control" />,
+		FullscreenControl: () => <div data-testid="mock-fullscreen-control" />,
+		GeolocateControl: () => <div data-testid="mock-geolocate-control" />,
+		ScaleControl: () => <div data-testid="mock-scale-control" />,
+	};
+});
 
 const stations: Station[] = [
 	{

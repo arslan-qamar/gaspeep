@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { StationOwnerDashboard } from '../StationOwnerDashboard';
@@ -9,15 +10,13 @@ import {
   ClaimedStation,
   Broadcast,
   DashboardStats,
-  BroadcastStatus,
-  VerificationStatus,
 } from '../types';
 
 describe('StationOwnerDashboard', () => {
-  const mockOwner: StationOwner = sampleData.stationOwner;
-  const mockStations: ClaimedStation[] = sampleData.claimedStations;
-  const mockBroadcasts: Broadcast[] = sampleData.broadcasts;
-  const mockStats: DashboardStats = sampleData.dashboardStats;
+  const mockOwner: StationOwner = sampleData.stationOwner as any;
+  const mockStations: ClaimedStation[] = sampleData.claimedStations as ClaimedStation[];
+  const mockBroadcasts: Broadcast[] = sampleData.broadcasts as Broadcast[];
+  const mockStats: DashboardStats = sampleData.dashboardStats as any;
 
   const defaultProps = {
     owner: mockOwner,
@@ -386,7 +385,6 @@ describe('StationOwnerDashboard', () => {
   describe('Broadcast Limit Display', () => {
     it('should display remaining broadcasts for current period', () => {
       render(<StationOwnerDashboard {...defaultProps} />);
-      const remaining = mockOwner.broadcastLimit - mockOwner.broadcastsThisWeek;
       expect(screen.getByText(new RegExp(`${mockOwner.broadcastsThisWeek}.*${mockOwner.broadcastLimit}`, 'i'))).toBeInTheDocument();
     });
 

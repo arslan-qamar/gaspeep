@@ -105,7 +105,9 @@ func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]ma
 
 func (r *PgStationOwnerRepository) GetByUserID(userID string) (*models.StationOwner, error) {
 	query := `
-		SELECT id, user_id, business_name, verification_status, contact_info, created_at, verified_at
+		SELECT id, user_id, business_name, verification_status, contact_info,
+		       contact_name, contact_email, contact_phone, plan,
+		       created_at, verified_at
 		FROM station_owners
 		WHERE user_id = $1
 		LIMIT 1`
@@ -114,7 +116,17 @@ func (r *PgStationOwnerRepository) GetByUserID(userID string) (*models.StationOw
 	var verifiedAt *time.Time
 
 	err := r.db.QueryRow(query, userID).Scan(
-		&owner.ID, &owner.UserID, &owner.BusinessName, &owner.VerificationStatus, &owner.ContactInfo, &owner.CreatedAt, &verifiedAt,
+		&owner.ID,
+		&owner.UserID,
+		&owner.BusinessName,
+		&owner.VerificationStatus,
+		&owner.ContactInfo,
+		&owner.ContactName,
+		&owner.ContactEmail,
+		&owner.ContactPhone,
+		&owner.Plan,
+		&owner.CreatedAt,
+		&verifiedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -459,6 +471,53 @@ func (r *PgStationOwnerRepository) UnclaimStation(userID, stationID string) erro
 	}
 
 	return nil
+}
+
+func (r *PgStationOwnerRepository) UpdateProfile(userID string, input UpdateOwnerProfileInput) (*models.StationOwner, error) {
+	query := `
+		UPDATE station_owners
+		SET business_name  = $1,
+		    contact_name   = $2,
+		    contact_email  = $3,
+		    contact_phone  = $4,
+		    updated_at     = NOW()
+		WHERE user_id = $5
+		RETURNING id, user_id, business_name, verification_status, contact_info,
+		          contact_name, contact_email, contact_phone, plan,
+		          created_at, verified_at`
+
+	var owner models.StationOwner
+	var verifiedAt *time.Time
+
+	err := r.db.QueryRow(
+		query,
+		input.BusinessName,
+		input.ContactName,
+		input.ContactEmail,
+		input.ContactPhone,
+		userID,
+	).Scan(
+		&owner.ID,
+		&owner.UserID,
+		&owner.BusinessName,
+		&owner.VerificationStatus,
+		&owner.ContactInfo,
+		&owner.ContactName,
+		&owner.ContactEmail,
+		&owner.ContactPhone,
+		&owner.Plan,
+		&owner.CreatedAt,
+		&verifiedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("station owner not found")
+		}
+		return nil, fmt.Errorf("failed to update owner profile: %w", err)
+	}
+
+	owner.VerifiedAt = verifiedAt
+	return &owner, nil
 }
 
 var _ StationOwnerRepository = (*PgStationOwnerRepository)(nil)
