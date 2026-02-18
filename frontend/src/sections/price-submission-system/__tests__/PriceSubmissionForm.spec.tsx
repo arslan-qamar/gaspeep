@@ -57,7 +57,14 @@ describe('PriceSubmissionForm', () => {
         })
       }
       if (url === '/price-submissions') {
-        return Promise.resolve({ data: Object.assign({ id: 'ps-1', price: body.price, moderationStatus: 'pending' }, { station_name: '7-Eleven Crows Nest', fuel_type: 'Unleaded 91' }) })
+        const submissions = (body.entries || []).map((entry: any, index: number) => ({
+          id: `ps-${index + 1}`,
+          price: entry.price,
+          moderationStatus: 'pending',
+          station_name: '7-Eleven Crows Nest',
+          fuel_type: index === 0 ? 'E10' : 'Unleaded 91',
+        }))
+        return Promise.resolve({ data: { submissions, count: submissions.length } })
       }
       return Promise.resolve({ data: {} })
     })
@@ -86,21 +93,25 @@ describe('PriceSubmissionForm', () => {
     fireEvent.click(stationOption)
     fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
 
-    // Step 2: select fuel type and enter price
-    // select fuel type
-    const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: 'f-91' } })
-
-    // enter price
-    const price = screen.getByPlaceholderText(/3.79/i)
-    fireEvent.change(price, { target: { value: '3.49' } })
+    // Step 2: enter price in specific fuel type input
+    const fuelInput = screen.getByLabelText(/Unleaded 91/i)
+    fireEvent.change(fuelInput, { target: { value: '3.49' } })
 
     // click submit
     const submitBtn = screen.getByRole('button', { name: /Submit Price|Confirm & Submit|Confirm/ })
     fireEvent.click(submitBtn)
 
     // expect post called
-    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/price-submissions', expect.objectContaining({ stationId: 's-1', fuelTypeId: 'f-91' })))
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/price-submissions',
+        expect.objectContaining({
+          stationId: 's-1',
+          submissionMethod: 'text',
+          entries: [{ fuelTypeId: 'f-91', price: 3.49 }],
+        })
+      )
+    )
 
     // Step 3: confirmation dialog should render
     const thanks = await screen.findByText(/Thanks for contributing!/i)

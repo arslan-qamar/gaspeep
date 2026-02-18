@@ -29,14 +29,20 @@ func (h *PriceSubmissionHandler) CreatePriceSubmission(c *gin.Context) {
 		return
 	}
 
+	type submissionEntry struct {
+		FuelTypeID string  `json:"fuelTypeId" binding:"required"`
+		Price      float64 `json:"price" binding:"required,gt=0"`
+	}
+
 	var req struct {
-		StationID         string  `json:"stationId" binding:"required"`
-		FuelTypeID        string  `json:"fuelTypeId" binding:"required"`
-		Price             float64 `json:"price" binding:"required,gt=0"`
-		SubmissionMethod  string  `json:"submissionMethod" binding:"required,oneof=text voice photo"`
-		PhotoURL          string  `json:"photoUrl"`
-		VoiceRecordingURL string  `json:"voiceRecordingUrl"`
-		OCRData           string  `json:"ocrData"`
+		StationID         string            `json:"stationId" binding:"required"`
+		FuelTypeID        string            `json:"fuelTypeId"`
+		Price             float64           `json:"price"`
+		SubmissionMethod  string            `json:"submissionMethod" binding:"required,oneof=text voice photo"`
+		PhotoURL          string            `json:"photoUrl"`
+		VoiceRecordingURL string            `json:"voiceRecordingUrl"`
+		OCRData           string            `json:"ocrData"`
+		Entries           []submissionEntry `json:"entries"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -44,30 +50,54 @@ func (h *PriceSubmissionHandler) CreatePriceSubmission(c *gin.Context) {
 		return
 	}
 
-	submission, err := h.submissionService.CreateSubmission(userID.(string), service.CreateSubmissionRequest{
-		StationID:         req.StationID,
-		FuelTypeID:        req.FuelTypeID,
-		Price:             req.Price,
-		SubmissionMethod:  req.SubmissionMethod,
-		PhotoURL:          req.PhotoURL,
-		VoiceRecordingURL: req.VoiceRecordingURL,
-		OCRData:           req.OCRData,
+	entries := req.Entries
+	if len(entries) == 0 {
+		if req.FuelTypeID == "" || req.Price <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fuelTypeId and price are required when entries is not provided"})
+			return
+		}
+		entries = []submissionEntry{{
+			FuelTypeID: req.FuelTypeID,
+			Price:      req.Price,
+		}}
+	}
+
+	submissions := make([]any, 0, len(entries))
+	for _, entry := range entries {
+		submission, err := h.submissionService.CreateSubmission(userID.(string), service.CreateSubmissionRequest{
+			StationID:         req.StationID,
+			FuelTypeID:        entry.FuelTypeID,
+			Price:             entry.Price,
+			SubmissionMethod:  req.SubmissionMethod,
+			PhotoURL:          req.PhotoURL,
+			VoiceRecordingURL: req.VoiceRecordingURL,
+			OCRData:           req.OCRData,
+		})
+
+		if errors.Is(err, service.ErrStationNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "station not found"})
+			return
+		}
+		if errors.Is(err, service.ErrFuelTypeNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fuel type not found"})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create price submission"})
+			return
+		}
+
+		submissions = append(submissions, submission)
+	}
+
+	if len(req.Entries) == 0 {
+		c.JSON(http.StatusCreated, submissions[0])
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{
+		"submissions": submissions,
+		"count":       len(submissions),
 	})
-
-	if errors.Is(err, service.ErrStationNotFound) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "station not found"})
-		return
-	}
-	if errors.Is(err, service.ErrFuelTypeNotFound) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "fuel type not found"})
-		return
-	}
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create price submission"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, submission)
 }
 
 // GetMySubmissions handles GET /api/price-submissions/my-submissions

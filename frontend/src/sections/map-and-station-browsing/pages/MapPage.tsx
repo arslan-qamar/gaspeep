@@ -222,7 +222,7 @@ export const MapPage: React.FC = () => {
           <Search size={20} className="text-slate-400" />
           <input
             type="text"
-            placeholder="Filter stations by name..."
+            placeholder="Filter stations by name e.g: Shell, BP..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 bg-transparent py-2 outline-none text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"

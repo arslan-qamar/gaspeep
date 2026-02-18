@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { apiClient, stationApi } from '../../lib/api'
 import { VoiceInputScreen } from './VoiceInputScreen'
 import { PhotoUploadScreen } from './PhotoUploadScreen'
@@ -22,11 +23,17 @@ export type FuelType = { id: string; name: string; displayName?: string }
 
 type SubmissionStep = 'station' | 'submit' | 'confirm'
 
+type FuelSubmissionEntry = {
+  fuelTypeId: string
+  fuelTypeName: string
+  price: number
+}
+
 export const PriceSubmissionForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<SubmissionStep>('station')
   const [station, setStation] = useState<Station | null>(null)
   const [fuelType, setFuelType] = useState<string>('')
-  const [price, setPrice] = useState<string>('')
+  const [pricesByFuelType, setPricesByFuelType] = useState<Record<string, string>>({})
   const [method, setMethod] = useState<'text' | 'voice' | 'photo'>('text')
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -44,6 +51,7 @@ export const PriceSubmissionForm: React.FC = () => {
 
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const isMountedRef = useRef(true)
 
   const steps = [
@@ -214,7 +222,26 @@ export const PriceSubmissionForm: React.FC = () => {
       }))
   }, [filteredStations])
 
-  const parsedPrice = useMemo(() => parseFloat(price || ''), [price])
+  const enteredFuelEntries = useMemo(() => {
+    return fuelTypesList
+      .map((f) => {
+        const raw = (pricesByFuelType[f.id] || '').trim()
+        if (!raw) return null
+
+        const parsed = parseFloat(raw)
+        return {
+          fuelTypeId: f.id,
+          fuelTypeName: f.displayName || f.name,
+          raw,
+          parsed,
+        }
+      })
+      .filter((entry): entry is { fuelTypeId: string; fuelTypeName: string; raw: string; parsed: number } => Boolean(entry))
+  }, [fuelTypesList, pricesByFuelType])
+
+  const hasInvalidEntry = useMemo(() => {
+    return enteredFuelEntries.some((entry) => isNaN(entry.parsed) || entry.parsed <= 0)
+  }, [enteredFuelEntries])
 
   const resolveFuelTypeId = useCallback(
     (input: string) => {
@@ -235,50 +262,82 @@ export const PriceSubmissionForm: React.FC = () => {
   async function submit() {
     setError(null)
     if (!station) return setError('Please select a station')
-    if (!fuelType) return setError('Please select a fuel type')
-    if (isNaN(parsedPrice)) return setError('Price must be a number')
-    if (parsedPrice <= 0) return setError('Price must be positive')
-    if (parsedPrice > 100) {
-      if (!confirm('The price entered looks unusually high. Submit anyway?')) return
+    if (enteredFuelEntries.length === 0) return setError('Enter at least one fuel price')
+    if (hasInvalidEntry) return setError('All entered prices must be valid positive numbers')
+
+    const submissionPayloads = enteredFuelEntries.map((entry) => ({
+      fuelTypeId: entry.fuelTypeId,
+      fuelTypeName: entry.fuelTypeName,
+      price: entry.parsed,
+    }))
+
+    if (submissionPayloads.some((entry) => entry.price > 100)) {
+      if (!confirm('One or more prices entered look unusually high. Submit anyway?')) return
     }
 
     setLoading(true)
     try {
-      const { data } = await apiClient.post('/price-submissions', {
+      const response = await apiClient.post('/price-submissions', {
         stationId: station.id,
-        fuelTypeId: fuelType,
-        price: parsedPrice,
         submissionMethod: method,
+        entries: submissionPayloads.map((entry) => ({
+          fuelTypeId: entry.fuelTypeId,
+          price: entry.price,
+        })),
       })
 
-      const fuelDisplay = (fuelTypesList || []).find((f: any) => f.id === fuelType)
-      const enhanced = Object.assign({}, data, {
-        station_name: station?.name || data.station_name || data.stationName,
-        fuel_type:
-          (fuelDisplay && (fuelDisplay.displayName || fuelDisplay.name)) ||
-          data.fuel_type ||
-          data.fuelTypeName,
-      })
+      const responseEntries = Array.isArray(response.data?.submissions)
+        ? response.data.submissions
+        : [response.data]
+
+      const submittedEntries: FuelSubmissionEntry[] = submissionPayloads.map((entry) => ({
+        fuelTypeId: entry.fuelTypeId,
+        fuelTypeName: entry.fuelTypeName,
+        price: entry.price,
+      }))
 
       try {
         const key = 'price_submission_history'
         const existingRaw = localStorage.getItem(key)
         const existing = existingRaw ? JSON.parse(existingRaw) : []
-        const record = {
-          id: enhanced.id || `local-${Date.now()}`,
-          station_name: enhanced.station_name,
-          fuel_type: enhanced.fuel_type,
-          price: enhanced.price,
-          submittedAt: enhanced.submittedAt || new Date().toISOString(),
-          moderationStatus: enhanced.moderationStatus || enhanced.status || 'pending',
-        }
-        const next = [record].concat(existing).slice(0, 50)
+        const newRecords = submittedEntries.map((entry, index) => {
+          const data = responseEntries[index] || {}
+          return {
+            id: data.id || `local-${Date.now()}-${entry.fuelTypeId}`,
+            station_name: station.name,
+            fuel_type: entry.fuelTypeName,
+            price: entry.price,
+            submittedAt: data.submittedAt || new Date().toISOString(),
+            moderationStatus: data.moderationStatus || data.status || 'pending',
+          }
+        })
+        const next = newRecords.concat(existing).slice(0, 50)
         localStorage.setItem(key, JSON.stringify(next))
+
+        queryClient.setQueryData(['my-submissions', 1], (previous: any) => {
+          const existingItems = Array.isArray(previous?.items) ? previous.items : []
+          return {
+            ...(previous || {}),
+            items: [...newRecords, ...existingItems],
+            pagination: previous?.pagination || null,
+          }
+        })
       } catch (_err) {
         // ignore localStorage errors
       }
 
-      setConfirmed(enhanced)
+      queryClient.invalidateQueries({ queryKey: ['my-submissions'] })
+
+      const firstResponse = responseEntries[0] || {}
+      const singleFuelSummary = submittedEntries.length === 1
+      setConfirmed({
+        ...firstResponse,
+        station_name: station?.name || firstResponse.station_name || firstResponse.stationName,
+        fuel_type: singleFuelSummary
+          ? submittedEntries[0].fuelTypeName
+          : `${submittedEntries.length} fuel types submitted`,
+        submittedEntries,
+      })
       setCurrentStep('confirm')
     } catch (e: any) {
       setError(e?.response?.data?.error || e.message || 'Submission failed')
@@ -422,37 +481,50 @@ export const PriceSubmissionForm: React.FC = () => {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">Fuel Type *</label>
-              <select
-                value={fuelType}
-                onChange={(e) => setFuelType(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
+              <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">Fuel Prices *</label>
+              <div className="space-y-3">
                 {fuelTypesList.length === 0 ? (
-                  <option value="">Loading...</option>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Loading fuel types...</p>
                 ) : (
-                  fuelTypesList.map((f: any) => (
-                    <option key={f.id} value={f.id}>
-                      {f.displayName || f.name}
-                    </option>
-                  ))
+                  fuelTypesList.map((f) => {
+                    const isHighlighted = fuelType === f.id
+                    return (
+                      <div key={f.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_2fr] gap-2 items-center">
+                        <label
+                          htmlFor={`fuel-price-${f.id}`}
+                          className={`text-sm ${
+                            isHighlighted
+                              ? 'font-semibold text-blue-700 dark:text-blue-300'
+                              : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {f.displayName || f.name}
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-700 dark:text-slate-300">$</span>
+                          <input
+                            id={`fuel-price-${f.id}`}
+                            inputMode="decimal"
+                            value={pricesByFuelType[f.id] || ''}
+                            onChange={(e) => {
+                              const nextValue = e.target.value
+                              setPricesByFuelType((prev) => ({
+                                ...prev,
+                                [f.id]: nextValue,
+                              }))
+                              setFuelType(f.id)
+                            }}
+                            placeholder="3.79"
+                            className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <span className="text-slate-600 dark:text-slate-400">/L</span>
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
-              </select>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">Price (per litre) *</label>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-white">$</span>
-                <input
-                  inputMode="decimal"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="3.79"
-                  className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                />
-                <span className="text-slate-600 dark:text-slate-400">/L</span>
               </div>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Fill one or more fuel prices, then submit together.</p>
             </div>
 
             {error && (
@@ -470,9 +542,9 @@ export const PriceSubmissionForm: React.FC = () => {
               </button>
               <button
                 onClick={submit}
-                disabled={loading || !station || !fuelType || isNaN(parsedPrice) || parsedPrice <= 0}
+                disabled={loading || !station || enteredFuelEntries.length === 0 || hasInvalidEntry}
                 className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
-                  loading || !station || !fuelType || isNaN(parsedPrice) || parsedPrice <= 0
+                  loading || !station || enteredFuelEntries.length === 0 || hasInvalidEntry
                     ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
@@ -506,8 +578,14 @@ export const PriceSubmissionForm: React.FC = () => {
               {method === 'voice' && (
                 <VoiceInputScreen
                   onParsed={(data) => {
-                    setFuelType(resolveFuelTypeId(data.fuelType))
-                    setPrice(String(data.price))
+                    const parsedFuelTypeId = resolveFuelTypeId(data.fuelType)
+                    if (parsedFuelTypeId) {
+                      setFuelType(parsedFuelTypeId)
+                      setPricesByFuelType((prev) => ({
+                        ...prev,
+                        [parsedFuelTypeId]: String(data.price),
+                      }))
+                    }
                     setMethod('text')
                     setShowModal(false)
                   }}
@@ -522,8 +600,14 @@ export const PriceSubmissionForm: React.FC = () => {
               {method === 'photo' && (
                 <PhotoUploadScreen
                   onParsed={(data) => {
-                    setFuelType(resolveFuelTypeId(data.fuelType))
-                    setPrice(String(data.price))
+                    const parsedFuelTypeId = resolveFuelTypeId(data.fuelType)
+                    if (parsedFuelTypeId) {
+                      setFuelType(parsedFuelTypeId)
+                      setPricesByFuelType((prev) => ({
+                        ...prev,
+                        [parsedFuelTypeId]: String(data.price),
+                      }))
+                    }
                     setMethod('text')
                     setShowModal(false)
                   }}
@@ -556,12 +640,22 @@ export const PriceSubmissionForm: React.FC = () => {
               <p className="text-sm text-slate-700 dark:text-slate-300">
                 <span className="font-semibold text-slate-900 dark:text-white">Station:</span> {confirmed.station_name || confirmed.stationName || station?.name || 'Unknown'}
               </p>
-              <p className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">Fuel:</span> {confirmed.fuel_type || confirmed.fuelTypeName || 'Unknown'}
-              </p>
-              <p className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">Price:</span> ${Number(confirmed.price || 0).toFixed(2)} /L
-              </p>
+              {Array.isArray(confirmed.submittedEntries) && confirmed.submittedEntries.length > 0 ? (
+                confirmed.submittedEntries.map((entry: FuelSubmissionEntry) => (
+                  <p key={entry.fuelTypeId} className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-slate-900 dark:text-white">{entry.fuelTypeName}:</span> ${entry.price.toFixed(2)} /L
+                  </p>
+                ))
+              ) : (
+                <>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-slate-900 dark:text-white">Fuel:</span> {confirmed.fuel_type || confirmed.fuelTypeName || 'Unknown'}
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-slate-900 dark:text-white">Price:</span> ${Number(confirmed.price || 0).toFixed(2)} /L
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -569,7 +663,8 @@ export const PriceSubmissionForm: React.FC = () => {
                 onClick={() => {
                   setConfirmed(null)
                   setCurrentStep('station')
-                  setPrice('')
+                  setFuelType('')
+                  setPricesByFuelType({})
                   setMethod('text')
                   setError(null)
                 }}

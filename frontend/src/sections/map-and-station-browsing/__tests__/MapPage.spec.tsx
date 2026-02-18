@@ -112,7 +112,7 @@ describe('MapPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByPlaceholderText('Filter stations by name...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
@@ -133,7 +133,7 @@ describe('MapPage', () => {
     if (filterButton) {
       await user.click(filterButton);
       // Modal opened - check if filter options are visible
-      expect(screen.getByPlaceholderText('Filter stations by name...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
     }
   });
 
@@ -147,7 +147,7 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name...');
+    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
     await user.type(searchInput, 'test{Enter}');
 
     // Component updates the search query and triggers a fetch with React Query
@@ -166,13 +166,13 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name...');
+    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
     await user.type(searchInput, 'test{Enter}');
 
     // Component may show loading indicator during fetch
     await waitFor(() => {
       // After query completes, search input should still be there
-      expect(screen.getByPlaceholderText('Filter stations by name...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
     });
   });
 
@@ -188,7 +188,7 @@ describe('MapPage', () => {
     // Component uses geolocation to get user location, then fetches nearby stations
     await waitFor(() => {
       // Verify search input is rendered (component loaded)
-      expect(screen.getByPlaceholderText('Filter stations by name...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
     }, { timeout: 5000 });
   });
 
@@ -222,7 +222,7 @@ describe('MapPage', () => {
 
     // Component should render the search input even with errors
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Filter stations by name...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
     });
   });
 
@@ -267,7 +267,7 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name...');
+    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
 
     // Perform a search that returns results
     await user.type(searchInput, 'test{Enter}');
