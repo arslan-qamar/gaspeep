@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { apiClient, stationApi } from '../../lib/api'
 import { VoiceInputScreen } from './VoiceInputScreen'
 import { PhotoUploadScreen } from './PhotoUploadScreen'
+import type { VoiceParseResult } from './voicePriceParser'
 import { searchStationsNearby } from '../../services/stationsService'
 import { calculateDistance } from '../../lib/utils'
 import { MapView } from '../map-and-station-browsing/components/MapView'
@@ -29,6 +30,15 @@ type FuelSubmissionEntry = {
   price: number
 }
 
+type VoiceReviewEntry = {
+  id: string
+  selected: boolean
+  spokenFuel: string
+  fuelTypeId: string
+  price: string
+  confidence: number
+}
+
 export const PriceSubmissionForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<SubmissionStep>('station')
   const [station, setStation] = useState<Station | null>(null)
@@ -47,7 +57,12 @@ export const PriceSubmissionForm: React.FC = () => {
   const [isLoadingStations, setIsLoadingStations] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [mapViewport, setMapViewport] = useState<{ latitude: number; longitude: number; zoom: number } | null>(null)
-  const [lastFetchPoint, setLastFetchPoint] = useState<{ lat: number; lng: number } | null>(null)
+  const [mapFocusLocation, setMapFocusLocation] = useState<{ lat: number; lng: number; zoom: number } | null>(null)
+  const [debouncedStationQuery, setDebouncedStationQuery] = useState('')
+  const [showStationDropdown, setShowStationDropdown] = useState(false)
+  const [voiceParseResult, setVoiceParseResult] = useState<VoiceParseResult | null>(null)
+  const [voiceReviewEntries, setVoiceReviewEntries] = useState<VoiceReviewEntry[]>([])
+  const [voiceReviewError, setVoiceReviewError] = useState<string | null>(null)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -62,6 +77,12 @@ export const PriceSubmissionForm: React.FC = () => {
 
   const currentStepNumber =
     currentStep === 'station' ? 1 : currentStep === 'submit' ? 2 : 3
+
+  const resetVoiceFlow = useCallback(() => {
+    setVoiceParseResult(null)
+    setVoiceReviewEntries([])
+    setVoiceReviewError(null)
+  }, [])
 
   // Prefill station / fuel type from navigation state (e.g. from map)
   useEffect(() => {
@@ -154,11 +175,15 @@ export const PriceSubmissionForm: React.FC = () => {
     )
   }, [])
 
-  const fetchNearby = useCallback(async (lat: number, lng: number, zoom: number) => {
+  const fetchNearby = useCallback(async (lat: number, lng: number, query: string) => {
     setIsLoadingStations(true)
     try {
-      const radiusKm = zoom >= 15 ? 3 : zoom >= 12 ? 8 : 15
-      const response = await searchStationsNearby({ latitude: lat, longitude: lng, radiusKm })
+      const response = await searchStationsNearby({
+        latitude: lat,
+        longitude: lng,
+        radiusKm: 150,
+        query: query.trim() || undefined,
+      })
 
       const mapped: Station[] = (response || [])
         .filter((s: any) => typeof s.latitude === 'number' && typeof s.longitude === 'number')
@@ -171,11 +196,10 @@ export const PriceSubmissionForm: React.FC = () => {
           longitude: s.longitude,
           distance: calculateDistance(lat, lng, s.latitude, s.longitude),
         }))
-        .sort((a, b) => (a.distance || 0) - (b.distance || 0))
+        .sort((a: Station, b: Station) => (a.distance || 0) - (b.distance || 0))
 
       if (!isMountedRef.current) return
       setNearbyStations(mapped)
-      setLastFetchPoint({ lat, lng })
     } catch (_err) {
       if (!isMountedRef.current) return
       setNearbyStations([])
@@ -186,30 +210,27 @@ export const PriceSubmissionForm: React.FC = () => {
   }, [])
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedStationQuery(stationQuery)
+    }, 250)
+    return () => window.clearTimeout(timeoutId)
+  }, [stationQuery])
+
+  useEffect(() => {
     if (!mapViewport) return
-
-    const shouldFetch =
-      !lastFetchPoint ||
-      calculateDistance(lastFetchPoint.lat, lastFetchPoint.lng, mapViewport.latitude, mapViewport.longitude) > 1
-
-    if (!shouldFetch) return
-
-    fetchNearby(mapViewport.latitude, mapViewport.longitude, mapViewport.zoom)
-  }, [mapViewport, lastFetchPoint, fetchNearby])
-
-  const filteredStations = useMemo(() => {
-    if (!stationQuery.trim()) return nearbyStations
-    const query = stationQuery.toLowerCase()
-    return nearbyStations.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        (s.address || '').toLowerCase().includes(query) ||
-        (s.brand || '').toLowerCase().includes(query)
-    )
-  }, [nearbyStations, stationQuery])
+    fetchNearby(mapViewport.latitude, mapViewport.longitude, debouncedStationQuery)
+  }, [mapViewport, debouncedStationQuery, fetchNearby])
 
   const mapStations = useMemo<MapStation[]>(() => {
-    return filteredStations
+    const stationsForMap =
+      station &&
+      typeof station.latitude === 'number' &&
+      typeof station.longitude === 'number' &&
+      !nearbyStations.some((nearby) => nearby.id === station.id)
+        ? [station, ...nearbyStations]
+        : nearbyStations
+
+    return stationsForMap
       .filter((s) => typeof s.latitude === 'number' && typeof s.longitude === 'number')
       .map((s) => ({
         id: s.id,
@@ -220,7 +241,23 @@ export const PriceSubmissionForm: React.FC = () => {
         longitude: s.longitude as number,
         prices: [],
       }))
-  }, [filteredStations])
+  }, [nearbyStations, station])
+
+  const selectStation = useCallback((selectedStation: Station) => {
+    setStation(selectedStation)
+    setStationQuery(selectedStation.name)
+    setShowStationDropdown(false)
+
+    if (typeof selectedStation.latitude === 'number' && typeof selectedStation.longitude === 'number') {
+      const focus = { lat: selectedStation.latitude, lng: selectedStation.longitude, zoom: 15 }
+      setMapViewport({
+        latitude: focus.lat,
+        longitude: focus.lng,
+        zoom: focus.zoom,
+      })
+      setMapFocusLocation(focus)
+    }
+  }, [])
 
   const enteredFuelEntries = useMemo(() => {
     return fuelTypesList
@@ -254,10 +291,46 @@ export const PriceSubmissionForm: React.FC = () => {
           f.name.toLowerCase() === normalized ||
           (f.displayName || '').toLowerCase() === normalized
       )
-      return byName?.id || fuelType || ''
+      if (byName) return byName.id
+
+      const byContains = fuelTypesList.find(
+        (f) =>
+          f.name.toLowerCase().includes(normalized) ||
+          (f.displayName || '').toLowerCase().includes(normalized) ||
+          normalized.includes(f.name.toLowerCase()) ||
+          normalized.includes((f.displayName || '').toLowerCase())
+      )
+
+      return byContains?.id || ''
     },
-    [fuelType, fuelTypesList]
+    [fuelTypesList]
   )
+
+  const applyVoiceSelections = useCallback(() => {
+    const approvedEntries = voiceReviewEntries
+      .filter((entry) => entry.selected)
+      .map((entry) => ({
+        fuelTypeId: entry.fuelTypeId,
+        price: parseFloat(entry.price),
+      }))
+      .filter((entry) => entry.fuelTypeId && Number.isFinite(entry.price) && entry.price > 0)
+
+    if (approvedEntries.length === 0) {
+      setVoiceReviewError('Select at least one valid fuel entry to apply.')
+      return
+    }
+
+    setPricesByFuelType((previous) => {
+      const next = { ...previous }
+      approvedEntries.forEach((entry) => {
+        next[entry.fuelTypeId] = entry.price.toFixed(2)
+      })
+      return next
+    })
+    setFuelType(approvedEntries[0].fuelTypeId)
+    setShowModal(false)
+    resetVoiceFlow()
+  }, [resetVoiceFlow, voiceReviewEntries])
 
   async function submit() {
     setError(null)
@@ -370,24 +443,93 @@ export const PriceSubmissionForm: React.FC = () => {
 
         {currentStep === 'station' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Select Nearby Station</h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Search Station</h2>
 
-            <input
-              type="text"
-              value={stationQuery}
-              onChange={(e) => setStationQuery(e.target.value)}
-              placeholder="Search nearby stations"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={stationQuery}
+                onChange={(e) => {
+                  setStationQuery(e.target.value)
+                  setShowStationDropdown(true)
+                }}
+                onFocus={() => setShowStationDropdown(true)}
+                onBlur={() => {
+                  window.setTimeout(() => setShowStationDropdown(false), 150)
+                }}
+                placeholder="Search station by name or address"
+                className="w-full py-2 pl-3 pr-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              />
+              {stationQuery.trim().length > 0 && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setStationQuery('')
+                    setShowStationDropdown(true)
+                  }}
+                  aria-label="Clear station search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                >
+                  <span aria-hidden="true" className="text-lg leading-none">&times;</span>
+                </button>
+              )}
+
+              {showStationDropdown && (
+                <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                  {isLoadingStations ? (
+                    <div className="p-3 text-sm text-slate-600 dark:text-slate-400">Searching stations...</div>
+                  ) : nearbyStations.length === 0 ? (
+                    <div className="p-3 text-sm text-slate-600 dark:text-slate-400">No stations matched your search.</div>
+                  ) : (
+                    nearbyStations.slice(0, 20).map((s) => {
+                      const isSelected = s.id === station?.id
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectStation(s)}
+                          className={`w-full border-b border-slate-100 p-3 text-left last:border-b-0 dark:border-slate-800 ${
+                            isSelected
+                              ? 'bg-blue-50 dark:bg-blue-950/40'
+                              : 'bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="font-medium text-slate-900 dark:text-white">{s.name}</div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">{s.address || 'Address unavailable'}</div>
+                          {typeof s.distance === 'number' && (
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">{s.distance.toFixed(1)} km away</div>
+                          )}
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="h-80 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600">
               {userLocation && mapViewport ? (
                 <MapView
                   stations={mapStations}
                   selectedStationId={station?.id}
+                  focusLocation={mapFocusLocation || undefined}
                   onStationSelect={(selected) => {
-                    const chosen = filteredStations.find((s) => s.id === selected.id)
-                    if (chosen) setStation(chosen)
+                    const chosen = nearbyStations.find((s) => s.id === selected.id)
+                    if (chosen) {
+                      selectStation(chosen)
+                      return
+                    }
+
+                    selectStation({
+                      id: selected.id,
+                      name: selected.name,
+                      address: selected.address,
+                      brand: selected.brand,
+                      latitude: selected.latitude,
+                      longitude: selected.longitude,
+                    })
                   }}
                   userLocation={userLocation}
                   onViewportChange={setMapViewport}
@@ -397,36 +539,6 @@ export const PriceSubmissionForm: React.FC = () => {
                 <div className="h-full flex items-center justify-center text-sm text-slate-600 dark:text-slate-400">
                   Locating nearby stations...
                 </div>
-              )}
-            </div>
-
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {isLoadingStations && filteredStations.length === 0 ? (
-                <div className="p-4 text-center text-slate-600 dark:text-slate-400">Loading nearby stations...</div>
-              ) : filteredStations.length === 0 ? (
-                <div className="p-4 text-center text-slate-600 dark:text-slate-400">No nearby stations found.</div>
-              ) : (
-                filteredStations.slice(0, 20).map((s) => {
-                  const isSelected = s.id === station?.id
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setStation(s)}
-                      className={`w-full text-left p-3 border rounded-lg transition-colors ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-300'
-                      }`}
-                    >
-                      <div className="font-medium text-slate-900 dark:text-white">{s.name}</div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">{s.address || 'Address unavailable'}</div>
-                      {typeof s.distance === 'number' && (
-                        <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">{s.distance.toFixed(1)} km away</div>
-                      )}
-                    </button>
-                  )
-                })
               )}
             </div>
 
@@ -460,6 +572,7 @@ export const PriceSubmissionForm: React.FC = () => {
                 <button
                   onClick={() => {
                     setMethod('voice')
+                    resetVoiceFlow()
                     setShowModal(true)
                   }}
                   title="Voice Entry"
@@ -470,6 +583,7 @@ export const PriceSubmissionForm: React.FC = () => {
                 <button
                   onClick={() => {
                     setMethod('photo')
+                    resetVoiceFlow()
                     setShowModal(true)
                   }}
                   title="Camera / Photo Entry"
@@ -561,12 +675,13 @@ export const PriceSubmissionForm: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {method === 'voice' ? 'Voice Entry' : 'Camera / Photo Entry'}
+                {method === 'voice' ? (voiceParseResult ? 'Confirm Detected Prices' : 'Voice Entry') : 'Camera / Photo Entry'}
               </h3>
               <button
                 onClick={() => {
                   setShowModal(false)
                   setMethod('text')
+                  resetVoiceFlow()
                 }}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
@@ -576,25 +691,156 @@ export const PriceSubmissionForm: React.FC = () => {
 
             <div className="p-6">
               {method === 'voice' && (
-                <VoiceInputScreen
-                  onParsed={(data) => {
-                    const parsedFuelTypeId = resolveFuelTypeId(data.fuelType)
-                    if (parsedFuelTypeId) {
-                      setFuelType(parsedFuelTypeId)
-                      setPricesByFuelType((prev) => ({
-                        ...prev,
-                        [parsedFuelTypeId]: String(data.price),
-                      }))
-                    }
-                    setMethod('text')
-                    setShowModal(false)
-                  }}
-                  onCancel={() => {
-                    setShowModal(false)
-                    setMethod('text')
-                  }}
-                  isModal={true}
-                />
+                voiceParseResult ? (
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Transcript</p>
+                      <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{voiceParseResult.transcript}</p>
+                    </div>
+
+                    {voiceParseResult.unmatched.length > 0 && (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Needs Review</p>
+                        <p className="mt-1 text-sm text-amber-700 dark:text-amber-200">
+                          {voiceParseResult.unmatched.join(' | ')}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Detected prices</h4>
+                      {voiceReviewEntries.map((entry) => (
+                        <div key={entry.id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                              <input
+                                type="checkbox"
+                                checked={entry.selected}
+                                onChange={(event) => {
+                                  const checked = event.target.checked
+                                  setVoiceReviewEntries((previous) =>
+                                    previous.map((item) =>
+                                      item.id === entry.id ? { ...item, selected: checked } : item
+                                    )
+                                  )
+                                }}
+                              />
+                              Apply this entry
+                            </label>
+                            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                              {entry.confidence >= 0.9 ? 'High' : entry.confidence >= 0.8 ? 'Medium' : 'Low'} confidence
+                            </span>
+                          </div>
+
+                          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                            Heard: <span className="font-medium">{entry.spokenFuel}</span>
+                          </p>
+
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <select
+                              aria-label={`Fuel type for ${entry.spokenFuel}`}
+                              value={entry.fuelTypeId}
+                              onChange={(event) => {
+                                const nextFuelTypeId = event.target.value
+                                setVoiceReviewEntries((previous) =>
+                                  previous.map((item) =>
+                                    item.id === entry.id ? { ...item, fuelTypeId: nextFuelTypeId } : item
+                                  )
+                                )
+                              }}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                            >
+                              <option value="">Select fuel</option>
+                              {fuelTypesList.map((fuelOption) => (
+                                <option key={fuelOption.id} value={fuelOption.id}>
+                                  {fuelOption.displayName || fuelOption.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <input
+                              aria-label={`Price for ${entry.spokenFuel}`}
+                              inputMode="decimal"
+                              value={entry.price}
+                              onChange={(event) => {
+                                const nextPrice = event.target.value
+                                setVoiceReviewEntries((previous) =>
+                                  previous.map((item) =>
+                                    item.id === entry.id ? { ...item, price: nextPrice } : item
+                                  )
+                                )
+                              }}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {voiceReviewError && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                        <p className="text-sm text-red-600 dark:text-red-400">{voiceReviewError}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <button
+                        type="button"
+                        onClick={applyVoiceSelections}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        Apply Selected
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetVoiceFlow}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        Record Again
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowModal(false)
+                          setMethod('text')
+                          resetVoiceFlow()
+                        }}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <VoiceInputScreen
+                    fuelTypes={fuelTypesList}
+                    onParsed={(data) => {
+                      const reviewEntries: VoiceReviewEntry[] = data.candidates.map((candidate, index) => {
+                        const fallbackFuelTypeId =
+                          candidate.normalizedFuelId || resolveFuelTypeId(candidate.spokenFuel)
+
+                        return {
+                          id: `${index}-${candidate.spokenFuel}`,
+                          selected: Boolean(fallbackFuelTypeId),
+                          spokenFuel: candidate.spokenFuel,
+                          fuelTypeId: fallbackFuelTypeId,
+                          price: candidate.price.toFixed(2),
+                          confidence: candidate.confidence,
+                        }
+                      })
+
+                      setVoiceReviewError(null)
+                      setVoiceParseResult(data)
+                      setVoiceReviewEntries(reviewEntries)
+                    }}
+                    onCancel={() => {
+                      setShowModal(false)
+                      setMethod('text')
+                      resetVoiceFlow()
+                    }}
+                    isModal={true}
+                  />
+                )
               )}
 
               {method === 'photo' && (
@@ -614,6 +860,7 @@ export const PriceSubmissionForm: React.FC = () => {
                   onCancel={() => {
                     setShowModal(false)
                     setMethod('text')
+                    resetVoiceFlow()
                   }}
                   isModal={true}
                 />
@@ -667,6 +914,7 @@ export const PriceSubmissionForm: React.FC = () => {
                   setPricesByFuelType({})
                   setMethod('text')
                   setError(null)
+                  resetVoiceFlow()
                 }}
                 className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
               >

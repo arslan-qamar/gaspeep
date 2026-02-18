@@ -1,52 +1,100 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Mic, Square, ChevronLeft } from 'lucide-react'
-
-type Parsed = { station: { id: string; name: string }; fuelType: string; price: number }
+import {
+  parseVoiceTranscript,
+  type FuelTypeLike,
+  type VoiceParseResult,
+} from './voicePriceParser'
 
 interface VoiceInputScreenProps {
-  onParsed: (p: Parsed) => void
+  fuelTypes: FuelTypeLike[]
+  onParsed: (p: VoiceParseResult) => void
   onCancel: () => void
   isModal?: boolean
 }
 
-export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, onCancel, isModal = false }) => {
+export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({
+  fuelTypes,
+  onParsed,
+  onCancel,
+  isModal = false,
+}) => {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [transcription, setTranscription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [recognition, setRecognition] = useState<any>(null)
 
-  useEffect(() => {
-    // Check for Web Speech API support
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition()
-      recognitionInstance.continuous = true
-      recognitionInstance.interimResults = true
-      recognitionInstance.lang = 'en-AU'
+  const finalTranscriptRef = useRef('')
+  const interimTranscriptRef = useRef('')
+  const shouldParseOnEndRef = useRef(false)
 
-      recognitionInstance.onresult = (event: any) => {
-        let finalTranscript = ''
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' '
-          }
-        }
-        if (finalTranscript) {
-          setTranscription((prev) => prev + finalTranscript)
-        }
-      }
-
-      recognitionInstance.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error)
-        setError('Could not understand. Please try again.')
-        setIsRecording(false)
-      }
-
-      setRecognition(recognitionInstance)
+  const finalizeAndParse = useCallback(() => {
+    const transcript = `${finalTranscriptRef.current} ${interimTranscriptRef.current}`.trim()
+    if (!transcript) {
+      setError('No speech detected. Please try again.')
+      return
     }
-  }, [])
+
+    const parsed = parseVoiceTranscript(transcript, fuelTypes)
+    if (parsed.candidates.length === 0) {
+      setError('Could not detect fuel price details. Please record again.')
+      return
+    }
+
+    onParsed(parsed)
+  }, [fuelTypes, onParsed])
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) return
+
+    const recognitionInstance = new SpeechRecognition()
+    recognitionInstance.continuous = true
+    recognitionInstance.interimResults = true
+    recognitionInstance.lang = 'en-AU'
+
+    recognitionInstance.onresult = (event: any) => {
+      let finalChunk = ''
+      let interimChunk = ''
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript?.trim() || ''
+        if (!transcript) continue
+
+        if (event.results[i].isFinal) {
+          finalChunk += `${transcript} `
+        } else {
+          interimChunk += `${transcript} `
+        }
+      }
+
+      if (finalChunk) {
+        finalTranscriptRef.current = `${finalTranscriptRef.current} ${finalChunk}`.trim()
+      }
+      interimTranscriptRef.current = interimChunk.trim()
+
+      const preview = `${finalTranscriptRef.current} ${interimTranscriptRef.current}`.trim()
+      if (preview) setTranscription(preview)
+    }
+
+    recognitionInstance.onerror = (event: any) => {
+      if (event.error === 'aborted') return
+      console.error('Speech recognition error:', event.error)
+      setError('Could not understand. Please try again.')
+      shouldParseOnEndRef.current = false
+      setIsRecording(false)
+    }
+
+    recognitionInstance.onend = () => {
+      setIsRecording(false)
+      if (!shouldParseOnEndRef.current) return
+      shouldParseOnEndRef.current = false
+      finalizeAndParse()
+    }
+
+    setRecognition(recognitionInstance)
+  }, [finalizeAndParse])
 
   useEffect(() => {
     let timer: number | undefined
@@ -65,33 +113,28 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
     setTranscription('')
     setRecordingTime(0)
 
-    if (recognition) {
-      try {
-        recognition.start()
-        setIsRecording(true)
-      } catch (err) {
-        setError('Microphone access denied. Please allow microphone access.')
-      }
-    } else {
+    finalTranscriptRef.current = ''
+    interimTranscriptRef.current = ''
+    shouldParseOnEndRef.current = false
+
+    if (!recognition) {
       setError('Voice recognition not supported in this browser.')
+      return
+    }
+
+    try {
+      recognition.start()
+      setIsRecording(true)
+    } catch (_err) {
+      setError('Microphone access denied. Please allow microphone access.')
     }
   }
 
   const stopRecording = () => {
-    if (recognition) {
-      recognition.stop()
-    }
     setIsRecording(false)
-
-    // Parse the transcription (simple demo parsing)
-    if (transcription) {
-      // Demo: just simulate parsing
-      onParsed({
-        station: { id: 'demo', name: 'Demo Station' },
-        fuelType: 'E10',
-        price: 3.79,
-      })
-    }
+    if (!recognition) return
+    shouldParseOnEndRef.current = true
+    recognition.stop()
   }
 
   const formatTime = (seconds: number) => {
@@ -102,7 +145,6 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
 
   return (
     <div className={isModal ? '' : 'min-h-screen bg-slate-50 dark:bg-slate-950'}>
-      {/* Header - only show if not in modal */}
       {!isModal && (
         <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex items-center gap-2">
           <button
@@ -115,7 +157,6 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
         </div>
       )}
 
-      {/* Content */}
       <div className={isModal ? '' : 'max-w-md mx-auto p-6'}>
         <div className={isModal ? 'p-0' : 'bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-8'}>
           <div className="text-center mb-6">
@@ -123,7 +164,6 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
             <p className="text-slate-600 dark:text-slate-400">Say the fuel type and price</p>
           </div>
 
-          {/* Recording Display */}
           <div className="flex flex-col items-center justify-center mb-8">
             <div
               className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-3xl transition-all ${
@@ -142,7 +182,6 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
             )}
           </div>
 
-          {/* Transcription */}
           {transcription && (
             <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">Heard:</p>
@@ -150,14 +189,12 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
 
-          {/* Button */}
           <button
             onClick={isRecording ? stopRecording : startRecording}
             className={`flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold transition-colors text-white w-full ${
@@ -177,9 +214,8 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({ onParsed, on
             )}
           </button>
 
-          {/* Info */}
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
-            Example: "Shell Market Street, Diesel, three dollars seventy-nine"
+            Example: "E10 three seventy nine, diesel four twenty nine"
           </p>
         </div>
       </div>

@@ -174,7 +174,7 @@ func (h *StationHandler) SearchStationsNearby(c *gin.Context) {
 	var req struct {
 		Latitude  float64  `json:"latitude" binding:"required"`
 		Longitude float64  `json:"longitude" binding:"required"`
-		RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=50"`
+		RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=200"`
 		Query     string   `json:"query"`
 		FuelTypes []string `json:"fuelTypes"`
 		MaxPrice  float64  `json:"maxPrice"`

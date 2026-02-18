@@ -1,4 +1,3 @@
-import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 import '@testing-library/jest-dom'
@@ -9,6 +8,27 @@ jest.mock('../../../lib/api', () => {
       get: jest.fn(),
       post: jest.fn(),
     },
+  }
+})
+
+let mockVoiceParsedPayload = {
+  transcript: 'E10 three seventy nine and diesel four twenty nine',
+  candidates: [
+    { spokenFuel: 'E10', normalizedFuelId: 'f-e10', price: 3.79, confidence: 0.96 },
+    { spokenFuel: 'diesel', normalizedFuelId: 'f-diesel', price: 4.29, confidence: 0.94 },
+  ],
+  unmatched: [],
+}
+
+jest.mock('../VoiceInputScreen', () => {
+  const React = require('react')
+  return {
+    VoiceInputScreen: ({ onParsed }: any) => (
+      React.createElement('button', { onClick: () => onParsed(mockVoiceParsedPayload) }, 'Mock Parse Voice')
+    ),
+    default: ({ onParsed }: any) => (
+      React.createElement('button', { onClick: () => onParsed(mockVoiceParsedPayload) }, 'Mock Parse Voice')
+    ),
   }
 })
 
@@ -83,12 +103,13 @@ describe('PriceSubmissionForm', () => {
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith(
         '/stations/search-nearby',
-        expect.any(Object),
+        expect.objectContaining({ radiusKm: 150 }),
         expect.any(Object)
       )
     )
 
     // Step 1: select station and continue
+    fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
     const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
     fireEvent.click(stationOption)
     fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
@@ -119,6 +140,96 @@ describe('PriceSubmissionForm', () => {
     expect(screen.getByText(/Your submission has been received/i)).toBeInTheDocument()
     expect(screen.getByText(/Station:/i)).toBeInTheDocument()
     expect(screen.getByText(/Unleaded 91/)).toBeInTheDocument()
+  })
+
+  it('shows a clear button for station search and clears the text when clicked', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({ data: [{ id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' }] })
+    ;(apiClient.post as jest.Mock).mockResolvedValue({
+      data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
+    })
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    const searchInput = screen.getByPlaceholderText(/search station by name or address/i) as HTMLInputElement
+    fireEvent.change(searchInput, { target: { value: 'Crows' } })
+
+    const clearButton = screen.getByRole('button', { name: /clear station search/i })
+    fireEvent.click(clearButton)
+
+    expect(searchInput).toHaveValue('')
+  })
+
+  it('requires review before applying voice candidates and submits selected entries as voice method', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({
+      data: [
+        { id: 'f-e10', name: 'E10', displayName: 'E10' },
+        { id: 'f-diesel', name: 'DIESEL', displayName: 'Diesel' },
+      ],
+    })
+    ;(apiClient.post as jest.Mock).mockImplementation((url: string, body: any) => {
+      if (url === '/stations/search-nearby') {
+        return Promise.resolve({
+          data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
+        })
+      }
+      if (url === '/price-submissions') {
+        return Promise.resolve({
+          data: {
+            submissions: (body.entries || []).map((entry: any) => ({
+              id: `ps-${entry.fuelTypeId}`,
+              price: entry.price,
+              moderationStatus: 'pending',
+            })),
+          },
+        })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
+    fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
+    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    fireEvent.click(stationOption)
+    fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
+
+    fireEvent.click(screen.getByTitle('Voice Entry'))
+    fireEvent.click(screen.getByRole('button', { name: /mock parse voice/i }))
+
+    expect(await screen.findByRole('heading', { name: /Confirm Detected Prices/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /apply selected/i }))
+
+    expect(screen.getByLabelText('E10')).toHaveValue('3.79')
+    expect(screen.getByLabelText('Diesel')).toHaveValue('4.29')
+
+    fireEvent.click(screen.getByRole('button', { name: /submit price/i }))
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/price-submissions',
+        expect.objectContaining({
+          stationId: 's-1',
+          submissionMethod: 'voice',
+          entries: [
+            { fuelTypeId: 'f-e10', price: 3.79 },
+            { fuelTypeId: 'f-diesel', price: 4.29 },
+          ],
+        })
+      )
+    )
   })
 })
 

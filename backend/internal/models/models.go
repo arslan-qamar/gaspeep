@@ -151,7 +151,7 @@ type FuelPriceData struct {
 type StationsNearbyRequest struct {
 	Latitude  float64  `json:"latitude" binding:"required"`
 	Longitude float64  `json:"longitude" binding:"required"`
-	RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=50"`
+	RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=200"`
 	FuelTypes []string `json:"fuelTypes"`
 	MaxPrice  float64  `json:"maxPrice"`
 }

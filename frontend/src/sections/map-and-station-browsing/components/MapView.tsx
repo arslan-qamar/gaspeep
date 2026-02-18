@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
@@ -14,6 +14,7 @@ interface MapViewProps {
   onStationSelect: (station: Station) => void;
   selectedStationId?: string;
   userLocation?: { lat: number; lng: number };
+  focusLocation?: { lat: number; lng: number; zoom?: number };
   onViewportChange?: (viewport: { latitude: number; longitude: number; zoom: number }) => void;
   isFetchingMore?: boolean;
 }
@@ -23,12 +24,19 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
   onStationSelect,
   selectedStationId,
   userLocation = { lat: 40.7128, lng: -74.006 },
+  focusLocation,
   onViewportChange,
   isFetchingMore = false,
 }, _ref) => {
   const mapRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [iconLoadErrors, setIconLoadErrors] = useState<Record<string, boolean>>({});
+  const getMapInstance = useCallback(() => {
+    if (!mapRef.current) return null;
+    if (typeof mapRef.current.getMap === 'function') return mapRef.current.getMap();
+    if (typeof mapRef.current.flyTo === 'function') return mapRef.current;
+    return null;
+  }, []);
 
   const handleMarkerClick = useCallback(
     (station: Station) => {
@@ -40,7 +48,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
   const handleGeolocate = useCallback(() => {
     if (!mapRef.current) return;
 
-    const map = mapRef.current.getMap();
+    const map = getMapInstance();
     if (!map) return;
 
     if (!navigator.geolocation) {
@@ -77,12 +85,25 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
       },
       { enableHighAccuracy: true }
     );
-  }, [onViewportChange]);
+  }, [getMapInstance, onViewportChange]);
 
   const selectedStation = useMemo(
     () => selectedStationId ? stations.find((s) => s.id === selectedStationId) : undefined,
     [stations, selectedStationId],
   );
+
+  useEffect(() => {
+    if (!focusLocation || !mapRef.current) return;
+
+    const map = getMapInstance();
+    if (!map) return;
+
+    map.flyTo({
+      center: [focusLocation.lng, focusLocation.lat],
+      zoom: focusLocation.zoom ?? 15,
+      duration: 600,
+    });
+  }, [focusLocation, getMapInstance]);
 
   return (
     <Map
