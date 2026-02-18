@@ -30,26 +30,32 @@ describe('PriceSubmissionForm', () => {
   beforeEach(() => {
     ;(apiClient.get as jest.Mock).mockReset()
     ;(apiClient.post as jest.Mock).mockReset()
+    jest
+      .spyOn(global.navigator.geolocation, 'getCurrentPosition')
+      .mockImplementation((success: any) =>
+        success({ coords: { latitude: -33.86, longitude: 151.2 } })
+      )
   })
 
-  it('loads fuel types, autocompletes station, submits and shows confirmation', async () => {
+  it('loads nearby stations, completes 3-step submission flow, and shows confirmation dialog', async () => {
     // mock fuel types
     ;(apiClient.get as jest.Mock).mockImplementation((...args: any[]) => {
       const url = args[0] as string;
-      // const opts = args[1];
       if (url === '/fuel-types') {
         return Promise.resolve({ data: [
           { id: 'f-e10', name: 'E10', displayName: 'E10' },
           { id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' },
         ] })
       }
-      if (url === '/stations/search') {
-        return Promise.resolve({ data: [ { id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd' } ] })
-      }
       return Promise.resolve({ data: [] })
     })
 
     ;(apiClient.post as jest.Mock).mockImplementation((url: string, body: any) => {
+      if (url === '/stations/search-nearby') {
+        return Promise.resolve({
+          data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
+        })
+      }
       if (url === '/price-submissions') {
         return Promise.resolve({ data: Object.assign({ id: 'ps-1', price: body.price, moderationStatus: 'pending' }, { station_name: '7-Eleven Crows Nest', fuel_type: 'Unleaded 91' }) })
       }
@@ -67,17 +73,20 @@ describe('PriceSubmissionForm', () => {
     // wait for fuel types to load
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
 
-    // type station query
-    const station = screen.getByRole('textbox', { name: /station/i })
-    fireEvent.change(station, { target: { value: '7-Eleven' } })
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/stations/search-nearby',
+        expect.any(Object),
+        expect.any(Object)
+      )
+    )
 
-    // wait for suggestions
-    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/stations/search', expect.any(Object)))
+    // Step 1: select station and continue
+    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    fireEvent.click(stationOption)
+    fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
 
-    // click suggestion item (rendered as listitem)
-    const suggestion = await screen.findByText('7-Eleven Crows Nest')
-    fireEvent.mouseDown(suggestion)
-
+    // Step 2: select fuel type and enter price
     // select fuel type
     const select = screen.getByRole('combobox')
     fireEvent.change(select, { target: { value: 'f-91' } })
@@ -93,10 +102,11 @@ describe('PriceSubmissionForm', () => {
     // expect post called
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/price-submissions', expect.objectContaining({ stationId: 's-1', fuelTypeId: 'f-91' })))
 
-    // confirmation should render via component state
+    // Step 3: confirmation dialog should render
     const thanks = await screen.findByText(/Thanks for contributing!/i)
     expect(thanks).toBeInTheDocument()
-    expect(screen.getByText(/7-Eleven Crows Nest/)).toBeInTheDocument()
+    expect(screen.getByText(/Your submission has been received/i)).toBeInTheDocument()
+    expect(screen.getByText(/Station:/i)).toBeInTheDocument()
     expect(screen.getByText(/Unleaded 91/)).toBeInTheDocument()
   })
 })
