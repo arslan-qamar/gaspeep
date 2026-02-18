@@ -109,7 +109,7 @@ func main() {
 		stations.POST("", middleware.AuthMiddleware(), stationHandler.CreateStation)
 		stations.PUT("/:id", middleware.AuthMiddleware(), stationHandler.UpdateStation)
 		stations.DELETE("/:id", middleware.AuthMiddleware(), stationHandler.DeleteStation)
-		stations.POST("/nearby", stationHandler.GetStationsNearby)
+		stations.POST("/search-nearby", stationHandler.SearchStationsNearby)
 		stations.GET("/search", stationHandler.SearchStations)
 	}
 

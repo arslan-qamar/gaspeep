@@ -271,7 +271,7 @@ func (r *PgStationRepository) DeleteStation(id string) (bool, error) {
 	return rowsAffected > 0, nil
 }
 
-// GetStationsNearby returns stations within radius with fuel prices.
+// GetStationsNearby returns stations within radius with fuel prices, optionally filtered by name/address.
 func (r *PgStationRepository) GetStationsNearby(
 	lat, lon float64,
 	radiusKm int,
@@ -335,6 +335,153 @@ func (r *PgStationRepository) GetStationsNearby(
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query nearby stations: %w", err)
+	}
+	defer rows.Close()
+
+	stationsMap := make(map[string]*models.Station)
+
+	for rows.Next() {
+		var (
+			id, name, brand, address, operatingHours string
+			lat, lon                                 float64
+			amenities                                interface{}
+			lastVerified                             sql.NullTime
+			fuelTypeID                               sql.NullString
+			fuelTypeName, currency                   sql.NullString
+			price                                    sql.NullFloat64
+			lastUpdated                              sql.NullTime
+			verified                                 sql.NullBool
+		)
+
+		err := rows.Scan(
+			&id, &name, &brand, &address, &lat, &lon,
+			&operatingHours, &amenities, &lastVerified,
+			&fuelTypeID, &fuelTypeName, &price, &currency, &lastUpdated, &verified,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan station row: %w", err)
+		}
+
+		if _, exists := stationsMap[id]; !exists {
+			stationsMap[id] = &models.Station{
+				ID:             id,
+				Name:           name,
+				Brand:          brand,
+				Address:        address,
+				Latitude:       lat,
+				Longitude:      lon,
+				OperatingHours: operatingHours,
+				Amenities:      []string{},
+				Prices:         []models.FuelPriceData{},
+			}
+
+			if lastVerified.Valid {
+				stationsMap[id].LastVerifiedAt = &lastVerified.Time
+			}
+		}
+
+		if fuelTypeID.Valid && price.Valid {
+			priceData := models.FuelPriceData{
+				FuelTypeID:   fuelTypeID.String,
+				FuelTypeName: fuelTypeName.String,
+				Price:        price.Float64,
+				Currency:     currency.String,
+				Verified:     verified.Bool,
+			}
+			if lastUpdated.Valid {
+				priceData.LastUpdated = lastUpdated.Time
+			}
+			stationsMap[id].Prices = append(stationsMap[id].Prices, priceData)
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating station rows: %w", err)
+	}
+
+	result := make([]models.Station, 0, len(stationsMap))
+	for _, station := range stationsMap {
+		result = append(result, *station)
+	}
+
+	return result, nil
+}
+
+// SearchStationsNearby searches within a geographic radius with optional name/address search and fuel type/price filtering.
+// If searchQuery is empty, returns all nearby stations. If searchQuery is provided, filters by name/address.
+func (r *PgStationRepository) SearchStationsNearby(
+	lat, lon float64,
+	radiusKm int,
+	searchQuery string,
+	fuelTypes []string,
+	maxPrice float64,
+) ([]models.Station, error) {
+	query := `
+		SELECT
+			s.id, s.name, s.brand, s.address,
+			ST_Y(s.location::geometry) as latitude,
+			ST_X(s.location::geometry) as longitude,
+			s.operating_hours, s.amenities, s.last_verified_at,
+			fp.fuel_type_id, ft.name as fuel_type_name, fp.price, fp.currency, fp.last_updated_at,
+			CASE WHEN fp.verification_status = 'verified' THEN true ELSE false END as verified
+		FROM stations s
+		LEFT JOIN fuel_prices fp ON s.id = fp.station_id
+		LEFT JOIN fuel_types ft ON fp.fuel_type_id = ft.id
+		WHERE ST_DWithin(
+			s.location::geography,
+			ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+			$3 * 1000
+		)
+	`
+
+	args := []interface{}{lon, lat, radiusKm}
+	argIndex := 4
+
+	// Add name/address search filter if query is provided
+	if strings.TrimSpace(searchQuery) != "" {
+		query += `
+		AND (s.name ILIKE $4 OR s.address ILIKE $4)
+	`
+		args = append(args, "%"+strings.TrimSpace(searchQuery)+"%")
+		argIndex = 5
+	}
+
+	if len(fuelTypes) > 0 {
+		var uuidVals []string
+		var nameVals []string
+		for _, ft := range fuelTypes {
+			if _, err := uuid.Parse(ft); err == nil {
+				uuidVals = append(uuidVals, ft)
+			} else {
+				nameVals = append(nameVals, strings.ToUpper(ft))
+			}
+		}
+
+		if len(uuidVals) > 0 && len(nameVals) > 0 {
+			query += ` AND (fp.fuel_type_id = ANY($` + strconv.Itoa(argIndex) + `::uuid[]) OR UPPER(ft.name) = ANY($` + strconv.Itoa(argIndex+1) + `))`
+			args = append(args, pq.Array(uuidVals), pq.Array(nameVals))
+			argIndex += 2
+		} else if len(uuidVals) > 0 {
+			query += ` AND fp.fuel_type_id = ANY($` + strconv.Itoa(argIndex) + `::uuid[])`
+			args = append(args, pq.Array(uuidVals))
+			argIndex++
+		} else {
+			query += ` AND UPPER(ft.name) = ANY($` + strconv.Itoa(argIndex) + `)`
+			args = append(args, pq.Array(nameVals))
+			argIndex++
+		}
+	}
+
+	if maxPrice > 0 {
+		query += ` AND fp.price <= $` + strconv.Itoa(argIndex)
+		args = append(args, maxPrice)
+	}
+
+	query += ` ORDER BY ST_Distance(s.location::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography), s.name`
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search nearby stations: %w", err)
 	}
 	defer rows.Close()
 

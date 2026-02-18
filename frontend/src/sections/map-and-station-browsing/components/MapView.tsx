@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 const getBrandIconUrl = (brand: string | undefined): string | null => {
   if (!brand) return null;
-  return `/icons-svg/${brand}.svg`;
+  return `/icons-svg/${encodeURIComponent(brand)}.svg`;
 };
 
 interface MapViewProps {
@@ -28,6 +28,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
 }, _ref) => {
   const mapRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [iconLoadErrors, setIconLoadErrors] = useState<Record<string, boolean>>({});
 
   const handleMarkerClick = useCallback(
     (station: Station) => {
@@ -146,15 +147,20 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
       {/* Stations */}
       {stations
         .filter((station) => typeof station.latitude === 'number' && typeof station.longitude === 'number')
-        .map((station) => (
-          <Marker
-            key={station.id}
-            longitude={station.longitude}
-            latitude={station.latitude}
-            onClick={() => handleMarkerClick(station)}
-          >
-            <div className="relative">
-              {/* Brand Icon */}
+        .map((station) => {
+          const iconUrl = getBrandIconUrl(station.brand);
+          const hasIconError = iconLoadErrors[station.id] === true;
+          const showIcon = Boolean(iconUrl) && !hasIconError;
+
+          return (
+            <Marker
+              key={station.id}
+              longitude={station.longitude}
+              latitude={station.latitude}
+              onClick={() => handleMarkerClick(station)}
+            >
+              <div className="relative">
+                {/* Brand Icon */}
               <button
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all cursor-pointer shadow-md border-2 border-white ${
                   selectedStationId === station.id
@@ -164,35 +170,43 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
 
                 title={station.brand || 'Gas Station'}
               >
-                {getBrandIconUrl(station.brand) ? (
+                {showIcon ? (
                   <img
-                    src={getBrandIconUrl(station.brand)!}
+                    src={iconUrl!}
                     alt={station.brand || 'Gas Station'}
                     className="w-8 h-8"
+                    loading="lazy"
+                    onError={() =>
+                      setIconLoadErrors((prev) => ({
+                        ...prev,
+                        [station.id]: true,
+                      }))
+                    }
                   />
                 ) : (
                   <span>⛽</span>
                 )}
               </button>
-              {/* Price Badge */}
-              {Array.isArray(station.prices) && station.prices.length > 0 ? (
-                <div
-                  className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
-                  title="Lowest fuel price"
-                >
-                  ${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}
-                </div>
-              ) : (
-                <div
-                  className="absolute -bottom-2 -right-2 bg-gray-400 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
-                  title="No price data available"
-                >
-                  ?
-                </div>
-              )}
-            </div>
-          </Marker>
-        ))}
+                {/* Price Badge */}
+                {Array.isArray(station.prices) && station.prices.length > 0 ? (
+                  <div
+                    className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
+                    title="Lowest fuel price"
+                  >
+                    ${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}
+                  </div>
+                ) : (
+                  <div
+                    className="absolute -bottom-2 -right-2 bg-gray-400 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
+                    title="No price data available"
+                  >
+                    ?
+                  </div>
+                )}
+              </div>
+            </Marker>
+          );
+        })}
 
       {/* Popup for selected station */}
       {selectedStation && (

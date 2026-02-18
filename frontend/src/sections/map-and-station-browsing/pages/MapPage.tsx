@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
 import FilterModal, { FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { fetchNearbyStations, searchStations } from '../../../services/stationsService'
+import { searchStationsNearby } from '../../../services/stationsService'
 
 export const MapPage: React.FC = () => {
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     fuelTypes: [],
@@ -28,6 +29,7 @@ export const MapPage: React.FC = () => {
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
   const viewportRef = useRef<{ latitude: number; longitude: number; zoom: number } | null>(null);
   const prevFiltersRef = useRef(filters);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Params for the current fetch — updating this triggers the React Query fetch
   const [fetchParams, setFetchParams] = useState<{
@@ -38,21 +40,34 @@ export const MapPage: React.FC = () => {
     clearExisting?: boolean
   } | null>(null)
 
+  // Debounce search query
+  useEffect(() => {
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 350);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchQuery]);
+
   // Use React Query to fetch stations; this improves deduplication and caching.
   const queryOptions: UseQueryOptions<Station[], Error, Station[]> = {
-    queryKey: ['stations', fetchParams, filters],
+    queryKey: ['stations', fetchParams, filters, debouncedSearchQuery],
     queryFn: async ({ signal }) => {
       if (!fetchParams) return [] as Station[]
 
-      if (fetchParams.searchQuery && fetchParams.searchQuery.trim()) {
-        return searchStations(fetchParams.searchQuery, { lat: fetchParams.lat, lng: fetchParams.lng }, fetchParams.zoom, filters, signal) as Promise<Station[]>
-      }
-
       const radius = getRadiusFromZoom(fetchParams.zoom)
-      return fetchNearbyStations({
+
+      // Use unified /search-nearby endpoint for both browse and search modes
+      // (query parameter is optional - when empty, behaves like /nearby)
+      return searchStationsNearby({
         latitude: fetchParams.lat,
         longitude: fetchParams.lng,
         radiusKm: radius,
+        query: debouncedSearchQuery || undefined,
         fuelTypes: filters.fuelTypes.length > 0 ? filters.fuelTypes : undefined,
         maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
       }, signal) as Promise<Station[]>
@@ -73,7 +88,7 @@ export const MapPage: React.FC = () => {
 
       const newStations = fetchedStations as Station[]
 
-      if (fetchParams.searchQuery && fetchParams.searchQuery.trim() && newStations.length === 0) {
+      if (debouncedSearchQuery && debouncedSearchQuery.trim() && newStations.length === 0) {
         setStations(newStations)
         return
       }
@@ -102,7 +117,7 @@ export const MapPage: React.FC = () => {
         }
       }
       lastFetchLocation.current = { lat: fetchParams.lat, lng: fetchParams.lng, zoom: fetchParams.zoom }
-    }, [fetchedStations, fetchParams])
+    }, [fetchedStations, fetchParams, debouncedSearchQuery])
 
   // Get user's location (only on initial load)
   useEffect(() => {
@@ -135,15 +150,27 @@ export const MapPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch stations when userLocation changes (initial load + geolocation resolution).
-  // AbortController ensures if geolocation resolves while the default-location fetch
-  // is in flight, the stale fetch is cancelled and only the new one completes.
+  // Initial load/geolocation resolution.
   useEffect(() => {
     if (!userLocation) return;
     viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
-    setFetchParams({ lat: userLocation.lat, lng: userLocation.lng, zoom: 14, searchQuery, clearExisting: true });
+    setFetchParams({ lat: userLocation.lat, lng: userLocation.lng, zoom: 14, searchQuery: debouncedSearchQuery, clearExisting: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation]);
+
+  // Re-fetch against the current viewport when the debounced search query changes.
+  useEffect(() => {
+    if (!userLocation) return;
+
+    const vp = viewportRef.current ?? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
+    setFetchParams({
+      lat: vp.latitude,
+      lng: vp.longitude,
+      zoom: vp.zoom,
+      searchQuery: debouncedSearchQuery,
+      clearExisting: true,
+    });
+  }, [debouncedSearchQuery, userLocation]);
 
   // Re-fetch when filters change (skip initial render via reference comparison)
   useEffect(() => {
@@ -153,8 +180,8 @@ export const MapPage: React.FC = () => {
     const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
     if (!vp) return;
 
-    setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery, clearExisting: true });
-  }, [filters, userLocation]);
+    setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery: debouncedSearchQuery, clearExisting: true });
+  }, [filters, userLocation, debouncedSearchQuery]);
 
   // Reflect React Query's fetching state into local loading flags for UI
   useEffect(() => {
@@ -178,18 +205,13 @@ export const MapPage: React.FC = () => {
       calculateDistance(last.lat, last.lng, newViewport.latitude, newViewport.longitude) > 0.5 ||
       Math.abs(last.zoom - newViewport.zoom) > 1
     ) {
-      setFetchParams({ lat: newViewport.latitude, lng: newViewport.longitude, zoom: newViewport.zoom, searchQuery, clearExisting: false });
+      setFetchParams({ lat: newViewport.latitude, lng: newViewport.longitude, zoom: newViewport.zoom, searchQuery: debouncedSearchQuery, clearExisting: false });
     }
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
-  // Search stations
-  const handleSearch = async () => {
-    const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
-    if (!vp) return;
-
-    // Update `fetchParams` so the search respects current viewport, radius
-    // and local filters (and so moving the map after a search keeps the query).
-    setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery, clearExisting: true });
+  // Clear search query
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
 
   return (
@@ -203,13 +225,17 @@ export const MapPage: React.FC = () => {
             placeholder="Filter stations by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch();
-              }
-            }}
             className="flex-1 bg-transparent py-2 outline-none text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
           />
+          {searchQuery && (
+            <button
+              onClick={handleClearSearch}
+              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={18} className="text-slate-600 dark:text-slate-300" />
+            </button>
+          )}
         </div>
         <button
           onClick={() => setFilterModalOpen(true)}

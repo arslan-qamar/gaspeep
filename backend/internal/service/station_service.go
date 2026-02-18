@@ -14,6 +14,7 @@ type StationService interface {
 	DeleteStation(id string) (bool, error)
 	GetStationsNearby(lat, lon float64, radiusKm int, fuelTypes []string, maxPrice float64) ([]models.Station, error)
 	SearchStations(searchQuery string, limit int) ([]models.Station, error)
+	SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error)
 }
 
 type stationService struct {
@@ -50,4 +51,8 @@ func (s *stationService) GetStationsNearby(lat, lon float64, radiusKm int, fuelT
 
 func (s *stationService) SearchStations(searchQuery string, limit int) ([]models.Station, error) {
 	return s.stationRepo.SearchStations(searchQuery, limit)
+}
+
+func (s *stationService) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error) {
+	return s.stationRepo.SearchStationsNearby(lat, lon, radiusKm, searchQuery, fuelTypes, maxPrice)
 }

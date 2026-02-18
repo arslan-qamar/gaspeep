@@ -32,4 +32,5 @@ type StationRepository interface {
 	DeleteStation(id string) (bool, error)
 	GetStationsNearby(lat, lon float64, radiusKm int, fuelTypes []string, maxPrice float64) ([]models.Station, error)
 	SearchStations(searchQuery string, limit int) ([]models.Station, error)
+	SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error)
 }

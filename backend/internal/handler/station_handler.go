@@ -151,30 +151,6 @@ func (h *StationHandler) DeleteStation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Station deleted successfully"})
 }
 
-// GetStationsNearby handles POST /api/stations/nearby with fuel price filtering
-func (h *StationHandler) GetStationsNearby(c *gin.Context) {
-	var req struct {
-		Latitude  float64  `json:"latitude" binding:"required"`
-		Longitude float64  `json:"longitude" binding:"required"`
-		RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=50"`
-		FuelTypes []string `json:"fuelTypes"`
-		MaxPrice  float64  `json:"maxPrice"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameters: " + err.Error()})
-		return
-	}
-
-	stations, err := h.stationService.GetStationsNearby(req.Latitude, req.Longitude, req.RadiusKm, req.FuelTypes, req.MaxPrice)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stations: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, stations)
-}
-
 // SearchStations handles GET /api/stations/search
 func (h *StationHandler) SearchStations(c *gin.Context) {
 	query := c.Query("q")
@@ -184,6 +160,32 @@ func (h *StationHandler) SearchStations(c *gin.Context) {
 	}
 
 	stations, err := h.stationService.SearchStations(query, 20)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stations)
+}
+
+// SearchStationsNearby handles POST /api/stations/search-nearby with geospatial and fuel filtering
+// Query parameter is optional: when empty, returns all nearby stations (like /nearby); when present, filters by name/address
+func (h *StationHandler) SearchStationsNearby(c *gin.Context) {
+	var req struct {
+		Latitude  float64  `json:"latitude" binding:"required"`
+		Longitude float64  `json:"longitude" binding:"required"`
+		RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=50"`
+		Query     string   `json:"query"`
+		FuelTypes []string `json:"fuelTypes"`
+		MaxPrice  float64  `json:"maxPrice"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameters: " + err.Error()})
+		return
+	}
+
+	stations, err := h.stationService.SearchStationsNearby(req.Latitude, req.Longitude, req.RadiusKm, req.Query, req.FuelTypes, req.MaxPrice)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed: " + err.Error()})
 		return

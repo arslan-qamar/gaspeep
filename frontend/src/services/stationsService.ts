@@ -10,6 +10,14 @@ export type NearbyParams = {
   maxPrice?: number
 }
 
+export type SearchNearbyParams = {
+  latitude: number
+  longitude: number
+  radiusKm: number
+  query?: string
+  fuelTypes?: Array<number | string>
+  maxPrice?: number
+}
 
 export async function fetchNearbyStations(params: NearbyParams, signal?: AbortSignal) {
   try {
@@ -52,5 +60,16 @@ export async function searchStations(q: string, _location: { lat: number; lng: n
     .map((item) => item.station)
   } catch (e) {
     throw new Error('Failed to search stations')
+  }
+}
+
+export async function searchStationsNearby(params: SearchNearbyParams, signal?: AbortSignal) {
+  try {
+    const config: Record<string, any> = {}
+    if (signal) config.signal = signal
+    const resp = await apiClient.post('/stations/search-nearby', params, config)
+    return resp.data
+  } catch (e) {
+    throw new Error('Failed to search nearby stations')
   }
 }
