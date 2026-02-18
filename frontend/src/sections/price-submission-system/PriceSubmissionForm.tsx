@@ -698,15 +698,6 @@ export const PriceSubmissionForm: React.FC = () => {
                       <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{voiceParseResult.transcript}</p>
                     </div>
 
-                    {voiceParseResult.unmatched.length > 0 && (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Needs Review</p>
-                        <p className="mt-1 text-sm text-amber-700 dark:text-amber-200">
-                          {voiceParseResult.unmatched.join(' | ')}
-                        </p>
-                      </div>
-                    )}
-
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Detected prices</h4>
                       {voiceReviewEntries.map((entry) => (
