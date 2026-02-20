@@ -19,6 +19,7 @@ export interface CreateAlertPayload {
   name: string;
   fuelTypeId: string;
   priceThreshold: number;
+  recurrenceType: 'recurring' | 'one_off';
   location: {
     address: string;
     latitude: number;
@@ -45,6 +46,7 @@ interface BackendAlert {
   alertName: string;
   notifyViaPush: boolean;
   notifyViaEmail: boolean;
+  recurrenceType?: 'recurring' | 'one_off';
   isActive: boolean;
   createdAt: string;
   lastTriggeredAt: string | null;
@@ -58,6 +60,7 @@ interface BackendCreateAlertPayload {
   longitude: number;
   radiusKm: number;
   alertName: string;
+  recurrenceType: 'recurring' | 'one_off';
   notifyViaPush: boolean;
   notifyViaEmail: boolean;
 }
@@ -68,6 +71,7 @@ interface BackendUpdateAlertPayload {
   alertName?: string;
   notifyViaPush?: boolean;
   notifyViaEmail?: boolean;
+  recurrenceType?: 'recurring' | 'one_off';
   isActive?: boolean;
 }
 
@@ -142,6 +146,7 @@ const mapBackendAlertToFrontend = (
     status: alert.isActive ? 'active' : 'paused',
     notifyViaPush: alert.notifyViaPush,
     notifyViaEmail: alert.notifyViaEmail,
+    recurrenceType: alert.recurrenceType ?? 'recurring',
     createdAt: alert.createdAt,
     lastModifiedAt: alert.createdAt,
     lastTriggeredAt: alert.lastTriggeredAt,
@@ -186,6 +191,7 @@ export const createAlert = async (payload: CreateAlertPayload): Promise<Alert> =
     longitude: payload.location.longitude,
     radiusKm: toBackendRadiusKm(payload.radius, payload.radiusUnit),
     alertName: payload.name,
+    recurrenceType: payload.recurrenceType,
     notifyViaPush: payload.notifyViaPush,
     notifyViaEmail: payload.notifyViaEmail,
   };
@@ -222,6 +228,9 @@ export const updateAlert = async (
   }
   if (payload.notifyViaEmail !== undefined) {
     backendPayload.notifyViaEmail = payload.notifyViaEmail;
+  }
+  if (payload.recurrenceType !== undefined) {
+    backendPayload.recurrenceType = payload.recurrenceType;
   }
 
   await apiClient.put(`/alerts/${alertId}`, backendPayload);

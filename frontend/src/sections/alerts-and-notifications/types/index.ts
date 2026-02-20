@@ -3,6 +3,7 @@
  */
 
 export type AlertStatus = 'active' | 'paused';
+export type AlertRecurrenceType = 'recurring' | 'one_off';
 
 export type NotificationType = 'alert' | 'broadcast' | 'system';
 
@@ -30,6 +31,7 @@ export interface Alert {
   status: AlertStatus;
   notifyViaPush: boolean;
   notifyViaEmail: boolean;
+  recurrenceType?: AlertRecurrenceType;
   createdAt: string;
   lastModifiedAt: string;
   lastTriggeredAt: string | null;
@@ -175,6 +177,7 @@ export interface CreateAlertForm {
   alertName: string;
   notifyViaPush: boolean;
   notifyViaEmail: boolean;
+  recurrenceType: AlertRecurrenceType;
 }
 
 export interface UserLocation {

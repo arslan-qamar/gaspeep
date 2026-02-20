@@ -65,6 +65,14 @@ func (m *MockStationRepository) SearchStations(searchQuery string, limit int) ([
 	return args.Get(0).([]models.Station), args.Error(1)
 }
 
+func (m *MockStationRepository) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error) {
+	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, maxPrice)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Station), args.Error(1)
+}
+
 // ============ Station Service Tests ============
 
 func TestStationService_GetStations_CallsRepository(t *testing.T) {

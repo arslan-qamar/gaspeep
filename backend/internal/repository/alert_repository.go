@@ -13,6 +13,7 @@ type CreateAlertInput struct {
 	Longitude      float64
 	RadiusKm       int
 	AlertName      string
+	RecurrenceType string
 	NotifyViaPush  bool
 	NotifyViaEmail bool
 }
@@ -22,6 +23,7 @@ type UpdateAlertInput struct {
 	PriceThreshold float64
 	RadiusKm       int
 	AlertName      string
+	RecurrenceType *string
 	NotifyViaPush  *bool
 	NotifyViaEmail *bool
 	IsActive       *bool
@@ -60,6 +62,16 @@ type MatchingStationResult struct {
 	LastUpdated    *time.Time `json:"lastUpdated"`
 }
 
+// TriggeredAlertResult holds alert metadata returned after a trigger event is recorded.
+type TriggeredAlertResult struct {
+	AlertID        string
+	UserID         string
+	AlertName      string
+	RecurrenceType string
+	NotifyViaPush  bool
+	NotifyViaEmail bool
+}
+
 // AlertRepository defines data-access operations for alerts.
 type AlertRepository interface {
 	Create(userID string, input CreateAlertInput) (*models.Alert, error)
@@ -68,4 +80,5 @@ type AlertRepository interface {
 	Delete(id, userID string) (bool, error)
 	GetPriceContext(input PriceContextInput) (*PriceContextResult, error)
 	GetMatchingStations(alertID, userID string) ([]MatchingStationResult, error)
+	RecordTriggersForPrice(stationID, fuelTypeID string, price float64) ([]TriggeredAlertResult, error)
 }

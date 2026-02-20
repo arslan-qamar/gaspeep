@@ -37,6 +37,7 @@ func TestCreate_Success(t *testing.T) {
 	assert.Equal(t, 151.2153, alert.Longitude)
 	assert.Equal(t, 10, alert.RadiusKm)
 	assert.Equal(t, "My Alert", alert.AlertName)
+	assert.Equal(t, "recurring", alert.RecurrenceType)
 	assert.True(t, alert.IsActive)
 }
 
@@ -134,7 +135,6 @@ func TestUpdate_PartialUpdate(t *testing.T) {
 
 	user := testhelpers.CreateTestUser(t, db)
 	alert := testhelpers.CreateTestAlert(t, db, user.ID, -33.8568, 151.2153)
-
 
 	repo := NewPgAlertRepository(db)
 	input := UpdateAlertInput{
@@ -256,6 +256,29 @@ func TestCreate_WithDifferentPriceThresholds(t *testing.T) {
 		require.NoError(t, err, "Failed for threshold %.2f", threshold)
 		assert.Equal(t, threshold, alert.PriceThreshold)
 	}
+}
+
+func TestCreate_WithOneOffRecurrence(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	fuelType := testhelpers.CreateTestFuelType(t, db, "E10")
+
+	repo := NewPgAlertRepository(db)
+	input := CreateAlertInput{
+		FuelTypeID:     fuelType,
+		PriceThreshold: 1.50,
+		Latitude:       -33.8568,
+		Longitude:      151.2153,
+		RadiusKm:       10,
+		AlertName:      "One Off Alert",
+		RecurrenceType: "one_off",
+	}
+
+	alert, err := repo.Create(user.ID, input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "one_off", alert.RecurrenceType)
 }
 
 func TestGetPriceContext_WithNearbyPrices(t *testing.T) {

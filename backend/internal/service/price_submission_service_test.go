@@ -108,6 +108,14 @@ func setupPriceSubmissionTest(t *testing.T) (*priceSubmissionService, *MockFuelP
 	return service, mockFuelPriceRepo, mockSubmissionRepo
 }
 
+func setupPriceSubmissionTestWithAlert(t *testing.T) (*priceSubmissionService, *MockFuelPriceRepository, *MockPriceSubmissionRepository, *MockAlertRepository) {
+	mockFuelPriceRepo := new(MockFuelPriceRepository)
+	mockSubmissionRepo := new(MockPriceSubmissionRepository)
+	mockAlertRepo := new(MockAlertRepository)
+	service := NewPriceSubmissionService(mockSubmissionRepo, mockFuelPriceRepo, mockAlertRepo).(*priceSubmissionService)
+	return service, mockFuelPriceRepo, mockSubmissionRepo, mockAlertRepo
+}
+
 // ============ CreateSubmission Tests ============
 
 func TestCreateSubmission_ValidPhotoSubmission_AutoApproved(t *testing.T) {
@@ -134,13 +142,14 @@ func TestCreateSubmission_ValidPhotoSubmission_AutoApproved(t *testing.T) {
 }
 
 func TestCreateSubmission_ValidTextSubmission_AutoApproved(t *testing.T) {
-	service, mockFuelPriceRepo, mockSubmissionRepo := setupPriceSubmissionTest(t)
+	service, mockFuelPriceRepo, mockSubmissionRepo, mockAlertRepo := setupPriceSubmissionTestWithAlert(t)
 
 	mockFuelPriceRepo.On("StationExists", "station-123").Return(true, nil)
 	mockFuelPriceRepo.On("FuelTypeExists", "fuel-456").Return(true, nil)
 	mockSubmissionRepo.On("Create", mock.Anything).Return(&repository.PriceSubmissionResult{ID: "sub-789"}, nil)
 	mockSubmissionRepo.On("AutoApprove", "sub-789").Return(nil)
 	mockFuelPriceRepo.On("UpsertFuelPrice", "station-123", "fuel-456", 1.55).Return(nil)
+	mockAlertRepo.On("RecordTriggersForPrice", "station-123", "fuel-456", 1.55).Return([]repository.TriggeredAlertResult{}, nil)
 
 	result, err := service.CreateSubmission("user-1", CreateSubmissionRequest{
 		StationID:        "station-123",
@@ -153,6 +162,7 @@ func TestCreateSubmission_ValidTextSubmission_AutoApproved(t *testing.T) {
 	assert.NotNil(t, result)
 	mockSubmissionRepo.AssertExpectations(t)
 	mockFuelPriceRepo.AssertExpectations(t)
+	mockAlertRepo.AssertExpectations(t)
 }
 
 func TestCreateSubmission_ValidVoiceSubmission_NotAutoApproved(t *testing.T) {
@@ -331,8 +341,6 @@ func TestGetMySubmissions_ValidPagination(t *testing.T) {
 	mockSubmissionRepo.AssertExpectations(t)
 }
 
-
-
 func TestGetMySubmissions_PageLessThanOne_DefaultsToOne(t *testing.T) {
 	service, _, mockSubmissionRepo := setupPriceSubmissionTest(t)
 
@@ -458,7 +466,7 @@ func TestGetModerationQueue_CalculatesCorrectOffset(t *testing.T) {
 // ============ ModerateSubmission Tests ============
 
 func TestModerateSubmission_ApprovedStatus_UpdatesFuelPrice(t *testing.T) {
-	service, mockFuelPriceRepo, mockSubmissionRepo := setupPriceSubmissionTest(t)
+	service, mockFuelPriceRepo, mockSubmissionRepo, mockAlertRepo := setupPriceSubmissionTestWithAlert(t)
 
 	details := &repository.SubmissionDetails{
 		StationID:  "station-123",
@@ -468,6 +476,7 @@ func TestModerateSubmission_ApprovedStatus_UpdatesFuelPrice(t *testing.T) {
 	mockSubmissionRepo.On("GetSubmissionDetails", "sub-1").Return(details, nil)
 	mockSubmissionRepo.On("UpdateModerationStatus", "sub-1", "approved", "").Return(true, nil)
 	mockFuelPriceRepo.On("UpsertFuelPrice", "station-123", "fuel-456", 1.50).Return(nil)
+	mockAlertRepo.On("RecordTriggersForPrice", "station-123", "fuel-456", 1.50).Return([]repository.TriggeredAlertResult{}, nil)
 
 	updated, err := service.ModerateSubmission("sub-1", "approved", "")
 
@@ -475,6 +484,7 @@ func TestModerateSubmission_ApprovedStatus_UpdatesFuelPrice(t *testing.T) {
 	assert.True(t, updated)
 	mockSubmissionRepo.AssertExpectations(t)
 	mockFuelPriceRepo.AssertExpectations(t)
+	mockAlertRepo.AssertExpectations(t)
 }
 
 func TestModerateSubmission_RejectedStatus_NoFuelPriceUpdate(t *testing.T) {

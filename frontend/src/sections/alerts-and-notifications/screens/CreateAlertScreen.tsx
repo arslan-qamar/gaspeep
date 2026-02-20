@@ -34,6 +34,7 @@ export const CreateAlertScreen: React.FC = () => {
     alertName: '',
     notifyViaPush: true,
     notifyViaEmail: false,
+    recurrenceType: 'recurring',
   });
 
   const [fuelTypes, setFuelTypes] = useState<FuelType[]>([]);
@@ -109,6 +110,7 @@ export const CreateAlertScreen: React.FC = () => {
         alertName: alert.name,
         notifyViaPush: alert.notifyViaPush,
         notifyViaEmail: alert.notifyViaEmail,
+        recurrenceType: alert.recurrenceType ?? 'recurring',
       });
     } catch (err) {
       console.error('Error loading alert:', err);
@@ -181,6 +183,7 @@ export const CreateAlertScreen: React.FC = () => {
       name: formData.alertName,
       fuelTypeId: formData.fuelTypeId,
       priceThreshold: formData.priceThreshold,
+      recurrenceType: formData.recurrenceType,
       location: formData.location,
       radius: formData.radius,
       radiusUnit: formData.radiusUnit,
@@ -395,6 +398,53 @@ export const CreateAlertScreen: React.FC = () => {
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                     /L
                   </span>
+                </div>
+              </div>
+
+              {/* Alert recurrence */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Alert Frequency
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, recurrenceType: 'one_off' })
+                    }
+                    className={`
+                      rounded-lg border-2 px-4 py-3 text-left transition-colors
+                      ${
+                        formData.recurrenceType === 'one_off'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      }
+                    `}
+                  >
+                    <div className="font-medium text-slate-900 dark:text-white">One-off</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Notify once, then stop this alert
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, recurrenceType: 'recurring' })
+                    }
+                    className={`
+                      rounded-lg border-2 px-4 py-3 text-left transition-colors
+                      ${
+                        formData.recurrenceType === 'recurring'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      }
+                    `}
+                  >
+                    <div className="font-medium text-slate-900 dark:text-white">Recurring</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Keep notifying whenever prices match
+                    </div>
+                  </button>
                 </div>
               </div>
 

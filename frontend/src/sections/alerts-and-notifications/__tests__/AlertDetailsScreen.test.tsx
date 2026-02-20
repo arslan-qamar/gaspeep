@@ -46,6 +46,7 @@ const mockAlert: Alert = {
   status: 'active',
   notifyViaPush: true,
   notifyViaEmail: false,
+  recurrenceType: 'recurring',
   createdAt: '2026-01-01T00:00:00.000Z',
   lastModifiedAt: '2026-01-01T00:00:00.000Z',
   lastTriggeredAt: null,
@@ -74,6 +75,9 @@ describe('AlertDetailsScreen', () => {
 
     expect(await screen.findByText('Home alert')).toBeInTheDocument();
     expect(screen.getByText(/Coverage preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/Notification Type/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recurring notification \(daily\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Delivery: Push/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Matching Stations/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Trigger History/i })).toBeInTheDocument();
     expect(screen.getByTestId('map-mock')).toBeInTheDocument();

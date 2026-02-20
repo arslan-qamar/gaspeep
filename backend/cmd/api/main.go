@@ -55,7 +55,7 @@ func main() {
 	stationService := service.NewStationService(stationRepo)
 	fuelTypeService := service.NewFuelTypeService(fuelTypeRepo)
 	fuelPriceService := service.NewFuelPriceService(fuelPriceRepo)
-	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo)
+	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo, alertRepo)
 	ocrService := service.NewGoogleVisionOCRServiceFromEnv()
 	alertService := service.NewAlertService(alertRepo)
 	broadcastService := service.NewBroadcastService(broadcastRepo, stationOwnerRepo)

@@ -57,6 +57,14 @@ func (m *MockAlertRepository) GetMatchingStations(alertID, userID string) ([]rep
 	return args.Get(0).([]repository.MatchingStationResult), args.Error(1)
 }
 
+func (m *MockAlertRepository) RecordTriggersForPrice(stationID, fuelTypeID string, price float64) ([]repository.TriggeredAlertResult, error) {
+	args := m.Called(stationID, fuelTypeID, price)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]repository.TriggeredAlertResult), args.Error(1)
+}
+
 // ============ Alert Service Tests ============
 
 func TestAlertService_CreateAlert_CallsRepository(t *testing.T) {

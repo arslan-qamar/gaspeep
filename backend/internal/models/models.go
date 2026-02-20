@@ -78,6 +78,7 @@ type Alert struct {
 	Longitude       float64    `json:"longitude"`
 	RadiusKm        int        `json:"radiusKm"`
 	AlertName       string     `json:"alertName"`
+	RecurrenceType  string     `json:"recurrenceType"`
 	NotifyViaPush   bool       `json:"notifyViaPush"`
 	NotifyViaEmail  bool       `json:"notifyViaEmail"`
 	IsActive        bool       `json:"isActive"`

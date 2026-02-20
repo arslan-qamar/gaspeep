@@ -22,6 +22,7 @@ const baseAlert: Alert = {
   status: 'active',
   notifyViaPush: true,
   notifyViaEmail: false,
+  recurrenceType: 'one_off',
   createdAt: new Date('2026-01-01T00:00:00Z').toISOString(),
   lastModifiedAt: new Date('2026-01-01T00:00:00Z').toISOString(),
   lastTriggeredAt: null,
@@ -42,6 +43,7 @@ describe('AlertCard', () => {
     expect(screen.getAllByText('Unleaded 91')).toHaveLength(2);
     expect(screen.getByText('Push')).toBeInTheDocument();
     expect(screen.getByText('Email off')).toBeInTheDocument();
+    expect(screen.getByText('One-off notification')).toBeInTheDocument();
     expect(screen.getByText('Coverage preview')).toBeInTheDocument();
     expect(screen.getByTestId('map-mock')).toBeInTheDocument();
   });

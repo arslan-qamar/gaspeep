@@ -164,18 +164,19 @@ func CreateTestAlert(t *testing.T, db *sql.DB, userID string, latitude, longitud
 		Longitude:      longitude,
 		RadiusKm:       radiusKm,
 		AlertName:      alertName,
+		RecurrenceType: "recurring",
 		IsActive:       isActive,
 		CreatedAt:      time.Now(),
 	}
 
 	err := db.QueryRow(`
-		INSERT INTO alerts (id, user_id, fuel_type_id, price_threshold, latitude, longitude, radius_km, alert_name, is_active, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-		RETURNING id, user_id, fuel_type_id, price_threshold, latitude, longitude, radius_km, alert_name, is_active, created_at, last_triggered_at, trigger_count
-	`, id, userID, fuelTypeID, priceThreshold, latitude, longitude, radiusKm, alertName, isActive).Scan(
+		INSERT INTO alerts (id, user_id, fuel_type_id, price_threshold, latitude, longitude, radius_km, alert_name, recurrence_type, is_active, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		RETURNING id, user_id, fuel_type_id, price_threshold, latitude, longitude, radius_km, alert_name, recurrence_type, is_active, created_at, last_triggered_at, trigger_count
+	`, id, userID, fuelTypeID, priceThreshold, latitude, longitude, radiusKm, alertName, alert.RecurrenceType, isActive).Scan(
 		&alert.ID, &alert.UserID, &alert.FuelTypeID, &alert.PriceThreshold,
 		&alert.Latitude, &alert.Longitude, &alert.RadiusKm, &alert.AlertName,
-		&alert.IsActive, &alert.CreatedAt, &alert.LastTriggeredAt, &alert.TriggerCount,
+		&alert.RecurrenceType, &alert.IsActive, &alert.CreatedAt, &alert.LastTriggeredAt, &alert.TriggerCount,
 	)
 
 	if err != nil {
@@ -193,13 +194,13 @@ func CreateTestStationOwner(t *testing.T, db *sql.DB, userID string) *models.Sta
 	contactInfo := "contact@example.com"
 
 	owner := &models.StationOwner{
-		ID:                   id,
-		UserID:               userID,
-		BusinessName:         businessName,
-		VerificationStatus:   verificationStatus,
+		ID:                    id,
+		UserID:                userID,
+		BusinessName:          businessName,
+		VerificationStatus:    verificationStatus,
 		VerificationDocuments: []string{},
-		ContactInfo:          &contactInfo,
-		CreatedAt:            time.Now(),
+		ContactInfo:           &contactInfo,
+		CreatedAt:             time.Now(),
 	}
 
 	err := db.QueryRow(`

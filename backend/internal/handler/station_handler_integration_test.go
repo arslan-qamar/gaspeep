@@ -62,7 +62,7 @@ func TestStationHandler_GetStationsNearby_Integration(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.POST("/api/stations/nearby", handler.GetStationsNearby)
+	router.POST("/api/stations/search-nearby", handler.SearchStationsNearby)
 
 	// Test: Find stations within 5km
 	payload := map[string]interface{}{
@@ -71,7 +71,7 @@ func TestStationHandler_GetStationsNearby_Integration(t *testing.T) {
 		"radiusKm":  5,
 	}
 	body, _ := json.Marshal(payload)
-	req := httptest.NewRequest(http.MethodPost, "/api/stations/nearby", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/stations/search-nearby", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 

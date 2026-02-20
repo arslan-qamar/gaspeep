@@ -26,15 +26,23 @@ type CreateSubmissionRequest struct {
 type priceSubmissionService struct {
 	submissionRepo repository.PriceSubmissionRepository
 	fuelPriceRepo  repository.FuelPriceRepository
+	alertRepo      repository.AlertRepository
 }
 
 func NewPriceSubmissionService(
 	submissionRepo repository.PriceSubmissionRepository,
 	fuelPriceRepo repository.FuelPriceRepository,
+	alertRepo ...repository.AlertRepository,
 ) PriceSubmissionService {
+	var resolvedAlertRepo repository.AlertRepository
+	if len(alertRepo) > 0 {
+		resolvedAlertRepo = alertRepo[0]
+	}
+
 	return &priceSubmissionService{
 		submissionRepo: submissionRepo,
 		fuelPriceRepo:  fuelPriceRepo,
+		alertRepo:      resolvedAlertRepo,
 	}
 }
 
@@ -75,6 +83,9 @@ func (s *priceSubmissionService) CreateSubmission(userID string, input CreateSub
 			return result, err
 		}
 		if err := s.fuelPriceRepo.UpsertFuelPrice(input.StationID, input.FuelTypeID, input.Price); err != nil {
+			return result, err
+		}
+		if err := s.recordAlertTriggers(input.StationID, input.FuelTypeID, input.Price); err != nil {
 			return result, err
 		}
 	}
@@ -126,9 +137,21 @@ func (s *priceSubmissionService) ModerateSubmission(id, status, notes string) (b
 		if err := s.fuelPriceRepo.UpsertFuelPrice(details.StationID, details.FuelTypeID, details.Price); err != nil {
 			return true, err
 		}
+		if err := s.recordAlertTriggers(details.StationID, details.FuelTypeID, details.Price); err != nil {
+			return true, err
+		}
 	}
 
 	return true, nil
+}
+
+func (s *priceSubmissionService) recordAlertTriggers(stationID, fuelTypeID string, price float64) error {
+	if s.alertRepo == nil {
+		return nil
+	}
+
+	_, err := s.alertRepo.RecordTriggersForPrice(stationID, fuelTypeID, price)
+	return err
 }
 
 // calculateConfidence returns the verification confidence based on the submission method.

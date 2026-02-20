@@ -58,6 +58,8 @@ export const AlertCard: React.FC<AlertCardProps> = ({
       enabled: alert.notifyViaEmail,
     },
   ];
+  const recurrenceLabel =
+    alert.recurrenceType === 'one_off' ? 'One-off notification' : 'Recurring notification (daily)';
 
   return (
     <div
@@ -163,6 +165,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
             </span>
           </span>
           <span>Within {alert.radius} {alert.radiusUnit}</span>
+          <span>{recurrenceLabel}</span>
           {alert.lastTriggeredAt ? (
             <span>
               Triggered {formatDistanceToNow(new Date(alert.lastTriggeredAt), { addSuffix: true })}

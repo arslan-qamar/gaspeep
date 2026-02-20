@@ -36,6 +36,7 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 		RadiusKm       int     `json:"radiusKm" binding:"required,min=1,max=50"`
 		AlertName      string  `json:"alertName"`
 		Name           string  `json:"name"`
+		RecurrenceType string  `json:"recurrenceType" binding:"omitempty,oneof=recurring one_off"`
 		NotifyViaPush  *bool   `json:"notifyViaPush"`
 		NotifyViaEmail *bool   `json:"notifyViaEmail"`
 	}
@@ -60,6 +61,10 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	if req.NotifyViaEmail != nil {
 		notifyViaEmail = *req.NotifyViaEmail
 	}
+	recurrenceType := req.RecurrenceType
+	if recurrenceType == "" {
+		recurrenceType = "recurring"
+	}
 
 	alert, err := h.alertService.CreateAlert(userID.(string), repository.CreateAlertInput{
 		FuelTypeID:     req.FuelTypeID,
@@ -68,6 +73,7 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 		Longitude:      req.Longitude,
 		RadiusKm:       req.RadiusKm,
 		AlertName:      alertName,
+		RecurrenceType: recurrenceType,
 		NotifyViaPush:  notifyViaPush,
 		NotifyViaEmail: notifyViaEmail,
 	})
@@ -109,6 +115,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 		PriceThreshold float64 `json:"priceThreshold"`
 		RadiusKm       int     `json:"radiusKm"`
 		AlertName      string  `json:"alertName"`
+		RecurrenceType *string `json:"recurrenceType" binding:"omitempty,oneof=recurring one_off"`
 		NotifyViaPush  *bool   `json:"notifyViaPush"`
 		NotifyViaEmail *bool   `json:"notifyViaEmail"`
 		IsActive       *bool   `json:"isActive"`
@@ -123,6 +130,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 		PriceThreshold: req.PriceThreshold,
 		RadiusKm:       req.RadiusKm,
 		AlertName:      req.AlertName,
+		RecurrenceType: req.RecurrenceType,
 		NotifyViaPush:  req.NotifyViaPush,
 		NotifyViaEmail: req.NotifyViaEmail,
 		IsActive:       req.IsActive,

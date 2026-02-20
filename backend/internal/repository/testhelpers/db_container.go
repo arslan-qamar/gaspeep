@@ -27,6 +27,9 @@ func SetupTestDB(t *testing.T) (*sql.DB, func()) {
 	if testContainer == nil {
 		container, err := createPostGISContainer(ctx)
 		if err != nil {
+			if isDockerUnavailableErr(err) {
+				t.Skipf("Skipping Docker-dependent test: %v", err)
+			}
 			t.Fatalf("Failed to create PostgreSQL container: %v", err)
 		}
 		testContainer = container
@@ -74,6 +77,19 @@ func SetupTestDB(t *testing.T) (*sql.DB, func()) {
 	return testDB, cleanup
 }
 
+func isDockerUnavailableErr(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "docker") &&
+		(strings.Contains(errMsg, "permission denied") ||
+			strings.Contains(errMsg, "connect: operation not permitted") ||
+			strings.Contains(errMsg, "no such file or directory") ||
+			strings.Contains(errMsg, "cannot connect"))
+}
+
 // SetupTestDBWithCleanup is like SetupTestDB but calls cleanup automatically on test failure
 func SetupTestDBWithCleanup(t *testing.T) *sql.DB {
 	db, cleanup := SetupTestDB(t)
@@ -82,7 +98,13 @@ func SetupTestDBWithCleanup(t *testing.T) *sql.DB {
 }
 
 // createPostGISContainer creates a PostgreSQL container with PostGIS extension
-func createPostGISContainer(ctx context.Context) (testcontainers.Container, error) {
+func createPostGISContainer(ctx context.Context) (container testcontainers.Container, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("docker unavailable: %v", r)
+		}
+	}()
+
 	req := testcontainers.ContainerRequest{
 		Image:        "postgis/postgis:16-3.4",
 		ExposedPorts: []string{"5432/tcp"},
@@ -96,7 +118,7 @@ func createPostGISContainer(ctx context.Context) (testcontainers.Container, erro
 			WithStartupTimeout(30 * time.Second),
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	container, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})

@@ -62,6 +62,14 @@ func (m *MockStationService) SearchStations(searchQuery string, limit int) ([]mo
 	return args.Get(0).([]models.Station), args.Error(1)
 }
 
+func (m *MockStationService) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error) {
+	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, maxPrice)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Station), args.Error(1)
+}
+
 // MockFuelPriceService is a mock implementation of service.FuelPriceService
 type MockFuelPriceService struct {
 	mock.Mock
