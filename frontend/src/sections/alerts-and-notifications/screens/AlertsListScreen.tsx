@@ -5,7 +5,7 @@ import { AlertCard } from '../components/AlertCard';
 import { Alert } from '../types';
 import {
   fetchUserAlerts,
-  toggleAlertStatus,
+  updateAlert,
   deleteAlert,
 } from '../api/alertsApi';
 import { useAuth } from '../../../hooks/useAuth';
@@ -46,8 +46,21 @@ export const AlertsListScreen: React.FC = () => {
   };
 
   const handleToggleAlert = async (alertId: string, isActive: boolean) => {
+    const currentAlert = alerts.find((alert) => alert.id === alertId);
+    if (!currentAlert) {
+      return;
+    }
+
     try {
-      const updatedAlert = await toggleAlertStatus(alertId, isActive);
+      const updatedAlert = await updateAlert(alertId, {
+        status: isActive ? 'active' : 'paused',
+        priceThreshold: currentAlert.priceThreshold,
+        radius: currentAlert.radius,
+        radiusUnit: currentAlert.radiusUnit,
+        name: currentAlert.name,
+        notifyViaPush: currentAlert.notifyViaPush,
+        notifyViaEmail: currentAlert.notifyViaEmail,
+      });
       setAlerts((prev) =>
         prev.map((alert) => (alert.id === alertId ? updatedAlert : alert))
       );

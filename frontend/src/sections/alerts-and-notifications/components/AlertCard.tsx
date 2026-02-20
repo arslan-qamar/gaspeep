@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, Bell, BellOff, Edit2, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { MapPin, Bell, BellOff, Edit2, Trash2, Fuel, Smartphone, Mail } from 'lucide-react';
 import { Alert } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -19,6 +19,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
   onClick,
 }) => {
   const isActive = alert.status === 'active';
+  const [mapLoadError, setMapLoadError] = useState(false);
 
   // Format the badge color based on fuel type color
   const badgeStyle = {
@@ -26,6 +27,27 @@ export const AlertCard: React.FC<AlertCardProps> = ({
     color: alert.fuelTypeColor,
     borderColor: alert.fuelTypeColor,
   };
+
+  const mapImageUrl = useMemo(() => {
+    const zoom = alert.radius <= 2 ? 13 : alert.radius <= 5 ? 12 : alert.radius <= 10 ? 11 : 10;
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${alert.location.latitude},${alert.location.longitude}&zoom=${zoom}&size=640x220&markers=${alert.location.latitude},${alert.location.longitude},lightblue1`;
+  }, [alert.location.latitude, alert.location.longitude, alert.radius]);
+
+  const coverageCircleSizePercent = Math.max(24, Math.min(88, 20 + alert.radius * 3));
+  const notificationMethods = [
+    {
+      key: 'push',
+      label: 'Push',
+      icon: Smartphone,
+      enabled: alert.notifyViaPush,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      icon: Mail,
+      enabled: alert.notifyViaEmail,
+    },
+  ];
 
   return (
     <div
@@ -101,6 +123,40 @@ export const AlertCard: React.FC<AlertCardProps> = ({
         </div>
       </div>
 
+      {/* Fuel type + notification methods */}
+      <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Fuel type</div>
+          <div className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-100">
+            <Fuel className="w-4 h-4" />
+            <span>{alert.fuelTypeName}</span>
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Notifications</div>
+          <div className="flex flex-wrap gap-2">
+            {notificationMethods.map((method) => {
+              const Icon = method.icon;
+              return (
+                <span
+                  key={method.key}
+                  className={`
+                    inline-flex items-center gap-1 px-2 py-1 rounded text-xs border
+                    ${method.enabled
+                      ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700'
+                      : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                    }
+                  `}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{method.enabled ? method.label : `${method.label} off`}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Location and radius */}
       <div className="flex items-start gap-2 mb-3 text-sm text-slate-600 dark:text-slate-300">
         <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -108,6 +164,40 @@ export const AlertCard: React.FC<AlertCardProps> = ({
           <div>{alert.location.address}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
             Within {alert.radius} {alert.radiusUnit}
+          </div>
+        </div>
+      </div>
+
+      {/* Coverage map */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-slate-500 dark:text-slate-400">Coverage preview</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {alert.radius} {alert.radiusUnit} radius
+          </span>
+        </div>
+        <div className="relative h-24 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700">
+          {!mapLoadError && (
+            <img
+              src={mapImageUrl}
+              alt={`Coverage map for ${alert.location.address}`}
+              loading="lazy"
+              className="w-full h-full object-cover"
+              onError={() => setMapLoadError(true)}
+            />
+          )}
+          <div className="absolute inset-0 pointer-events-none">
+            <div
+              className="absolute rounded-full border-2 border-blue-500/80 bg-blue-500/20"
+              style={{
+                width: `${coverageCircleSizePercent}%`,
+                height: `${coverageCircleSizePercent}%`,
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+            <div className="absolute w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white dark:border-slate-800 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
         </div>
       </div>

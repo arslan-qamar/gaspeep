@@ -71,6 +71,45 @@ interface BackendUpdateAlertPayload {
   isActive?: boolean;
 }
 
+interface FuelTypeMetadata {
+  name: string;
+  color: string;
+}
+
+let fuelTypeMetadataCache: Record<string, FuelTypeMetadata> | null = null;
+
+const formatFuelTypeFallback = (fuelTypeId: string): string => {
+  const fallback = fuelTypeId.replace(/[-_]+/g, ' ').trim();
+  if (!fallback) return fuelTypeId;
+  return fallback
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const loadFuelTypeMetadata = async (): Promise<Record<string, FuelTypeMetadata>> => {
+  if (fuelTypeMetadataCache) {
+    return fuelTypeMetadataCache;
+  }
+
+  try {
+    const response = await apiClient.get<FuelType[]>('/fuel-types');
+    fuelTypeMetadataCache = response.data.reduce<Record<string, FuelTypeMetadata>>(
+      (acc, fuelType) => {
+        acc[fuelType.id] = {
+          name: fuelType.displayName || fuelType.name,
+          color: fuelType.color,
+        };
+        return acc;
+      },
+      {}
+    );
+    return fuelTypeMetadataCache;
+  } catch (_err) {
+    return {};
+  }
+};
+
 const toBackendRadiusKm = (radius: number, radiusUnit: 'km' | 'miles'): number => {
   if (radiusUnit === 'miles') {
     return Math.max(1, Math.round(radius * 1.60934));
@@ -78,39 +117,49 @@ const toBackendRadiusKm = (radius: number, radiusUnit: 'km' | 'miles'): number =
   return radius;
 };
 
-const mapBackendAlertToFrontend = (alert: BackendAlert): Alert => ({
-  id: alert.id,
-  userId: alert.userId,
-  name: alert.alertName,
-  fuelTypeId: alert.fuelTypeId,
-  // Backend does not currently enrich alerts with fuel metadata.
-  fuelTypeName: alert.fuelTypeId,
-  fuelTypeColor: '#2563eb',
-  priceThreshold: alert.priceThreshold,
-  currency: 'AUD',
-  unit: 'L',
-  location: {
-    address: `(${alert.latitude.toFixed(4)}, ${alert.longitude.toFixed(4)})`,
-    latitude: alert.latitude,
-    longitude: alert.longitude,
-  },
-  radius: alert.radiusKm,
-  radiusUnit: 'km',
-  status: alert.isActive ? 'active' : 'paused',
-  notifyViaPush: alert.notifyViaPush,
-  notifyViaEmail: alert.notifyViaEmail,
-  createdAt: alert.createdAt,
-  lastModifiedAt: alert.createdAt,
-  lastTriggeredAt: alert.lastTriggeredAt,
-  triggerCount: alert.triggerCount,
-});
+const mapBackendAlertToFrontend = (
+  alert: BackendAlert,
+  fuelTypeMetadata: Record<string, FuelTypeMetadata> = {}
+): Alert => {
+  const metadata = fuelTypeMetadata[alert.fuelTypeId];
+  return {
+    id: alert.id,
+    userId: alert.userId,
+    name: alert.alertName,
+    fuelTypeId: alert.fuelTypeId,
+    fuelTypeName: metadata?.name ?? formatFuelTypeFallback(alert.fuelTypeId),
+    fuelTypeColor: metadata?.color ?? '#2563eb',
+    priceThreshold: alert.priceThreshold,
+    currency: 'AUD',
+    unit: 'L',
+    location: {
+      address: `(${alert.latitude.toFixed(4)}, ${alert.longitude.toFixed(4)})`,
+      latitude: alert.latitude,
+      longitude: alert.longitude,
+    },
+    radius: alert.radiusKm,
+    radiusUnit: 'km',
+    status: alert.isActive ? 'active' : 'paused',
+    notifyViaPush: alert.notifyViaPush,
+    notifyViaEmail: alert.notifyViaEmail,
+    createdAt: alert.createdAt,
+    lastModifiedAt: alert.createdAt,
+    lastTriggeredAt: alert.lastTriggeredAt,
+    triggerCount: alert.triggerCount,
+  };
+};
 
 /**
  * Fetch all alerts for the current user
  */
 export const fetchUserAlerts = async (): Promise<Alert[]> => {
-  const response = await apiClient.get<BackendAlert[]>('/alerts');
-  return response.data.map(mapBackendAlertToFrontend);
+  const [alertsResponse, fuelTypeMetadata] = await Promise.all([
+    apiClient.get<BackendAlert[]>('/alerts'),
+    loadFuelTypeMetadata(),
+  ]);
+  return alertsResponse.data.map((alert) =>
+    mapBackendAlertToFrontend(alert, fuelTypeMetadata)
+  );
 };
 
 /**
@@ -141,7 +190,8 @@ export const createAlert = async (payload: CreateAlertPayload): Promise<Alert> =
     notifyViaEmail: payload.notifyViaEmail,
   };
   const response = await apiClient.post<BackendAlert>('/alerts', backendPayload);
-  return mapBackendAlertToFrontend(response.data);
+  const fuelTypeMetadata = await loadFuelTypeMetadata();
+  return mapBackendAlertToFrontend(response.data, fuelTypeMetadata);
 };
 
 /**
