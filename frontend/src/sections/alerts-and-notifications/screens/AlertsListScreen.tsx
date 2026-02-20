@@ -9,6 +9,7 @@ import {
   deleteAlert,
 } from '../api/alertsApi';
 import { useAuth } from '../../../hooks/useAuth';
+import { ConfirmDialog } from '../../../shell/components/ConfirmDialog';
 
 type FilterType = 'all' | 'active' | 'paused';
 
@@ -19,6 +20,8 @@ export const AlertsListScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<FilterType>('all');
+  const [alertToDeleteId, setAlertToDeleteId] = useState<string | null>(null);
+  const [isDeletingAlert, setIsDeletingAlert] = useState(false);
 
   const isPremium = user?.tier === 'premium';
 
@@ -70,19 +73,22 @@ export const AlertsListScreen: React.FC = () => {
     }
   };
 
-  const handleDeleteAlert = async (alertId: string) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this alert? This action cannot be undone.'
-    );
+  const handleDeleteAlert = (alertId: string) => {
+    setAlertToDeleteId(alertId);
+  };
 
-    if (!confirmed) return;
-
+  const confirmDeleteAlert = async () => {
+    if (!alertToDeleteId) return;
     try {
-      await deleteAlert(alertId);
-      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+      setIsDeletingAlert(true);
+      await deleteAlert(alertToDeleteId);
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertToDeleteId));
+      setAlertToDeleteId(null);
     } catch (err) {
       console.error('Error deleting alert:', err);
       alert('Failed to delete alert. Please try again.');
+    } finally {
+      setIsDeletingAlert(false);
     }
   };
 
@@ -316,6 +322,19 @@ export const AlertsListScreen: React.FC = () => {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(alertToDeleteId)}
+        title="Delete Alert?"
+        message="Are you sure you want to delete this alert? This action cannot be undone."
+        confirmLabel="Delete Alert"
+        isConfirming={isDeletingAlert}
+        onCancel={() => {
+          if (!isDeletingAlert) {
+            setAlertToDeleteId(null);
+          }
+        }}
+        onConfirm={confirmDeleteAlert}
+      />
     </div>
   );
 };

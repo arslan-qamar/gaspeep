@@ -12,6 +12,7 @@ type AlertService interface {
 	UpdateAlert(id, userID string, input repository.UpdateAlertInput) (string, error)
 	DeleteAlert(id, userID string) (bool, error)
 	GetPriceContext(input repository.PriceContextInput) (*repository.PriceContextResult, error)
+	GetMatchingStations(alertID, userID string) ([]repository.MatchingStationResult, error)
 }
 
 type alertService struct {
@@ -40,4 +41,8 @@ func (s *alertService) DeleteAlert(id, userID string) (bool, error) {
 
 func (s *alertService) GetPriceContext(input repository.PriceContextInput) (*repository.PriceContextResult, error) {
 	return s.alertRepo.GetPriceContext(input)
+}
+
+func (s *alertService) GetMatchingStations(alertID, userID string) ([]repository.MatchingStationResult, error) {
+	return s.alertRepo.GetMatchingStations(alertID, userID)
 }

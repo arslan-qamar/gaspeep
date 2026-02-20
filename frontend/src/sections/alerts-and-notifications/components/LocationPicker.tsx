@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect, type ReactNode } from 'react';
 import Map, { Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin, Loader, Search, X } from 'lucide-react';
@@ -7,6 +7,7 @@ interface LocationPickerProps {
   value: { address: string; latitude: number; longitude: number } | null;
   onChange: (location: { address: string; latitude: number; longitude: number } | null) => void;
   radiusKm?: number;
+  infoContent?: ReactNode;
 }
 
 interface NominatimResult {
@@ -17,8 +18,14 @@ interface NominatimResult {
 
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org';
 const SYDNEY_DEFAULT = { lat: -33.8688, lng: 151.2093 };
+const MAX_VISUAL_RADIUS_KM = 30;
 
-export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, radiusKm = 5 }) => {
+export const LocationPicker: React.FC<LocationPickerProps> = ({
+  value,
+  onChange,
+  radiusKm = 5,
+  infoContent,
+}) => {
   const mapRef = useRef<any>(null);
   const hasStartedInitializationRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,8 +44,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange,
     const map = mapRef.current.getMap?.();
     if (!map) return;
 
-    const latOffset = km / 111;
-    const lngOffset = km / (111 * Math.cos((lat * Math.PI) / 180));
+    // Keep the map readable at high monitoring radii while preserving
+    // the actual alert radius value for backend filtering.
+    const visualRadiusKm = Math.min(km, MAX_VISUAL_RADIUS_KM);
+    const latOffset = visualRadiusKm / 111;
+    const lngOffset = visualRadiusKm / (111 * Math.cos((lat * Math.PI) / 180));
 
     map.fitBounds(
       [
@@ -318,6 +328,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange,
         )}
       </div>
 
+      {infoContent}
+
       {/* Map Container - Always Visible */}
       <div className="h-56 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
         <Map
@@ -334,6 +346,28 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange,
           style={{ width: '100%', height: '100%' }}
           mapStyle="https://tiles.openfreemap.org/styles/liberty"
         >
+          {/* Current Location Control */}
+          <div className="maplibregl-ctrl-group absolute bottom-[10px] right-2 z-20">
+            <button
+              onClick={handleUseCurrentLocation}
+              disabled={isLocating}
+              className="maplibregl-ctrl-fullscreen"
+              title="Go to current location"
+              aria-label="Go to current location"
+              type="button"
+            >
+              <span className="maplibregl-ctrl-icon" aria-hidden="true">
+                {isLocating ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.5 2C9.03 2 4.5 6.53 4.5 12c0 6.5 10 15 10 15s10-8.5 10-15c0-5.47-4.53-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="#3B82F6"/>
+                  </svg>
+                )}
+              </span>
+            </button>
+          </div>
+
           <Marker
             longitude={markerPosition.lng}
             latitude={markerPosition.lat}
@@ -346,25 +380,6 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange,
           </Marker>
         </Map>
       </div>
-
-      {/* Current Location Button */}
-      <button
-        onClick={handleUseCurrentLocation}
-        disabled={isLocating}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {isLocating ? (
-          <>
-            <Loader className="w-5 h-5 animate-spin" />
-            Getting Location...
-          </>
-        ) : (
-          <>
-            <MapPin className="w-5 h-5" />
-            Use Current Location
-          </>
-        )}
-      </button>
 
       {/* Selected Location Display */}
       {value && (

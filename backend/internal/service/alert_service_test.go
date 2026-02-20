@@ -49,6 +49,14 @@ func (m *MockAlertRepository) GetPriceContext(input repository.PriceContextInput
 	return args.Get(0).(*repository.PriceContextResult), args.Error(1)
 }
 
+func (m *MockAlertRepository) GetMatchingStations(alertID, userID string) ([]repository.MatchingStationResult, error) {
+	args := m.Called(alertID, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]repository.MatchingStationResult), args.Error(1)
+}
+
 // ============ Alert Service Tests ============
 
 func TestAlertService_CreateAlert_CallsRepository(t *testing.T) {

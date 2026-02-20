@@ -39,14 +39,11 @@ describe('AlertCard', () => {
       />
     );
 
-    expect(screen.getByText('Fuel type')).toBeInTheDocument();
     expect(screen.getAllByText('Unleaded 91')).toHaveLength(2);
     expect(screen.getByText('Push')).toBeInTheDocument();
     expect(screen.getByText('Email off')).toBeInTheDocument();
     expect(screen.getByText('Coverage preview')).toBeInTheDocument();
-    expect(
-      screen.getByAltText('Coverage map for Sydney NSW, Australia')
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('map-mock')).toBeInTheDocument();
   });
 
   it('toggles active state without triggering card click', () => {

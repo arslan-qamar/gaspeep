@@ -1,6 +1,7 @@
 // Screens
 export { AlertsListScreen } from './screens/AlertsListScreen';
 export { CreateAlertScreen } from './screens/CreateAlertScreen';
+export { AlertDetailsScreen } from './screens/AlertDetailsScreen';
 export { NotificationCenterScreen } from './screens/NotificationCenterScreen';
 
 // Components

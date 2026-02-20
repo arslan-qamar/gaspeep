@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gaspeep/backend/internal/models"
+	"time"
 )
 
 // CreateAlertInput holds parameters for creating an alert.
@@ -47,6 +48,18 @@ type PriceContextResult struct {
 	StationCount           int     `json:"stationCount"`
 }
 
+// MatchingStationResult holds stations currently matching an alert threshold.
+type MatchingStationResult struct {
+	StationID      string     `json:"stationId"`
+	StationName    string     `json:"stationName"`
+	StationAddress string     `json:"stationAddress"`
+	Price          float64    `json:"price"`
+	Currency       string     `json:"currency"`
+	Unit           string     `json:"unit"`
+	Distance       float64    `json:"distance"`
+	LastUpdated    *time.Time `json:"lastUpdated"`
+}
+
 // AlertRepository defines data-access operations for alerts.
 type AlertRepository interface {
 	Create(userID string, input CreateAlertInput) (*models.Alert, error)
@@ -54,4 +67,5 @@ type AlertRepository interface {
 	Update(id, userID string, input UpdateAlertInput) (string, error)
 	Delete(id, userID string) (bool, error)
 	GetPriceContext(input PriceContextInput) (*PriceContextResult, error)
+	GetMatchingStations(alertID, userID string) ([]MatchingStationResult, error)
 }

@@ -152,4 +152,87 @@ func (r *PgAlertRepository) GetPriceContext(input PriceContextInput) (*PriceCont
 	return &result, nil
 }
 
+func (r *PgAlertRepository) GetMatchingStations(alertID, userID string) ([]MatchingStationResult, error) {
+	var fuelTypeID string
+	var priceThreshold float64
+	var latitude, longitude float64
+	var radiusKm int
+
+	err := r.db.QueryRow(
+		`SELECT fuel_type_id, price_threshold, latitude, longitude, radius_km
+		 FROM alerts
+		 WHERE id = $1 AND user_id = $2`,
+		alertID,
+		userID,
+	).Scan(&fuelTypeID, &priceThreshold, &latitude, &longitude, &radiusKm)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
+		return nil, fmt.Errorf("failed to load alert for matching stations: %w", err)
+	}
+
+	rows, err := r.db.Query(
+		`
+		SELECT
+			s.id::text AS station_id,
+			s.name AS station_name,
+			s.address AS station_address,
+			fp.price,
+			fp.currency,
+			fp.unit,
+			ST_Distance(
+				s.location::geography,
+				ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+			) / 1000 AS distance_km,
+			fp.last_updated_at
+		FROM fuel_prices fp
+		INNER JOIN stations s ON s.id = fp.station_id
+		WHERE fp.fuel_type_id = $3
+			AND fp.verification_status IN ('verified', 'unverified')
+			AND fp.price <= $4
+			AND ST_DWithin(
+				s.location::geography,
+				ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+				$5
+			)
+		ORDER BY distance_km ASC, fp.price ASC
+		LIMIT 100
+		`,
+		longitude,
+		latitude,
+		fuelTypeID,
+		priceThreshold,
+		radiusKm*1000,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query matching stations: %w", err)
+	}
+	defer rows.Close()
+
+	stations := make([]MatchingStationResult, 0)
+	for rows.Next() {
+		var station MatchingStationResult
+		if err := rows.Scan(
+			&station.StationID,
+			&station.StationName,
+			&station.StationAddress,
+			&station.Price,
+			&station.Currency,
+			&station.Unit,
+			&station.Distance,
+			&station.LastUpdated,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan matching station: %w", err)
+		}
+		stations = append(stations, station)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating matching stations: %w", err)
+	}
+
+	return stations, nil
+}
+
 var _ AlertRepository = (*PgAlertRepository)(nil)

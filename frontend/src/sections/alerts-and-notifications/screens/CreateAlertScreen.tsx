@@ -297,6 +297,19 @@ export const CreateAlertScreen: React.FC = () => {
                 <LocationPicker
                   value={formData.location}
                   radiusKm={formData.radius}
+                  infoContent={
+                    loadingContext ? (
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
+                        Loading station data...
+                      </div>
+                    ) : priceContext ? (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-sm text-slate-700 dark:text-slate-300">
+                          <strong>{priceContext.stationCount}</strong> stations found within {formData.radius} km
+                        </div>
+                      </div>
+                    ) : null
+                  }
                   onChange={(location) => setFormData({ ...formData, location })}
                 />
               </div>
@@ -323,18 +336,6 @@ export const CreateAlertScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Station count (if price context loaded) */}
-              {loadingContext ? (
-                <div className="text-sm text-slate-500 dark:text-slate-400">
-                  Loading station data...
-                </div>
-              ) : priceContext ? (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="text-sm text-slate-700 dark:text-slate-300">
-                    <strong>{priceContext.stationCount}</strong> stations found within {formData.radius} km
-                  </div>
-                </div>
-              ) : null}
             </div>
           )}
 

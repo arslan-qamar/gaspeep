@@ -164,6 +164,14 @@ func (m *MockAlertService) GetPriceContext(input repository.PriceContextInput) (
 	return args.Get(0).(*repository.PriceContextResult), args.Error(1)
 }
 
+func (m *MockAlertService) GetMatchingStations(alertID, userID string) ([]repository.MatchingStationResult, error) {
+	args := m.Called(alertID, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]repository.MatchingStationResult), args.Error(1)
+}
+
 // MockNotificationService is a mock implementation of service.NotificationService
 type MockNotificationService struct {
 	mock.Mock

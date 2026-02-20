@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { MapPin, Bell, BellOff, Edit2, Trash2, Fuel, Smartphone, Mail } from 'lucide-react';
+import Map, { Marker } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Alert } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -19,7 +21,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
   onClick,
 }) => {
   const isActive = alert.status === 'active';
-  const [mapLoadError, setMapLoadError] = useState(false);
+  const radiusKm = alert.radiusUnit === 'miles' ? alert.radius * 1.60934 : alert.radius;
 
   // Format the badge color based on fuel type color
   const badgeStyle = {
@@ -28,12 +30,20 @@ export const AlertCard: React.FC<AlertCardProps> = ({
     borderColor: alert.fuelTypeColor,
   };
 
-  const mapImageUrl = useMemo(() => {
-    const zoom = alert.radius <= 2 ? 13 : alert.radius <= 5 ? 12 : alert.radius <= 10 ? 11 : 10;
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${alert.location.latitude},${alert.location.longitude}&zoom=${zoom}&size=640x220&markers=${alert.location.latitude},${alert.location.longitude},lightblue1`;
-  }, [alert.location.latitude, alert.location.longitude, alert.radius]);
+  const coverageZoom = useMemo(() => {
+    if (radiusKm <= 2) return 13;
+    if (radiusKm <= 5) return 12;
+    if (radiusKm <= 20) return 11;
+    if (radiusKm <= 50) return 10;
+    return 9;
+  }, [radiusKm]);
 
-  const coverageCircleSizePercent = Math.max(24, Math.min(88, 20 + alert.radius * 3));
+  const coverageCircleSizePercent = useMemo(() => {
+    // Non-linear scaling gives larger radii stronger visual weight in the small preview.
+    // Intentionally allow >100% so large radii can extend past map bounds and be clipped.
+    const normalized = Math.max(0, Math.min(radiusKm, 50)) / 50;
+    return Math.round(26 + 120 * Math.sqrt(normalized));
+  }, [radiusKm]);
   const notificationMethods = [
     {
       key: 'push',
@@ -52,7 +62,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
   return (
     <div
       className={`
-        p-4 rounded-lg border transition-all
+        p-3 rounded-lg border transition-all
         ${isActive
           ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
           : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 opacity-75'
@@ -62,7 +72,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
       onClick={() => onClick?.(alert.id)}
     >
       {/* Header with fuel type and status toggle */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <span
@@ -113,35 +123,24 @@ export const AlertCard: React.FC<AlertCardProps> = ({
         </button>
       </div>
 
-      {/* Price threshold */}
-      <div className="mb-3">
-        <div className="text-lg font-bold text-slate-900 dark:text-white">
-          ≤ ${alert.priceThreshold.toFixed(2)}/{alert.unit}
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400">
-          Price threshold
-        </div>
-      </div>
-
-      {/* Fuel type + notification methods */}
-      <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Fuel type</div>
-          <div className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-100">
+      {/* Compact details */}
+      <div className="mb-3 space-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-base font-semibold text-slate-900 dark:text-white">
+            ≤ ${alert.priceThreshold.toFixed(2)}/{alert.unit}
+          </span>
+          <span className="inline-flex items-center gap-1 text-sm text-slate-700 dark:text-slate-200">
             <Fuel className="w-4 h-4" />
             <span>{alert.fuelTypeName}</span>
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Notifications</div>
-          <div className="flex flex-wrap gap-2">
+          </span>
+          <div className="flex flex-wrap gap-1.5">
             {notificationMethods.map((method) => {
               const Icon = method.icon;
               return (
                 <span
                   key={method.key}
                   className={`
-                    inline-flex items-center gap-1 px-2 py-1 rounded text-xs border
+                    inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border
                     ${method.enabled
                       ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700'
                       : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
@@ -155,43 +154,58 @@ export const AlertCard: React.FC<AlertCardProps> = ({
             })}
           </div>
         </div>
-      </div>
 
-      {/* Location and radius */}
-      <div className="flex items-start gap-2 mb-3 text-sm text-slate-600 dark:text-slate-300">
-        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-        <div>
-          <div>{alert.location.address}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            Within {alert.radius} {alert.radiusUnit}
-          </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate max-w-[32ch] sm:max-w-[52ch]">
+              {alert.location.address}
+            </span>
+          </span>
+          <span>Within {alert.radius} {alert.radiusUnit}</span>
+          {alert.lastTriggeredAt ? (
+            <span>
+              Triggered {formatDistanceToNow(new Date(alert.lastTriggeredAt), { addSuffix: true })}
+              {' '}({alert.triggerCount} times)
+            </span>
+          ) : (
+            <span>Never triggered</span>
+          )}
         </div>
       </div>
 
       {/* Coverage map */}
-      <div className="mb-4">
+      <div className="mb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-slate-500 dark:text-slate-400">Coverage preview</span>
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {alert.radius} {alert.radiusUnit} radius
           </span>
         </div>
-        <div className="relative h-24 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700">
-          {!mapLoadError && (
-            <img
-              src={mapImageUrl}
-              alt={`Coverage map for ${alert.location.address}`}
-              loading="lazy"
-              className="w-full h-full object-cover"
-              onError={() => setMapLoadError(true)}
-            />
-          )}
+        <div className="relative h-28 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700">
+          <Map
+            initialViewState={{
+              latitude: alert.location.latitude,
+              longitude: alert.location.longitude,
+              zoom: coverageZoom,
+            }}
+            mapStyle="https://tiles.openfreemap.org/styles/liberty"
+            style={{ width: '100%', height: '100%' }}
+            interactive={false}
+          >
+            <Marker
+              longitude={alert.location.longitude}
+              latitude={alert.location.latitude}
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-white" />
+            </Marker>
+          </Map>
           <div className="absolute inset-0 pointer-events-none">
             <div
               className="absolute rounded-full border-2 border-blue-500/80 bg-blue-500/20"
               style={{
                 width: `${coverageCircleSizePercent}%`,
-                height: `${coverageCircleSizePercent}%`,
+                aspectRatio: '1 / 1',
                 left: '50%',
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
@@ -202,31 +216,14 @@ export const AlertCard: React.FC<AlertCardProps> = ({
         </div>
       </div>
 
-      {/* Last triggered */}
-      <div className="mb-4 text-sm">
-        {alert.lastTriggeredAt ? (
-          <div>
-            <span className="text-slate-500 dark:text-slate-400">Last triggered: </span>
-            <span className="text-green-600 dark:text-green-400 font-medium">
-              {formatDistanceToNow(new Date(alert.lastTriggeredAt), { addSuffix: true })}
-            </span>
-            <span className="text-slate-400 dark:text-slate-500 ml-2">
-              ({alert.triggerCount} times)
-            </span>
-          </div>
-        ) : (
-          <div className="text-slate-400 dark:text-slate-500">Never triggered</div>
-        )}
-      </div>
-
       {/* Action buttons */}
-      <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onEdit(alert.id);
           }}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
         >
           <Edit2 className="w-4 h-4" />
           Edit
@@ -236,7 +233,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
             e.stopPropagation();
             onDelete(alert.id);
           }}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           Delete

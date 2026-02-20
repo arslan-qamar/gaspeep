@@ -149,6 +149,7 @@ func main() {
 		alerts.POST("", alertHandler.CreateAlert)
 		alerts.POST("/price-context", alertHandler.GetPriceContext)
 		alerts.GET("", alertHandler.GetAlerts)
+		alerts.GET("/:id/matching-stations", alertHandler.GetMatchingStations)
 		alerts.PUT("/:id", alertHandler.UpdateAlert)
 		alerts.DELETE("/:id", alertHandler.DeleteAlert)
 	}

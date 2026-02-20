@@ -23,6 +23,7 @@ import PriceSubmissionHistory from '../sections/price-submission-system/PriceSub
 import {
   AlertsListScreen,
   CreateAlertScreen,
+  AlertDetailsScreen,
   NotificationCenterScreen,
 } from '../sections/alerts-and-notifications'
 
@@ -436,6 +437,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppShell>
           <CreateAlertScreen />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/alerts/:alertId',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <AlertDetailsScreen />
         </AppShell>
       </ProtectedRoute>
     ),

@@ -161,6 +161,28 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "alert deleted"})
 }
 
+// GetMatchingStations handles GET /api/alerts/:id/matching-stations
+func (h *AlertHandler) GetMatchingStations(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	id := c.Param("id")
+
+	stations, err := h.alertService.GetMatchingStations(id, userID.(string))
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "alert not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch matching stations"})
+		return
+	}
+
+	c.JSON(http.StatusOK, stations)
+}
+
 // GetPriceContext handles POST /api/alerts/price-context
 func (h *AlertHandler) GetPriceContext(c *gin.Context) {
 	var req struct {
