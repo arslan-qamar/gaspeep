@@ -11,6 +11,7 @@ import { StationSelectionStep } from './components/StationSelectionStep'
 import { PriceEntryStep } from './components/PriceEntryStep'
 import { EntryMethodModal } from './components/EntryMethodModal'
 import { SubmissionConfirmationDialog } from './components/SubmissionConfirmationDialog'
+import type { PhotoAnalysisResult } from './PhotoUploadScreen'
 import type {
   SubmissionStep,
   FuelSubmissionEntry,
@@ -48,6 +49,7 @@ export const PriceSubmissionForm: React.FC = () => {
   const [voiceParseResult, setVoiceParseResult] = useState<VoiceParseResult | null>(null)
   const [voiceReviewEntries, setVoiceReviewEntries] = useState<VoiceReviewEntry[]>([])
   const [voiceReviewError, setVoiceReviewError] = useState<string | null>(null)
+  const [photoAnalysisMetadata, setPhotoAnalysisMetadata] = useState<{ photoUrl?: string; ocrData?: string } | null>(null)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -288,6 +290,82 @@ export const PriceSubmissionForm: React.FC = () => {
       if (exactId) return exactId.id
 
       const normalized = input.trim().toLowerCase()
+      const compact = normalized.replace(/[^a-z0-9]/g, '')
+      const hasToken = (token: string) =>
+        normalized.includes(token) || compact.includes(token.replace(/[^a-z0-9]/g, ''))
+      const findBy = (predicate: (value: string) => boolean) =>
+        fuelTypesList.find((f) => {
+          const name = f.name.toLowerCase()
+          const display = (f.displayName || '').toLowerCase()
+          const compactName = name.replace(/[^a-z0-9]/g, '')
+          const compactDisplay = display.replace(/[^a-z0-9]/g, '')
+          return (
+            predicate(name) ||
+            predicate(display) ||
+            predicate(compactName) ||
+            predicate(compactDisplay)
+          )
+        })
+
+      // Common OCR labels -> canonical fuel types.
+      if (hasToken('e10')) {
+        const match = findBy((value) => value.includes('e10'))
+        if (match) return match.id
+      }
+      if (hasToken('e85')) {
+        const match = findBy((value) => value.includes('e85'))
+        if (match) return match.id
+      }
+      if (hasToken('adblue')) {
+        const match = findBy((value) => value.includes('adblue'))
+        if (match) return match.id
+      }
+      if (hasToken('lpg')) {
+        const match = findBy((value) => value.includes('lpg'))
+        if (match) return match.id
+      }
+      if (hasToken('biodiesel')) {
+        const match = findBy((value) => value.includes('biodiesel'))
+        if (match) return match.id
+      }
+      if (hasToken('truckdiesel') || (hasToken('truck') && hasToken('diesel'))) {
+        const match = findBy((value) => value.includes('truck') && value.includes('diesel'))
+        if (match) return match.id
+      }
+      if (hasToken('premiumdiesel') || (hasToken('premium') && hasToken('diesel'))) {
+        const match = findBy((value) => value.includes('premium') && value.includes('diesel'))
+        if (match) return match.id
+      }
+      if (hasToken('diesel')) {
+        const match = findBy(
+          (value) =>
+            value.includes('diesel') &&
+            !value.includes('premium') &&
+            !value.includes('truck') &&
+            !value.includes('bio')
+        )
+        if (match) return match.id
+      }
+      if (hasToken('98')) {
+        const match = findBy((value) => value.includes('98') || value.includes('u98'))
+        if (match) return match.id
+      }
+      if (hasToken('95')) {
+        const match = findBy((value) => value.includes('95') || value.includes('u95'))
+        if (match) return match.id
+      }
+      if (
+        hasToken('91') ||
+        hasToken('ulp') ||
+        hasToken('unleaded') ||
+        hasToken('regular')
+      ) {
+        const match = findBy(
+          (value) => value.includes('91') || value.includes('unleaded') || value.includes('ulp')
+        )
+        if (match) return match.id
+      }
+
       const byName = fuelTypesList.find(
         (f) =>
           f.name.toLowerCase() === normalized ||
@@ -353,6 +431,12 @@ export const PriceSubmissionForm: React.FC = () => {
     setLoading(true)
     try {
       const response = await apiClient.post('/price-submissions', {
+        ...(method === 'photo' && photoAnalysisMetadata?.photoUrl
+          ? { photoUrl: photoAnalysisMetadata.photoUrl }
+          : {}),
+        ...(method === 'photo' && photoAnalysisMetadata?.ocrData
+          ? { ocrData: photoAnalysisMetadata.ocrData }
+          : {}),
         stationId: station.id,
         submissionMethod: method,
         entries: submissionPayloads.map((entry) => ({
@@ -424,6 +508,7 @@ export const PriceSubmissionForm: React.FC = () => {
   const closeEntryModal = useCallback(() => {
     setShowModal(false)
     setMethod('text')
+    setPhotoAnalysisMetadata(null)
     resetVoiceFlow()
   }, [resetVoiceFlow])
 
@@ -447,16 +532,38 @@ export const PriceSubmissionForm: React.FC = () => {
     setVoiceReviewEntries(reviewEntries)
   }, [resolveFuelTypeId])
 
-  const handlePhotoParsed = useCallback((data: { fuelType: string; price: number }) => {
-    const parsedFuelTypeId = resolveFuelTypeId(data.fuelType)
-    if (parsedFuelTypeId) {
-      setFuelType(parsedFuelTypeId)
-      setPricesByFuelType((prev) => ({
-        ...prev,
-        [parsedFuelTypeId]: String(data.price),
-      }))
+  const handlePhotoParsed = useCallback((data: PhotoAnalysisResult) => {
+    const resolvedEntries = data.entries
+      .map((entry) => {
+        const fuelTypeId = resolveFuelTypeId(entry.fuelType)
+        if (!fuelTypeId) return null
+        return {
+          fuelTypeId,
+          price: entry.price,
+        }
+      })
+      .filter((entry): entry is { fuelTypeId: string; price: number } => Boolean(entry))
+
+    if (resolvedEntries.length === 0) {
+      setError('Photo analyzed, but no detected fuel types matched supported options.')
+      return
     }
-    setMethod('text')
+
+    setPricesByFuelType((previous) => {
+      const next = { ...previous }
+      resolvedEntries.forEach((entry) => {
+        next[entry.fuelTypeId] = entry.price.toFixed(2)
+      })
+      return next
+    })
+    setFuelType(resolvedEntries[0].fuelTypeId)
+
+    setPhotoAnalysisMetadata({
+      photoUrl: data.photoUrl,
+      ocrData: data.ocrData,
+    })
+    setError(null)
+    setMethod('photo')
     setShowModal(false)
   }, [resolveFuelTypeId])
 
@@ -503,11 +610,13 @@ export const PriceSubmissionForm: React.FC = () => {
             onSubmit={submit}
             onVoiceEntry={() => {
               setMethod('voice')
+              setPhotoAnalysisMetadata(null)
               resetVoiceFlow()
               setShowModal(true)
             }}
             onPhotoEntry={() => {
               setMethod('photo')
+              setPhotoAnalysisMetadata(null)
               resetVoiceFlow()
               setShowModal(true)
             }}
@@ -540,6 +649,7 @@ export const PriceSubmissionForm: React.FC = () => {
           setFuelType('')
           setPricesByFuelType({})
           setMethod('text')
+          setPhotoAnalysisMetadata(null)
           setError(null)
           resetVoiceFlow()
         }}

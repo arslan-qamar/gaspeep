@@ -20,6 +20,18 @@ let mockVoiceParsedPayload = {
   unmatched: [],
 }
 
+let mockPhotoParsedPayload = {
+  entries: [
+    { fuelType: 'E10', price: 3.95 },
+    { fuelType: 'Premium 98', price: 4.11 },
+    { fuelType: 'Premium 95', price: 4.01 },
+  ],
+  fuelType: 'E10',
+  price: 3.95,
+  photoUrl: 'https://example.com/price-board.jpg',
+  ocrData: '{"text":"E10 3.95 Premium 98 4.11 Premium 95 4.01"}',
+}
+
 jest.mock('../VoiceInputScreen', () => {
   const React = require('react')
   return {
@@ -28,6 +40,18 @@ jest.mock('../VoiceInputScreen', () => {
     ),
     default: ({ onParsed }: any) => (
       React.createElement('button', { onClick: () => onParsed(mockVoiceParsedPayload) }, 'Mock Parse Voice')
+    ),
+  }
+})
+
+jest.mock('../PhotoUploadScreen', () => {
+  const React = require('react')
+  return {
+    PhotoUploadScreen: ({ onParsed }: any) => (
+      React.createElement('button', { onClick: () => onParsed(mockPhotoParsedPayload) }, 'Mock Parse Photo')
+    ),
+    default: ({ onParsed }: any) => (
+      React.createElement('button', { onClick: () => onParsed(mockPhotoParsedPayload) }, 'Mock Parse Photo')
     ),
   }
 })
@@ -227,6 +251,74 @@ describe('PriceSubmissionForm', () => {
             { fuelTypeId: 'f-e10', price: 3.79 },
             { fuelTypeId: 'f-diesel', price: 4.29 },
           ],
+        })
+      )
+    )
+  })
+
+  it('applies analyzed photo entries and submits with photo metadata', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({
+      data: [
+        { id: 'f-e10', name: 'E10', displayName: 'E10' },
+        { id: 'f-u98', name: 'U98', displayName: 'U98' },
+        { id: 'f-u95', name: 'U95', displayName: 'U95' },
+      ],
+    })
+    ;(apiClient.post as jest.Mock).mockImplementation((url: string, body: any) => {
+      if (url === '/stations/search-nearby') {
+        return Promise.resolve({
+          data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
+        })
+      }
+      if (url === '/price-submissions') {
+        return Promise.resolve({
+          data: {
+            submissions: (body.entries || []).map((entry: any) => ({
+              id: `ps-${entry.fuelTypeId}`,
+              price: entry.price,
+              moderationStatus: 'pending',
+            })),
+          },
+        })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
+    fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
+    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    fireEvent.click(stationOption)
+    fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
+
+    fireEvent.click(screen.getByTitle('Camera / Photo Entry'))
+    fireEvent.click(screen.getByRole('button', { name: /mock parse photo/i }))
+
+    expect(screen.getByLabelText('E10')).toHaveValue('3.95')
+    expect(screen.getByLabelText('U98')).toHaveValue('4.11')
+    expect(screen.getByLabelText('U95')).toHaveValue('4.01')
+    fireEvent.click(screen.getByRole('button', { name: /submit price/i }))
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/price-submissions',
+        expect.objectContaining({
+          stationId: 's-1',
+          submissionMethod: 'photo',
+          photoUrl: 'https://example.com/price-board.jpg',
+          ocrData: '{"text":"E10 3.95 Premium 98 4.11 Premium 95 4.01"}',
+          entries: expect.arrayContaining([
+            { fuelTypeId: 'f-e10', price: 3.95 },
+            { fuelTypeId: 'f-u95', price: 4.01 },
+            { fuelTypeId: 'f-u98', price: 4.11 },
+          ]),
         })
       )
     )

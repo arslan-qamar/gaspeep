@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -14,11 +15,17 @@ import (
 // PriceSubmissionHandler handles price submission endpoints
 type PriceSubmissionHandler struct {
 	submissionService service.PriceSubmissionService
+	ocrService        service.OCRService
 }
 
 // NewPriceSubmissionHandler creates a new PriceSubmissionHandler
 func NewPriceSubmissionHandler(submissionService service.PriceSubmissionService) *PriceSubmissionHandler {
 	return &PriceSubmissionHandler{submissionService: submissionService}
+}
+
+// SetOCRService wires OCR processing for analyze-photo endpoints.
+func (h *PriceSubmissionHandler) SetOCRService(ocrService service.OCRService) {
+	h.ocrService = ocrService
 }
 
 // CreatePriceSubmission handles POST /api/price-submissions
@@ -97,6 +104,62 @@ func (h *PriceSubmissionHandler) CreatePriceSubmission(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"submissions": submissions,
 		"count":       len(submissions),
+	})
+}
+
+// AnalyzePhoto handles POST /api/price-submissions/analyze-photo
+func (h *PriceSubmissionHandler) AnalyzePhoto(c *gin.Context) {
+	if h.ocrService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "photo analysis is not configured"})
+		return
+	}
+
+	file, _, err := c.Request.FormFile("photo")
+	if err != nil {
+		file, _, err = c.Request.FormFile("image")
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "photo file is required"})
+		return
+	}
+	defer file.Close()
+
+	const maxImageBytes = 10 << 20 // 10MB
+	imageBytes, err := io.ReadAll(io.LimitReader(file, maxImageBytes+1))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read uploaded photo"})
+		return
+	}
+	if len(imageBytes) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uploaded photo is empty"})
+		return
+	}
+	if len(imageBytes) > maxImageBytes {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uploaded photo exceeds 10MB limit"})
+		return
+	}
+
+	result, err := h.ocrService.AnalyzeFuelPrices(c.Request.Context(), imageBytes, "")
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrOCRNoTextDetected):
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "could not detect readable fuel prices due to: " + err.Error()})
+		case errors.Is(err, service.ErrOCRUnavailable):
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "photo analysis is temporarily unavailable and error is: " + err.Error()})
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to analyze photo"})
+		}
+		return
+	}
+
+	if len(result.Entries) == 0 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "could not detect readable fuel prices"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"entries": result.Entries,
+		"ocrData": result.OCRData,
 	})
 }
 

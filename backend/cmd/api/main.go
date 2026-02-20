@@ -56,6 +56,7 @@ func main() {
 	fuelTypeService := service.NewFuelTypeService(fuelTypeRepo)
 	fuelPriceService := service.NewFuelPriceService(fuelPriceRepo)
 	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo)
+	ocrService := service.NewGoogleVisionOCRServiceFromEnv()
 	alertService := service.NewAlertService(alertRepo)
 	broadcastService := service.NewBroadcastService(broadcastRepo, stationOwnerRepo)
 	notificationService := service.NewNotificationService(notificationRepo)
@@ -69,6 +70,7 @@ func main() {
 	fuelTypeHandler := handler.NewFuelTypeHandler(fuelTypeService)
 	fuelPriceHandler := handler.NewFuelPriceHandler(fuelPriceService)
 	priceSubmissionHandler := handler.NewPriceSubmissionHandler(priceSubmissionService)
+	priceSubmissionHandler.SetOCRService(ocrService)
 	alertHandler := handler.NewAlertHandler(alertService)
 	broadcastHandler := handler.NewBroadcastHandler(broadcastService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
@@ -133,6 +135,7 @@ func main() {
 	priceSubmissions.Use(middleware.AuthMiddleware())
 	{
 		priceSubmissions.POST("", priceSubmissionHandler.CreatePriceSubmission)
+		priceSubmissions.POST("/analyze-photo", priceSubmissionHandler.AnalyzePhoto)
 		priceSubmissions.GET("/my-submissions", priceSubmissionHandler.GetMySubmissions)
 		priceSubmissions.PUT("/:id/moderate", priceSubmissionHandler.ModerateSubmission)
 	}

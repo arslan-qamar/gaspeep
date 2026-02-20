@@ -1,16 +1,29 @@
-import React, { useState, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Camera, Upload, X, ChevronLeft } from 'lucide-react'
+import { apiClient } from '../../lib/api'
 
-type Parsed = { station: { id: string; name: string }; fuelType: string; price: number }
+export type PhotoAnalysisEntry = {
+  fuelType: string
+  price: number
+}
+
+export type PhotoAnalysisResult = {
+  entries: PhotoAnalysisEntry[]
+  fuelType: string
+  price: number
+  photoUrl?: string
+  ocrData?: string
+}
 
 interface PhotoUploadScreenProps {
-  onParsed: (p: Parsed) => void
+  onParsed: (p: PhotoAnalysisResult) => void
   onCancel: () => void
   isModal?: boolean
 }
 
 export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, onCancel, isModal = false }) => {
   const [preview, setPreview] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isUsingCamera, setIsUsingCamera] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -18,15 +31,76 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
   const cameraRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
+
+  const clearObjectUrl = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
+    }
+  }
+
+  const setPreviewFromFile = (file: File) => {
+    clearObjectUrl()
+    const nextPreview = URL.createObjectURL(file)
+    previewUrlRef.current = nextPreview
+    setSelectedFile(file)
+    setPreview(nextPreview)
+  }
+
+  const normalizeAnalysisResponse = (raw: any): PhotoAnalysisResult => {
+    const listCandidate =
+      (Array.isArray(raw?.entries) && raw.entries) ||
+      (Array.isArray(raw?.prices) && raw.prices) ||
+      (Array.isArray(raw?.detections) && raw.detections) ||
+      (Array.isArray(raw?.candidates) && raw.candidates) ||
+      []
+
+    const parsedEntries = (listCandidate as any[])
+      .map((entry) => {
+        const fuelType =
+          entry?.fuelType ||
+          entry?.fuel_type ||
+          entry?.fuel ||
+          entry?.type ||
+          entry?.name ||
+          ''
+        const numericPrice = Number(entry?.price ?? entry?.value ?? entry?.amount)
+
+        if (!fuelType || !Number.isFinite(numericPrice) || numericPrice <= 0) return null
+        return {
+          fuelType: String(fuelType),
+          price: Number(numericPrice.toFixed(3)),
+        }
+      })
+      .filter((entry): entry is PhotoAnalysisEntry => Boolean(entry))
+
+    if (parsedEntries.length === 0) {
+      const topFuelType = raw?.fuelType || raw?.fuel_type || raw?.fuel || ''
+      const topPrice = Number(raw?.price ?? raw?.value ?? raw?.amount)
+      if (!topFuelType || !Number.isFinite(topPrice) || topPrice <= 0) {
+        throw new Error('No valid price was detected in this image.')
+      }
+      parsedEntries.push({
+        fuelType: String(topFuelType),
+        price: Number(topPrice.toFixed(3)),
+      })
+    }
+
+    return {
+      entries: parsedEntries,
+      fuelType: parsedEntries[0].fuelType,
+      price: parsedEntries[0].price,
+      photoUrl: typeof raw?.photoUrl === 'string' ? raw.photoUrl : undefined,
+      ocrData: typeof raw?.ocrData === 'string' ? raw.ocrData : JSON.stringify(raw),
+    }
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setPreview(event.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+      setError(null)
+      setPreviewFromFile(file)
     }
   }
 
@@ -65,36 +139,71 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.drawImage(video, 0, 0)
-        const imageData = canvas.toDataURL('image/jpeg')
-        setPreview(imageData)
-        stopCamera()
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              setError('Unable to capture photo. Please try again.')
+              return
+            }
+            const capturedFile = new File([blob], `price-board-${Date.now()}.jpg`, {
+              type: 'image/jpeg',
+            })
+            setPreviewFromFile(capturedFile)
+            stopCamera()
+          },
+          'image/jpeg',
+          0.9
+        )
       }
     }
   }
 
-  const analyzePhoto = () => {
+  const analyzePhoto = async () => {
+    if (!selectedFile) {
+      setError('Select or capture a photo before analysis.')
+      return
+    }
+
     setIsProcessing(true)
     setError(null)
 
-    // Simulate OCR processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      // Demo: simulate successful OCR
-      onParsed({
-        station: { id: 'demo', name: 'Demo Station' },
-        fuelType: 'Diesel',
-        price: 4.39,
+    try {
+      const formData = new FormData()
+      formData.append('photo', selectedFile)
+      formData.append('image', selectedFile)
+
+      const response = await apiClient.post('/price-submissions/analyze-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
-    }, 2000)
+
+      onParsed(normalizeAnalysisResponse(response.data))
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Photo analysis failed. Try another photo or enter price manually.'
+      setError(message)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const clearPreview = () => {
+    clearObjectUrl()
     setPreview(null)
+    setSelectedFile(null)
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
+
+  useEffect(() => {
+    return () => {
+      stopCamera()
+      clearObjectUrl()
+    }
+  }, [])
 
   return (
     <div className={isModal ? '' : 'min-h-screen bg-slate-50 dark:bg-slate-950'}>
@@ -145,9 +254,9 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
                 </button>
                 <button
                   onClick={analyzePhoto}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !selectedFile}
                   className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
-                    isProcessing
+                    isProcessing || !selectedFile
                       ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}

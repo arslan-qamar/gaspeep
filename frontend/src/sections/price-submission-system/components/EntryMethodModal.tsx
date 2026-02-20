@@ -3,6 +3,7 @@ import { VoiceInputScreen } from '../VoiceInputScreen'
 import { PhotoUploadScreen } from '../PhotoUploadScreen'
 import type { VoiceParseResult } from '../voicePriceParser'
 import type { FuelType, VoiceReviewEntry } from '../PriceSubmissionForm.types'
+import type { PhotoAnalysisResult } from '../PhotoUploadScreen'
 
 type EntryMethodModalProps = {
   showModal: boolean
@@ -16,7 +17,7 @@ type EntryMethodModalProps = {
   resetVoiceFlow: () => void
   onClose: () => void
   onVoiceParsed: (data: VoiceParseResult) => void
-  onPhotoParsed: (data: { fuelType: string; price: number }) => void
+  onPhotoParsed: (data: PhotoAnalysisResult) => void
 }
 
 export const EntryMethodModal: React.FC<EntryMethodModalProps> = ({

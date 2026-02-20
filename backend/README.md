@@ -124,6 +124,38 @@ See `.env.example` for all available configuration options.
     - Start backend (`make -C backend dev`) and frontend (`npm run dev` in `frontend`).
     - Open the Sign In page and click “Sign in with Google” — a popup will open and, on success, the backend will set an HttpOnly session cookie and notify the opener.
 
+## Google Vision OCR Setup
+
+1. In Google Cloud Console:
+    - Enable billing for your project.
+    - Enable the `Cloud Vision API`.
+    - Create an API key and restrict it to `Cloud Vision API` only.
+
+2. Set environment variable in `backend/.env`:
+
+```dotenv
+GOOGLE_VISION_API_KEY=your_google_vision_api_key
+```
+
+3. Restart backend after updating env vars.
+
+4. Test photo analysis endpoint:
+    - Endpoint: `POST /api/price-submissions/analyze-photo`
+    - Auth required (same auth middleware as other price submission routes).
+    - Multipart field: `photo` (also accepts `image`).
+
+Example `curl` test (cookie-based auth):
+
+```bash
+curl -k -X POST "https://api.gaspeep.com/api/price-submissions/analyze-photo" \
+  -H "Cookie: auth_token=YOUR_AUTH_TOKEN" \
+  -F "photo=@/absolute/path/to/price-board.jpg"
+```
+
+Successful response includes:
+- `entries`: parsed fuel types and prices
+- `ocrData`: raw OCR text extracted from the image
+
 ## Cookie configuration and production notes
 
 The backend sets an HttpOnly `auth_token` cookie on successful sign-in (email/password or OAuth). Cookie attributes are configured as follows:
