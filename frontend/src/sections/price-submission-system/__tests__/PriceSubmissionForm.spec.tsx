@@ -71,6 +71,15 @@ jest.mock('react-router-dom', () => {
 })
 
 describe('PriceSubmissionForm', () => {
+  const renderForm = () =>
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
   beforeEach(() => {
     ;(apiClient.get as jest.Mock).mockReset()
     ;(apiClient.post as jest.Mock).mockReset()
@@ -113,13 +122,7 @@ describe('PriceSubmissionForm', () => {
       return Promise.resolve({ data: {} })
     })
 
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
-          <PriceSubmissionForm />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderForm()
 
     // wait for fuel types to load
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
@@ -172,13 +175,8 @@ describe('PriceSubmissionForm', () => {
       data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
     })
 
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
-          <PriceSubmissionForm />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderForm()
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
 
     const searchInput = screen.getByPlaceholderText(/search station by name or address/i) as HTMLInputElement
     fireEvent.change(searchInput, { target: { value: 'Crows' } })
@@ -216,13 +214,7 @@ describe('PriceSubmissionForm', () => {
       return Promise.resolve({ data: {} })
     })
 
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
-          <PriceSubmissionForm />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderForm()
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
     fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
@@ -284,13 +276,7 @@ describe('PriceSubmissionForm', () => {
       return Promise.resolve({ data: {} })
     })
 
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
-          <PriceSubmissionForm />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderForm()
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
     fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
