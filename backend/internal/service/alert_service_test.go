@@ -41,6 +41,14 @@ func (m *MockAlertRepository) Delete(id, userID string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockAlertRepository) GetPriceContext(input repository.PriceContextInput) (*repository.PriceContextResult, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.PriceContextResult), args.Error(1)
+}
+
 // ============ Alert Service Tests ============
 
 func TestAlertService_CreateAlert_CallsRepository(t *testing.T) {
@@ -69,5 +77,29 @@ func TestAlertService_GetAlerts_CallsRepository(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedAlerts, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAlertService_GetPriceContext_CallsRepository(t *testing.T) {
+	mockRepo := new(MockAlertRepository)
+	service := NewAlertService(mockRepo)
+
+	input := repository.PriceContextInput{
+		FuelTypeID: "fuel-1",
+		Latitude:   -33.8688,
+		Longitude:  151.2093,
+		RadiusKm:   10,
+	}
+	expected := &repository.PriceContextResult{
+		FuelTypeID:   "fuel-1",
+		FuelTypeName: "E10",
+		StationCount: 2,
+	}
+	mockRepo.On("GetPriceContext", input).Return(expected, nil)
+
+	result, err := service.GetPriceContext(input)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
 	mockRepo.AssertExpectations(t)
 }

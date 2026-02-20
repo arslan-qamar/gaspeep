@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import Map, { Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin, Loader, Search, X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { MapPin, Loader, Search, X } from 'lucide-react';
 interface LocationPickerProps {
   value: { address: string; latitude: number; longitude: number } | null;
   onChange: (location: { address: string; latitude: number; longitude: number } | null) => void;
+  radiusKm?: number;
 }
 
 interface NominatimResult {
@@ -15,17 +16,100 @@ interface NominatimResult {
 }
 
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org';
+const SYDNEY_DEFAULT = { lat: -33.8688, lng: 151.2093 };
 
-export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
+export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, radiusKm = 5 }) => {
   const mapRef = useRef<any>(null);
+  const hasStartedInitializationRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [hasInitializedLocation, setHasInitializedLocation] = useState(false);
   const [markerPosition, setMarkerPosition] = useState(
-    value ? { lat: value.latitude, lng: value.longitude } : { lat: 40.7128, lng: -74.006 }
+    value ? { lat: value.latitude, lng: value.longitude } : SYDNEY_DEFAULT
   );
+
+  const fitMapToRadius = useCallback((lat: number, lng: number, km: number) => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current.getMap?.();
+    if (!map) return;
+
+    const latOffset = km / 111;
+    const lngOffset = km / (111 * Math.cos((lat * Math.PI) / 180));
+
+    map.fitBounds(
+      [
+        [lng - lngOffset, lat - latOffset],
+        [lng + lngOffset, lat + latOffset],
+      ],
+      {
+        padding: 40,
+        duration: 600,
+        maxZoom: 15,
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!value) return;
+    setMarkerPosition({ lat: value.latitude, lng: value.longitude });
+  }, [value]);
+
+  useEffect(() => {
+    fitMapToRadius(markerPosition.lat, markerPosition.lng, radiusKm);
+  }, [markerPosition.lat, markerPosition.lng, radiusKm, fitMapToRadius]);
+
+  useEffect(() => {
+    if (value || hasInitializedLocation || hasStartedInitializationRef.current) return;
+    hasStartedInitializationRef.current = true;
+
+    const applySydneyFallback = () => {
+      onChange({
+        address: 'Sydney NSW, Australia',
+        latitude: SYDNEY_DEFAULT.lat,
+        longitude: SYDNEY_DEFAULT.lng,
+      });
+      setHasInitializedLocation(true);
+    };
+
+    if (!navigator.geolocation) {
+      applySydneyFallback();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setMarkerPosition({ lat: latitude, lng: longitude });
+        try {
+          const response = await fetch(
+            `${NOMINATIM_API}/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const data: NominatimResult = await response.json();
+          onChange({
+            address: data.display_name,
+            latitude,
+            longitude,
+          });
+        } catch (_err) {
+          onChange({
+            address: 'Current Location',
+            latitude,
+            longitude,
+          });
+        } finally {
+          setHasInitializedLocation(true);
+        }
+      },
+      () => {
+        applySydneyFallback();
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  }, [value, hasInitializedLocation, onChange]);
 
   // Debounced geocoding search
   const performSearch = useCallback(async (query: string) => {
@@ -79,12 +163,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
 
     // Animate map to selected location
     if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      map?.flyTo({
-        center: [lng, lat],
-        zoom: 14,
-        duration: 1000,
-      });
+      fitMapToRadius(lat, lng, radiusKm);
     }
   };
 
@@ -172,14 +251,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
         }
 
         // Animate map to current location
-        if (mapRef.current) {
-          const map = mapRef.current.getMap();
-          map?.flyTo({
-            center: [longitude, latitude],
-            zoom: 14,
-            duration: 1000,
-          });
-        }
+        fitMapToRadius(latitude, longitude, radiusKm);
 
         setIsLocating(false);
       },
@@ -188,7 +260,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
         alert('Unable to get current location. Please enter manually.');
         setIsLocating(false);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
@@ -254,6 +326,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
             latitude: markerPosition.lat,
             longitude: markerPosition.lng,
             zoom: 14,
+          }}
+          onLoad={() => {
+            fitMapToRadius(markerPosition.lat, markerPosition.lng, radiusKm);
           }}
           onClick={handleMapClick}
           style={{ width: '100%', height: '100%' }}

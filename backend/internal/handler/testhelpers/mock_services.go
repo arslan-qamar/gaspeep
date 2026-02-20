@@ -156,6 +156,14 @@ func (m *MockAlertService) DeleteAlert(id, userID string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockAlertService) GetPriceContext(input repository.PriceContextInput) (*repository.PriceContextResult, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.PriceContextResult), args.Error(1)
+}
+
 // MockNotificationService is a mock implementation of service.NotificationService
 type MockNotificationService struct {
 	mock.Mock

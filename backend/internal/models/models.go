@@ -78,6 +78,8 @@ type Alert struct {
 	Longitude       float64    `json:"longitude"`
 	RadiusKm        int        `json:"radiusKm"`
 	AlertName       string     `json:"alertName"`
+	NotifyViaPush   bool       `json:"notifyViaPush"`
+	NotifyViaEmail  bool       `json:"notifyViaEmail"`
 	IsActive        bool       `json:"isActive"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	LastTriggeredAt *time.Time `json:"lastTriggeredAt"`

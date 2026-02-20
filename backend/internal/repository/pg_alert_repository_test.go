@@ -258,6 +258,58 @@ func TestCreate_WithDifferentPriceThresholds(t *testing.T) {
 	}
 }
 
+func TestGetPriceContext_WithNearbyPrices(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "Diesel")
+	station1 := testhelpers.CreateTestStation(t, db, -33.8688, 151.2093)
+	station2 := testhelpers.CreateTestStation(t, db, -33.8700, 151.2100)
+	testhelpers.CreateTestFuelPrice(t, db, station1.ID, fuelTypeID, 1.90)
+	testhelpers.CreateTestFuelPrice(t, db, station2.ID, fuelTypeID, 1.80)
+
+	repo := NewPgAlertRepository(db)
+	context, err := repo.GetPriceContext(PriceContextInput{
+		FuelTypeID: fuelTypeID,
+		Latitude:   -33.8688,
+		Longitude:  151.2093,
+		RadiusKm:   15,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, context)
+	assert.Equal(t, fuelTypeID, context.FuelTypeID)
+	assert.Equal(t, "Diesel", context.FuelTypeName)
+	assert.Equal(t, 2, context.StationCount)
+	assert.InDelta(t, 1.85, context.AveragePrice, 0.0001)
+	assert.InDelta(t, 1.80, context.LowestPrice, 0.0001)
+	assert.Equal(t, station2.ID, context.LowestPriceStationID)
+	assert.NotEmpty(t, context.LowestPriceStationName)
+}
+
+func TestGetPriceContext_NoNearbyPrices_ReturnsZeroedContext(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "LPG")
+
+	repo := NewPgAlertRepository(db)
+	context, err := repo.GetPriceContext(PriceContextInput{
+		FuelTypeID: fuelTypeID,
+		Latitude:   -33.8688,
+		Longitude:  151.2093,
+		RadiusKm:   10,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, context)
+	assert.Equal(t, fuelTypeID, context.FuelTypeID)
+	assert.Equal(t, "LPG", context.FuelTypeName)
+	assert.Equal(t, 0, context.StationCount)
+	assert.Equal(t, 0.0, context.AveragePrice)
+	assert.Equal(t, 0.0, context.LowestPrice)
+	assert.Equal(t, "", context.LowestPriceStationID)
+	assert.Equal(t, "", context.LowestPriceStationName)
+}
+
 // Helper function
 func ptrBool(b bool) *bool {
 	return &b

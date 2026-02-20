@@ -12,6 +12,8 @@ type CreateAlertInput struct {
 	Longitude      float64
 	RadiusKm       int
 	AlertName      string
+	NotifyViaPush  bool
+	NotifyViaEmail bool
 }
 
 // UpdateAlertInput holds parameters for updating an alert.
@@ -19,7 +21,30 @@ type UpdateAlertInput struct {
 	PriceThreshold float64
 	RadiusKm       int
 	AlertName      string
+	NotifyViaPush  *bool
+	NotifyViaEmail *bool
 	IsActive       *bool
+}
+
+// PriceContextInput holds request parameters for alert price context.
+type PriceContextInput struct {
+	FuelTypeID string
+	Latitude   float64
+	Longitude  float64
+	RadiusKm   int
+}
+
+// PriceContextResult holds aggregate pricing context for alert setup.
+type PriceContextResult struct {
+	FuelTypeID             string  `json:"fuelTypeId"`
+	FuelTypeName           string  `json:"fuelTypeName"`
+	AveragePrice           float64 `json:"averagePrice"`
+	LowestPrice            float64 `json:"lowestPrice"`
+	LowestPriceStationName string  `json:"lowestPriceStationName"`
+	LowestPriceStationID   string  `json:"lowestPriceStationId"`
+	Currency               string  `json:"currency"`
+	Unit                   string  `json:"unit"`
+	StationCount           int     `json:"stationCount"`
 }
 
 // AlertRepository defines data-access operations for alerts.
@@ -28,4 +53,5 @@ type AlertRepository interface {
 	GetByUserID(userID string) ([]models.Alert, error)
 	Update(id, userID string, input UpdateAlertInput) (string, error)
 	Delete(id, userID string) (bool, error)
+	GetPriceContext(input PriceContextInput) (*PriceContextResult, error)
 }

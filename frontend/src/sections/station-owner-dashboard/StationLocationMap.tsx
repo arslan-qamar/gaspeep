@@ -32,6 +32,7 @@ const createCircleGeoJSON = (lat: number, lng: number, radiusKm: number, points 
 
   return {
     type: 'Feature' as const,
+    properties: {},
     geometry: {
       type: 'Polygon' as const,
       coordinates: [coordinates],

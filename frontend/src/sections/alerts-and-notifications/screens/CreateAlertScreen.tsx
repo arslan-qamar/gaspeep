@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Loader } from 'lucide-react';
 import { StepIndicator } from '../components/StepIndicator';
@@ -41,6 +41,9 @@ export const CreateAlertScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingContext, setLoadingContext] = useState(false);
+  const [contextRadiusKm, setContextRadiusKm] = useState(5);
+  const priceContextTimeoutRef = useRef<number | null>(null);
+  const latestPriceContextRequestRef = useRef(0);
 
   // Load fuel types on mount
   useEffect(() => {
@@ -56,10 +59,32 @@ export const CreateAlertScreen: React.FC = () => {
 
   // Load price context when location/radius/fuel type changes
   useEffect(() => {
-    if (formData.location && formData.fuelTypeId && formData.step >= 2) {
-      loadPriceContext();
+    if (!formData.location || !formData.fuelTypeId || formData.step < 2) return;
+
+    if (priceContextTimeoutRef.current) {
+      window.clearTimeout(priceContextTimeoutRef.current);
     }
-  }, [formData.location, formData.radius, formData.fuelTypeId]);
+
+    priceContextTimeoutRef.current = window.setTimeout(() => {
+      void loadPriceContext(
+        formData.fuelTypeId!,
+        formData.location!.latitude,
+        formData.location!.longitude,
+        contextRadiusKm
+      );
+    }, 350);
+
+    return () => {
+      if (priceContextTimeoutRef.current) {
+        window.clearTimeout(priceContextTimeoutRef.current);
+      }
+    };
+  }, [formData.location, formData.fuelTypeId, formData.step, contextRadiusKm]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    setContextRadiusKm(formData.radius);
+  }, [formData.radius, isEditMode]);
 
   const loadFuelTypes = async () => {
     try {
@@ -94,29 +119,48 @@ export const CreateAlertScreen: React.FC = () => {
     }
   };
 
-  const loadPriceContext = async () => {
-    if (!formData.location || !formData.fuelTypeId) return;
-
+  const loadPriceContext = async (
+    fuelTypeId: string,
+    latitude: number,
+    longitude: number,
+    radius: number
+  ) => {
+    const requestId = ++latestPriceContextRequestRef.current;
     try {
       setLoadingContext(true);
       const context = await fetchPriceContext(
-        formData.fuelTypeId,
-        formData.location.latitude,
-        formData.location.longitude,
-        formData.radius
+        fuelTypeId,
+        latitude,
+        longitude,
+        radius
       );
-      setPriceContext(context);
+      if (requestId === latestPriceContextRequestRef.current) {
+        setPriceContext(context);
+      }
     } catch (err) {
       console.error('Error loading price context:', err);
     } finally {
-      setLoadingContext(false);
+      if (requestId === latestPriceContextRequestRef.current) {
+        setLoadingContext(false);
+      }
     }
   };
 
   const handleNext = () => {
     if (formData.step < 3) {
+      if (formData.step === 2) {
+        setContextRadiusKm(formData.radius);
+      }
       setFormData({ ...formData, step: (formData.step + 1) as 1 | 2 | 3 });
     }
+  };
+
+  const handleRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, radius: parseInt(e.target.value, 10) });
+  };
+
+  const commitRadiusForContext = () => {
+    setContextRadiusKm(formData.radius);
   };
 
   const handleBack = () => {
@@ -252,6 +296,7 @@ export const CreateAlertScreen: React.FC = () => {
                 </label>
                 <LocationPicker
                   value={formData.location}
+                  radiusKm={formData.radius}
                   onChange={(location) => setFormData({ ...formData, location })}
                 />
               </div>
@@ -266,9 +311,10 @@ export const CreateAlertScreen: React.FC = () => {
                   min="1"
                   max="50"
                   value={formData.radius}
-                  onChange={(e) =>
-                    setFormData({ ...formData, radius: parseInt(e.target.value) })
-                  }
+                  onChange={handleRadiusChange}
+                  onMouseUp={commitRadiusForContext}
+                  onTouchEnd={commitRadiusForContext}
+                  onKeyUp={commitRadiusForContext}
                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">

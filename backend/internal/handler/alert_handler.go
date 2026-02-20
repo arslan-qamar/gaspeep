@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"gaspeep/backend/internal/repository"
@@ -33,12 +34,31 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 		Latitude       float64 `json:"latitude" binding:"required"`
 		Longitude      float64 `json:"longitude" binding:"required"`
 		RadiusKm       int     `json:"radiusKm" binding:"required,min=1,max=50"`
-		AlertName      string  `json:"alertName" binding:"required"`
+		AlertName      string  `json:"alertName"`
+		Name           string  `json:"name"`
+		NotifyViaPush  *bool   `json:"notifyViaPush"`
+		NotifyViaEmail *bool   `json:"notifyViaEmail"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	alertName := req.AlertName
+	if alertName == "" {
+		alertName = req.Name
+	}
+	if alertName == "" {
+		alertName = "Price Alert"
+	}
+	notifyViaPush := true
+	if req.NotifyViaPush != nil {
+		notifyViaPush = *req.NotifyViaPush
+	}
+	notifyViaEmail := false
+	if req.NotifyViaEmail != nil {
+		notifyViaEmail = *req.NotifyViaEmail
 	}
 
 	alert, err := h.alertService.CreateAlert(userID.(string), repository.CreateAlertInput{
@@ -47,7 +67,9 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
 		RadiusKm:       req.RadiusKm,
-		AlertName:      req.AlertName,
+		AlertName:      alertName,
+		NotifyViaPush:  notifyViaPush,
+		NotifyViaEmail: notifyViaEmail,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create alert"})
@@ -87,6 +109,8 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 		PriceThreshold float64 `json:"priceThreshold"`
 		RadiusKm       int     `json:"radiusKm"`
 		AlertName      string  `json:"alertName"`
+		NotifyViaPush  *bool   `json:"notifyViaPush"`
+		NotifyViaEmail *bool   `json:"notifyViaEmail"`
 		IsActive       *bool   `json:"isActive"`
 	}
 
@@ -99,6 +123,8 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 		PriceThreshold: req.PriceThreshold,
 		RadiusKm:       req.RadiusKm,
 		AlertName:      req.AlertName,
+		NotifyViaPush:  req.NotifyViaPush,
+		NotifyViaEmail: req.NotifyViaEmail,
 		IsActive:       req.IsActive,
 	})
 	if err == sql.ErrNoRows {
@@ -133,4 +159,36 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "alert deleted"})
+}
+
+// GetPriceContext handles POST /api/alerts/price-context
+func (h *AlertHandler) GetPriceContext(c *gin.Context) {
+	var req struct {
+		FuelTypeID string  `json:"fuelTypeId" binding:"required"`
+		Latitude   float64 `json:"latitude" binding:"required"`
+		Longitude  float64 `json:"longitude" binding:"required"`
+		RadiusKm   int     `json:"radius" binding:"required,min=1,max=200"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	context, err := h.alertService.GetPriceContext(repository.PriceContextInput{
+		FuelTypeID: req.FuelTypeID,
+		Latitude:   req.Latitude,
+		Longitude:  req.Longitude,
+		RadiusKm:   req.RadiusKm,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "fuel type not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch price context"})
+		return
+	}
+
+	c.JSON(http.StatusOK, context)
 }
