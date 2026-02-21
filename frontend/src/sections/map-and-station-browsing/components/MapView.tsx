@@ -41,7 +41,9 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
   isFetchingMore = false,
 }, _ref) => {
   const mapRef = useRef<any>(null);
+  const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [dimNonLowPriceBadges, setDimNonLowPriceBadges] = useState(false);
   const [iconLoadErrorCounts, setIconLoadErrorCounts] = useState<Record<string, number>>({});
   const getMapInstance = useCallback(() => {
     if (!mapRef.current) return null;
@@ -104,6 +106,16 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
     [stations, selectedStationId],
   );
 
+  const resetIdleBadgeTimer = useCallback(() => {
+    setDimNonLowPriceBadges(false);
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+    }
+    idleTimeoutRef.current = setTimeout(() => {
+      setDimNonLowPriceBadges(true);
+    }, 2000);
+  }, []);
+
   const { stationLowestPriceById, lowPriceThreshold, highPriceThreshold } = useMemo(() => {
     const lowestPriceById = new Map<string, number>();
     const allLowestPrices: number[] = [];
@@ -155,6 +167,15 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
     });
   }, [focusLocation, getMapInstance]);
 
+  useEffect(() => {
+    resetIdleBadgeTimer();
+    return () => {
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, [resetIdleBadgeTimer]);
+
   return (
     <MapViewGL
       ref={mapRef}
@@ -163,7 +184,9 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
         longitude: userLocation.lng,
         zoom: 14,
       }}
+      onMove={resetIdleBadgeTimer}
       onMoveEnd={(evt) => {
+        resetIdleBadgeTimer();
         onViewportChange?.({
           latitude: evt.viewState.latitude,
           longitude: evt.viewState.longitude,
@@ -227,19 +250,27 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
           const lowestPrice = stationLowestPriceById.get(station.id);
 
           let badgeClassName = 'bg-gray-400';
+          let badgeBucket: 'low' | 'mid' | 'high' | 'none' = 'none';
           let badgeTitle = 'No price data available';
           if (typeof lowestPrice === 'number' && lowPriceThreshold !== null && highPriceThreshold !== null) {
             if (lowestPrice <= lowPriceThreshold) {
               badgeClassName = 'bg-green-500';
+              badgeBucket = 'low';
               badgeTitle = 'Lower-end price';
             } else if (lowestPrice >= highPriceThreshold) {
               badgeClassName = 'bg-red-500';
+              badgeBucket = 'high';
               badgeTitle = 'Higher-end price';
             } else {
               badgeClassName = 'bg-yellow-500';
+              badgeBucket = 'mid';
               badgeTitle = 'Median-range price';
             }
           }
+          const badgeColorClassName =
+            dimNonLowPriceBadges && (badgeBucket === 'mid' || badgeBucket === 'high')
+              ? 'bg-gray-400'
+              : badgeClassName;
 
           return (
             <Marker
@@ -279,14 +310,14 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
                 {/* Price Badge */}
                 {typeof lowestPrice === 'number' ? (
                   <div
-                    className={`absolute -bottom-2 -right-2 ${badgeClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
+                    className={`absolute -bottom-2 -right-2 ${badgeColorClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
                     title={badgeTitle}
                   >
                     ${lowestPrice.toFixed(2)}
                   </div>
                 ) : (
                   <div
-                    className={`absolute -bottom-2 -right-2 ${badgeClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
+                    className={`absolute -bottom-2 -right-2 ${badgeColorClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
                     title="No price data available"
                   >
                     ?
