@@ -6,9 +6,15 @@ import FilterModal, { FilterState } from '../components/FilterModal';
 
 const mockFilters: FilterState = {
   fuelTypes: ['e10', 'diesel'],
-  maxPrice: 4.50,
+  maxPrice: 199.9,
   onlyVerified: true,
 };
+
+const mockFuelTypeOptions = [
+  { id: 'e10', label: 'E10' },
+  { id: 'unleaded-91', label: 'Unleaded 91' },
+  { id: 'diesel', label: 'Diesel' },
+];
 
 describe('FilterModal', () => {
   it('does not render when not open', () => {
@@ -16,6 +22,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={false}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
@@ -28,14 +35,15 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
     );
 
     expect(screen.getByText('Filters')).toBeInTheDocument();
-    expect(screen.getByText('Max Price: $4.50')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('4.5')).toBeInTheDocument();
+    expect(screen.getByText('Max Price: 199.9¢/L')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('199.9')).toBeInTheDocument();
     expect(screen.getByLabelText('Show verified prices only')).toBeChecked();
   });
 
@@ -44,6 +52,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
@@ -59,6 +68,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
@@ -79,15 +89,16 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
     );
 
-    const slider = screen.getByDisplayValue('4.5');
-    fireEvent.change(slider, { target: { value: '5' } });
+    const slider = screen.getByDisplayValue('199.9');
+    fireEvent.change(slider, { target: { value: '205' } });
 
-    expect(screen.getByText('Max Price: $5.00')).toBeInTheDocument();
+    expect(screen.getByText('Max Price: 205.0¢/L')).toBeInTheDocument();
   });
 
   it('toggles verified only checkbox', async () => {
@@ -95,6 +106,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={() => {}}
       />
@@ -113,6 +125,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={mockClose}
       />
@@ -132,6 +145,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={mockFiltersChange}
         onClose={mockClose}
       />
@@ -151,6 +165,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={mockClose}
       />
@@ -169,6 +184,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={() => {}}
         onClose={mockClose}
       />
@@ -187,6 +203,7 @@ describe('FilterModal', () => {
       <FilterModal
         isOpen={true}
         filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
         onFiltersChange={mockFiltersChange}
         onClose={() => {}}
       />
@@ -195,8 +212,8 @@ describe('FilterModal', () => {
     // Change some filters
     const user = userEvent.setup();
     await user.click(screen.getByLabelText('Unleaded 91'));
-    const slider = screen.getByDisplayValue('4.5');
-    fireEvent.change(slider, { target: { value: '6' } });
+    const slider = screen.getByDisplayValue('199.9');
+    fireEvent.change(slider, { target: { value: '205' } });
     await user.click(screen.getByLabelText('Show verified prices only'));
 
     const applyButton = screen.getByRole('button', { name: /apply/i });
@@ -204,7 +221,7 @@ describe('FilterModal', () => {
 
     expect(mockFiltersChange).toHaveBeenCalledWith({
       fuelTypes: ['e10', 'diesel', 'unleaded-91'],
-      maxPrice: 6.0,
+      maxPrice: 205.0,
       onlyVerified: false,
     });
   });

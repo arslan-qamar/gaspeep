@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, X } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
-import FilterModal, { FilterState } from '../components/FilterModal';
+import FilterModal, { FuelTypeOption, FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { searchStationsNearby } from '../../../services/stationsService'
+import { fuelTypeApi } from '@/lib/api';
 
 export const MapPage: React.FC = () => {
+  const DEFAULT_MAX_PRICE_CENTS = 400;
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,7 +19,7 @@ export const MapPage: React.FC = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     fuelTypes: [],
-    maxPrice: 10,
+    maxPrice: DEFAULT_MAX_PRICE_CENTS,
     onlyVerified: false,
   });
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -79,6 +81,21 @@ export const MapPage: React.FC = () => {
   }
 
   const { data: fetchedStations, isFetching } = useQuery(queryOptions)
+  const { data: fuelTypeOptions = [] } = useQuery<FuelTypeOption[]>({
+    queryKey: ['fuel-types-filter-options'],
+    queryFn: async () => {
+      const response = await fuelTypeApi.getFuelTypes()
+      const fuelTypes = response?.data ?? []
+      return fuelTypes
+        .slice()
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .map((fuelType) => ({
+          id: fuelType.id,
+          label: fuelType.displayName || fuelType.name,
+        }))
+    },
+    staleTime: 10 * 60_000,
+  })
 
     // Ensure fetchedStations are reflected into local `stations` state. This
     // duplicates onSuccess safety and guards against cases where the query
@@ -286,6 +303,7 @@ export const MapPage: React.FC = () => {
       <FilterModal
         isOpen={filterModalOpen}
         filters={filters}
+        fuelTypeOptions={fuelTypeOptions}
         onFiltersChange={setFilters}
         onClose={() => setFilterModalOpen(false)}
       />

@@ -51,8 +51,8 @@ func TestGetStationsNearby_RadiusFiltering(t *testing.T) {
 
 	// Create 3 stations at different distances
 	s1 := testhelpers.CreateTestStation(t, db, -33.8650, 151.2100) // ~1km
-	_ = testhelpers.CreateTestStation(t, db, -33.8700, 151.2050) // ~2km
-	_ = testhelpers.CreateTestStation(t, db, -33.8750, 151.2000) // ~3km
+	_ = testhelpers.CreateTestStation(t, db, -33.8750, 151.2050)   // >2km
+	_ = testhelpers.CreateTestStation(t, db, -33.8750, 151.2000)   // ~3km
 
 	repo := NewPgStationRepository(db)
 
@@ -430,8 +430,8 @@ func TestGetStations_OrderedByDistance(t *testing.T) {
 
 	// Create stations at increasing distances
 	s1 := testhelpers.CreateTestStation(t, db, centerLat+0.01, centerLon) // ~1km
-	_ = testhelpers.CreateTestStation(t, db, centerLat+0.02, centerLon) // ~2km
-	_ = testhelpers.CreateTestStation(t, db, centerLat+0.03, centerLon) // ~3km
+	_ = testhelpers.CreateTestStation(t, db, centerLat+0.02, centerLon)   // ~2km
+	_ = testhelpers.CreateTestStation(t, db, centerLat+0.03, centerLon)   // ~3km
 
 	repo := NewPgStationRepository(db)
 	results, err := repo.GetStations(centerLat, centerLon, 10, "")

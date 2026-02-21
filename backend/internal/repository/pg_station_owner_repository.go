@@ -63,11 +63,11 @@ func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]ma
 	for rows.Next() {
 		var (
 			id, name, brand, address, operatingHours string
-			verificationStatus                        *string
-			latitude, longitude                       float64
-			amenities                                 string
-			lastVerifiedAt                            time.Time
-			verifiedAt                                *time.Time
+			verificationStatus                       *string
+			latitude, longitude                      float64
+			amenities                                interface{}
+			lastVerifiedAt                           sql.NullTime
+			verifiedAt                               *time.Time
 		)
 
 		if err := rows.Scan(&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &amenities, &lastVerifiedAt, &verificationStatus, &verifiedAt); err != nil {
@@ -80,6 +80,16 @@ func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]ma
 			status = *verificationStatus
 		}
 
+		parsedAmenities := []string{}
+		if raw := parseAmenities(amenities); len(raw) > 0 {
+			parsedAmenities = raw
+		}
+
+		var lastVerifiedAtValue interface{}
+		if lastVerifiedAt.Valid {
+			lastVerifiedAtValue = lastVerifiedAt.Time
+		}
+
 		station := map[string]interface{}{
 			"id":                 id,
 			"name":               name,
@@ -88,8 +98,8 @@ func (r *PgStationOwnerRepository) GetStationsByOwnerUserID(userID string) ([]ma
 			"latitude":           latitude,
 			"longitude":          longitude,
 			"operatingHours":     operatingHours,
-			"amenities":          amenities,
-			"lastVerifiedAt":     lastVerifiedAt,
+			"amenities":          parsedAmenities,
+			"lastVerifiedAt":     lastVerifiedAtValue,
 			"verificationStatus": status,
 			"verifiedAt":         verifiedAt,
 		}
@@ -149,11 +159,11 @@ func (r *PgStationOwnerRepository) GetStationByID(userID, stationID string) (map
 
 	var (
 		id, name, brand, address, operatingHours string
-		verificationStatus                        *string
-		latitude, longitude                       float64
-		amenities                                 string
-		lastVerifiedAt                            time.Time
-		verifiedAt                                *time.Time
+		verificationStatus                       *string
+		latitude, longitude                      float64
+		amenities                                interface{}
+		lastVerifiedAt                           sql.NullTime
+		verifiedAt                               *time.Time
 	)
 
 	err := r.db.QueryRow(query, userID, stationID).Scan(
@@ -172,6 +182,16 @@ func (r *PgStationOwnerRepository) GetStationByID(userID, stationID string) (map
 		status = *verificationStatus
 	}
 
+	parsedAmenities := []string{}
+	if raw := parseAmenities(amenities); len(raw) > 0 {
+		parsedAmenities = raw
+	}
+
+	var lastVerifiedAtValue interface{}
+	if lastVerifiedAt.Valid {
+		lastVerifiedAtValue = lastVerifiedAt.Time
+	}
+
 	station := map[string]interface{}{
 		"id":                 id,
 		"name":               name,
@@ -180,8 +200,8 @@ func (r *PgStationOwnerRepository) GetStationByID(userID, stationID string) (map
 		"latitude":           latitude,
 		"longitude":          longitude,
 		"operatingHours":     operatingHours,
-		"amenities":          amenities,
-		"lastVerifiedAt":     lastVerifiedAt,
+		"amenities":          parsedAmenities,
+		"lastVerifiedAt":     lastVerifiedAtValue,
 		"verificationStatus": status,
 		"verifiedAt":         verifiedAt,
 	}
@@ -223,11 +243,11 @@ func (r *PgStationOwnerRepository) GetStationWithPrices(userID, stationID string
 		}
 
 		prices = append(prices, map[string]interface{}{
-			"fuelTypeId":       fuelTypeID,
-			"fuelTypeName":     fuelTypeName,
-			"price":            price,
-			"currency":         currency,
-			"lastUpdated":      lastUpdated,
+			"fuelTypeId":         fuelTypeID,
+			"fuelTypeName":       fuelTypeName,
+			"price":              price,
+			"currency":           currency,
+			"lastUpdated":        lastUpdated,
 			"verificationStatus": verificationStatus,
 		})
 	}
@@ -267,7 +287,7 @@ func (r *PgStationOwnerRepository) SearchAvailableStations(userID, query, lat, l
 	for rows.Next() {
 		var (
 			id, name, brand, address, operatingHours string
-			latitude, longitude, distanceKm         float64
+			latitude, longitude, distanceKm          float64
 		)
 
 		if err := rows.Scan(&id, &name, &brand, &address, &latitude, &longitude, &operatingHours, &distanceKm); err != nil {
@@ -382,13 +402,13 @@ func (r *PgStationOwnerRepository) ClaimStation(userID, stationID, verificationM
 	}
 
 	return map[string]interface{}{
-		"id":                   verificationID,
-		"stationId":            stationID,
-		"stationName":          stationName,
-		"ownerId":              ownerID,
-		"verificationMethod":   verificationMethod,
-		"verificationStatus":   verificationStatus,
-		"createdAt":            createdAt,
+		"id":                 verificationID,
+		"stationId":          stationID,
+		"stationName":        stationName,
+		"ownerId":            ownerID,
+		"verificationMethod": verificationMethod,
+		"verificationStatus": verificationStatus,
+		"createdAt":          createdAt,
 	}, nil
 }
 
@@ -415,7 +435,7 @@ func (r *PgStationOwnerRepository) GetFuelPricesForOwner(userID string) (map[str
 	for rows.Next() {
 		var (
 			stationID, stationName, fuelTypeID, fuelTypeName, currency, verificationStatus string
-			price                                                                           float64
+			price                                                                          float64
 			lastUpdated                                                                    time.Time
 		)
 
@@ -424,11 +444,11 @@ func (r *PgStationOwnerRepository) GetFuelPricesForOwner(userID string) (map[str
 		}
 
 		priceData := map[string]interface{}{
-			"fuelTypeId":       fuelTypeID,
-			"fuelTypeName":     fuelTypeName,
-			"price":            price,
-			"currency":         currency,
-			"lastUpdated":      lastUpdated,
+			"fuelTypeId":         fuelTypeID,
+			"fuelTypeName":       fuelTypeName,
+			"price":              price,
+			"currency":           currency,
+			"lastUpdated":        lastUpdated,
 			"verificationStatus": verificationStatus,
 		}
 

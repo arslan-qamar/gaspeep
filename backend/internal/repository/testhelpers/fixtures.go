@@ -47,15 +47,6 @@ func CreateTestFuelType(t *testing.T, db *sql.DB, name string) string {
 	id := uuid.New().String()
 
 	displayName := name
-	if name == "E10" {
-		displayName = "Unleaded E10"
-	} else if name == "E95" {
-		displayName = "Unleaded E95"
-	} else if name == "Diesel" {
-		displayName = "Diesel"
-	} else if name == "LPG" {
-		displayName = "LPG"
-	}
 
 	colorCode := "#1ABC9C"
 	if name == "Diesel" {
@@ -64,11 +55,14 @@ func CreateTestFuelType(t *testing.T, db *sql.DB, name string) string {
 		colorCode = "#E74C3C"
 	}
 
-	_, err := db.Exec(`
+	err := db.QueryRow(`
 		INSERT INTO fuel_types (id, name, display_name, color_code, display_order)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (name) DO UPDATE SET id = EXCLUDED.id
-	`, id, name, displayName, colorCode, 0)
+		ON CONFLICT (name) DO UPDATE
+		SET display_name = EXCLUDED.display_name,
+		    color_code = EXCLUDED.color_code
+		RETURNING id
+	`, id, name, displayName, colorCode, 0).Scan(&id)
 
 	if err != nil {
 		t.Fatalf("Failed to create test fuel type: %v", err)
@@ -136,7 +130,7 @@ func CreateTestFuelPrice(t *testing.T, db *sql.DB, stationID, fuelTypeID string,
 		INSERT INTO fuel_prices (id, station_id, fuel_type_id, price, currency, unit, verification_status, last_updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 		ON CONFLICT (station_id, fuel_type_id) DO UPDATE
-		SET price = $4, last_updated_at = NOW(), confirmation_count = confirmation_count + 1
+		SET price = $4, last_updated_at = NOW(), confirmation_count = fuel_prices.confirmation_count + 1
 	`, id, stationID, fuelTypeID, price, currency, unit, verificationStatus)
 
 	if err != nil {

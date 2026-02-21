@@ -1,35 +1,38 @@
 import React, { useState } from 'react';
 import { X, Filter } from 'lucide-react';
 
+const MAX_PRICE_CENTS_MIN = 0;
+const MAX_PRICE_CENTS_MAX = 400;
+const MAX_PRICE_CENTS_STEP = 0.1;
+
 export interface FilterState {
   fuelTypes: string[];
   maxPrice: number;
   onlyVerified: boolean;
 }
 
+export interface FuelTypeOption {
+  id: string;
+  label: string;
+}
+
 interface FilterModalProps {
   isOpen: boolean;
   filters: FilterState;
+  fuelTypeOptions: FuelTypeOption[];
   onFiltersChange: (filters: FilterState) => void;
   onClose: () => void;
 }
 
-const FUEL_TYPES = [
-  { id: 'e10', label: 'E10' },
-  { id: 'unleaded-91', label: 'Unleaded 91' },
-  { id: 'diesel', label: 'Diesel' },
-  { id: 'u95', label: 'U95' },
-  { id: 'u98', label: 'U98' },
-  { id: 'lpg', label: 'LPG' },
-];
-
 export const FilterModal: React.FC<FilterModalProps> = ({
   isOpen,
   filters,
+  fuelTypeOptions,
   onFiltersChange,
   onClose,
 }) => {
   const [localFilters, setLocalFilters] = useState(filters);
+  const formatCents = (price: number): string => `${price.toFixed(1)}¢/L`;
 
   if (!isOpen) return null;
 
@@ -79,7 +82,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           <div>
             <h4 className="font-semibold mb-2">Fuel Types</h4>
             <div className="space-y-2">
-              {FUEL_TYPES.map((ft) => (
+              {fuelTypeOptions.map((ft) => (
                 <label key={ft.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -90,19 +93,22 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   <span>{ft.label}</span>
                 </label>
               ))}
+              {fuelTypeOptions.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-400">No fuel types available</p>
+              )}
             </div>
           </div>
 
           {/* Max Price */}
           <div>
             <label className="block font-semibold mb-2">
-              Max Price: ${localFilters.maxPrice.toFixed(2)}
+              Max Price: {formatCents(localFilters.maxPrice)}
             </label>
             <input
               type="range"
-              min="0"
-              max="10"
-              step="0.10"
+              min={MAX_PRICE_CENTS_MIN}
+              max={MAX_PRICE_CENTS_MAX}
+              step={MAX_PRICE_CENTS_STEP}
               value={localFilters.maxPrice}
               onChange={(e) =>
                 setLocalFilters({

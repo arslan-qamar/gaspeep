@@ -33,8 +33,8 @@ const stations: Station[] = [
 		latitude: 40.7128,
 		longitude: -74.006,
 		prices: [
-			{ fuelTypeId: 'e10', fuelTypeName: 'E10', price: 1.99, currency: 'USD', lastUpdated: '2026-02-07T08:00:00Z', verified: true },
-			{ fuelTypeId: 'diesel', fuelTypeName: 'Diesel', price: 2.49, currency: 'USD', lastUpdated: '2026-02-07T08:00:00Z', verified: false }
+			{ fuelTypeId: 'e10', fuelTypeName: 'E10', price: 199.9, currency: 'AUD', lastUpdated: '2026-02-07T08:00:00Z', verified: true },
+			{ fuelTypeId: 'diesel', fuelTypeName: 'Diesel', price: 249.9, currency: 'AUD', lastUpdated: '2026-02-07T08:00:00Z', verified: false }
 		]
 	},
 	{
@@ -52,7 +52,7 @@ describe('MapView', () => {
 		render(<MapView stations={stations} onStationSelect={() => {}} />);
 		// Check for station marker buttons
 		expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
-		expect(screen.getByText('$1.99')).toBeInTheDocument();
+		expect(screen.getByText('199.9')).toBeInTheDocument();
 		expect(screen.getByText('?')).toBeInTheDocument();
 	});
 
@@ -65,7 +65,7 @@ describe('MapView', () => {
 		const mockSelect = jest.fn();
 		render(<MapView stations={stations} onStationSelect={mockSelect} />);
 		const user = userEvent.setup();
-		await user.click(screen.getByText('$1.99'));
+		await user.click(screen.getByText('199.9'));
 		expect(mockSelect).toHaveBeenCalled();
 	});
 

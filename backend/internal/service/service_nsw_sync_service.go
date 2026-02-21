@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -382,7 +381,7 @@ func (s *ServiceNSWSyncService) persistPrices(ctx context.Context, resp *service
 			stationIDByKey[key] = stationID
 		}
 
-		price := normalizeServiceNSWPrice(float64(p.Price))
+		price := float64(p.Price)
 		lastUpdated, err := parseServiceNSWLastUpdated(p.LastUpdated)
 		if err != nil {
 			log.Printf("persistPrices: parseServiceNSWLastUpdated failed for value=%s: %v", p.LastUpdated, err)
@@ -695,11 +694,6 @@ func stationSyncKey(state, code string) string {
 		return ""
 	}
 	return state + ":" + code
-}
-
-func normalizeServiceNSWPrice(cents float64) float64 {
-	// Service NSW price feed is in cents; store internal prices in dollars.
-	return math.Round((cents/100.0)*1000) / 1000
 }
 
 func parseEnvInt(name string, fallback int) int {

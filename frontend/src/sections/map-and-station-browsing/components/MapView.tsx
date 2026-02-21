@@ -21,6 +21,8 @@ const getLowestStationPrice = (station: Station): number | null => {
   return Math.min(...validPrices);
 };
 
+const formatPriceInCents = (price: number): string => price.toFixed(1);
+
 interface MapViewProps {
   stations: Station[];
   onStationSelect: (station: Station) => void;
@@ -313,7 +315,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
                     className={`absolute -bottom-2 -right-2 ${badgeColorClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
                     title={badgeTitle}
                   >
-                    ${lowestPrice.toFixed(2)}
+                    {formatPriceInCents(lowestPrice)}
                   </div>
                 ) : (
                   <div

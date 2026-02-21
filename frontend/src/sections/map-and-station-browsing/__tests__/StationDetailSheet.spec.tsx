@@ -16,16 +16,16 @@ const mockStation: Station = {
     {
       fuelTypeId: '1',
       fuelTypeName: 'Regular',
-      price: 3.99,
-      currency: 'USD',
+      price: 199.9,
+      currency: 'AUD',
       lastUpdated: '2026-02-07T08:00:00Z',
       verified: true,
     },
     {
       fuelTypeId: '2',
       fuelTypeName: 'Premium',
-      price: 4.29,
-      currency: 'USD',
+      price: 214.9,
+      currency: 'AUD',
       lastUpdated: '2026-02-07T08:00:00Z',
       verified: false,
     },
@@ -89,12 +89,13 @@ describe('StationDetailSheet', () => {
     );
 
     expect(screen.getByText('Regular')).toBeInTheDocument();
-    expect(screen.getByText('$3.99')).toBeInTheDocument();
+    expect(screen.getByText('199.9¢')).toBeInTheDocument();
     expect(screen.getByText('✓ Verified')).toBeInTheDocument();
 
     expect(screen.getByText('Premium')).toBeInTheDocument();
-    expect(screen.getByText('$4.29')).toBeInTheDocument();
+    expect(screen.getByText('214.9¢')).toBeInTheDocument();
     expect(screen.getByText('Unverified')).toBeInTheDocument();
+    expect(screen.getAllByText(/Last updated/i)).toHaveLength(2);
   });
 
   it('shows no price data message when no prices', () => {

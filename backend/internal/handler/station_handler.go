@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -40,7 +41,7 @@ func (h *StationHandler) GetStation(c *gin.Context) {
 	id := c.Param("id")
 
 	station, err := h.stationService.GetStationByID(id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Station not found"})
 		return
 	}

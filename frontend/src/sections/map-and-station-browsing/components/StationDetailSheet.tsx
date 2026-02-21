@@ -15,6 +15,20 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
   onClose,
   onSubmitPrice,
 }) => {
+  const formatPriceInCents = (price: number): string => `${price.toFixed(1)}¢`;
+
+  const formatLastUpdated = (lastUpdated?: string): string | null => {
+    if (!lastUpdated) return null;
+
+    const parsedDate = new Date(lastUpdated);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+
+    return parsedDate.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
   if (!isOpen || !station) return null;
 
   return (
@@ -70,25 +84,33 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
             </h3>
             <div className="space-y-2">
               {station.prices.length > 0 ? (
-                station.prices.map((price) => (
-                  <div
-                    key={price.fuelTypeId}
-                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{price.fuelTypeName}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        {price.verified ? '✓ Verified' : 'Unverified'}
-                      </p>
+                station.prices.map((price) => {
+                  const formattedLastUpdated = formatLastUpdated(price.lastUpdated);
+
+                  return (
+                    <div key={price.fuelTypeId} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{price.fuelTypeName}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                            {price.verified ? '✓ Verified' : 'Unverified'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold">{formatPriceInCents(price.price)}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                            per litre
+                          </p>
+                        </div>
+                      </div>
+                      {formattedLastUpdated && (
+                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                          Last updated {formattedLastUpdated}
+                        </p>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">${price.price.toFixed(2)}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        per gallon
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-slate-600 dark:text-slate-400 text-center py-4">
                   No price data available

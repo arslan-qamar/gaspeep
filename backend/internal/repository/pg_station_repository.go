@@ -2,13 +2,14 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"gaspeep/backend/internal/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"gaspeep/backend/internal/models"
 )
 
 // PgStationRepository is the PostgreSQL implementation of StationRepository.
@@ -18,6 +19,28 @@ type PgStationRepository struct {
 
 func NewPgStationRepository(db *sql.DB) *PgStationRepository {
 	return &PgStationRepository{db: db}
+}
+
+func parseAmenities(raw interface{}) []string {
+	if raw == nil {
+		return []string{}
+	}
+
+	var data []byte
+	switch v := raw.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return []string{}
+	}
+
+	var amenities []string
+	if err := json.Unmarshal(data, &amenities); err != nil {
+		return []string{}
+	}
+	return amenities
 }
 
 // GetStations retrieves stations with optional geospatial and fuel-type filtering.
@@ -108,7 +131,7 @@ func (r *PgStationRepository) GetStations(lat, lon, radiusKm float64, fuelTypeID
 			return nil, fmt.Errorf("failed to scan station: %w", err)
 		}
 
-		s.Amenities = []string{}
+		s.Amenities = parseAmenities(amenitiesJSON)
 		stations = append(stations, s)
 	}
 
@@ -121,6 +144,10 @@ func (r *PgStationRepository) GetStations(lat, lon, radiusKm float64, fuelTypeID
 
 // GetStationByID returns a single station with its fuel prices.
 func (r *PgStationRepository) GetStationByID(id string) (*models.Station, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, sql.ErrNoRows
+	}
+
 	query := `
 		SELECT
 			s.id, s.name, s.brand, s.address,
@@ -147,7 +174,7 @@ func (r *PgStationRepository) GetStationByID(id string) (*models.Station, error)
 		var (
 			stationID, name, brand, address, operatingHours string
 			lat, lon                                        float64
-			amenities                                       pq.StringArray
+			amenities                                       interface{}
 			lastVerified                                    sql.NullTime
 			fuelTypeID                                      sql.NullString
 			fuelTypeName, currency                          sql.NullString
@@ -174,7 +201,7 @@ func (r *PgStationRepository) GetStationByID(id string) (*models.Station, error)
 				Latitude:       lat,
 				Longitude:      lon,
 				OperatingHours: operatingHours,
-				Amenities:      amenities,
+				Amenities:      parseAmenities(amenities),
 				Prices:         []models.FuelPriceData{},
 			}
 
@@ -211,29 +238,34 @@ func (r *PgStationRepository) CreateStation(input CreateStationInput) (*models.S
 	id := uuid.New().String()
 
 	query := `
-		INSERT INTO stations (id, name, brand, address, location, operating_hours, amenities)
-		VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $7, $8)
+		INSERT INTO stations (id, name, brand, address, location, latitude, longitude, operating_hours, amenities)
+		VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $6, $5, $7, $8)
 		RETURNING id, name, brand, address, ST_Y(location::geometry), ST_X(location::geometry),
 			operating_hours, amenities, last_verified_at, created_at, updated_at`
 
 	var s models.Station
 	var amenitiesJSON interface{}
+	var lastVerified sql.NullTime
+	amenitiesPayload, _ := json.Marshal(input.Amenities)
 
 	err := r.db.QueryRow(
 		query,
 		id, input.Name, input.Brand, input.Address,
 		input.Longitude, input.Latitude,
-		input.OperatingHours, "[]",
+		input.OperatingHours, amenitiesPayload,
 	).Scan(
 		&s.ID, &s.Name, &s.Brand, &s.Address,
 		&s.Latitude, &s.Longitude, &s.OperatingHours,
-		&amenitiesJSON, &s.LastVerifiedAt, &s.CreatedAt, &s.UpdatedAt,
+		&amenitiesJSON, &lastVerified, &s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create station: %w", err)
 	}
 
-	s.Amenities = input.Amenities
+	if lastVerified.Valid {
+		s.LastVerifiedAt = &lastVerified.Time
+	}
+	s.Amenities = parseAmenities(amenitiesJSON)
 	return &s, nil
 }
 
@@ -371,7 +403,7 @@ func (r *PgStationRepository) GetStationsNearby(
 				Latitude:       lat,
 				Longitude:      lon,
 				OperatingHours: operatingHours,
-				Amenities:      []string{},
+				Amenities:      parseAmenities(amenities),
 				Prices:         []models.FuelPriceData{},
 			}
 
@@ -518,7 +550,7 @@ func (r *PgStationRepository) SearchStationsNearby(
 				Latitude:       lat,
 				Longitude:      lon,
 				OperatingHours: operatingHours,
-				Amenities:      []string{},
+				Amenities:      parseAmenities(amenities),
 				Prices:         []models.FuelPriceData{},
 			}
 
@@ -612,7 +644,7 @@ func (r *PgStationRepository) SearchStations(searchQuery string, limit int) ([]m
 				Latitude:       lat,
 				Longitude:      lon,
 				OperatingHours: operatingHours,
-				Amenities:      []string{},
+				Amenities:      parseAmenities(amenities),
 				Prices:         []models.FuelPriceData{},
 			}
 
