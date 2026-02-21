@@ -4,6 +4,8 @@ import (
 	"gaspeep/backend/internal/models"
 	"gaspeep/backend/internal/repository"
 	"gaspeep/backend/internal/service"
+	"time"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -75,28 +77,28 @@ type MockFuelPriceService struct {
 	mock.Mock
 }
 
-func (m *MockFuelPriceService) GetFuelPrices(filters repository.FuelPriceFilters) ([]models.FuelPrice, error) {
+func (m *MockFuelPriceService) GetFuelPrices(filters repository.FuelPriceFilters) ([]repository.FuelPriceResult, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.FuelPrice), args.Error(1)
+	return args.Get(0).([]repository.FuelPriceResult), args.Error(1)
 }
 
-func (m *MockFuelPriceService) GetStationPrices(stationID string) ([]models.FuelPrice, error) {
+func (m *MockFuelPriceService) GetStationPrices(stationID string) ([]repository.StationPriceResult, error) {
 	args := m.Called(stationID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.FuelPrice), args.Error(1)
+	return args.Get(0).([]repository.StationPriceResult), args.Error(1)
 }
 
-func (m *MockFuelPriceService) GetCheapestPrices(lat, lon, radiusKm float64) ([]models.FuelPrice, error) {
+func (m *MockFuelPriceService) GetCheapestPrices(lat, lon, radiusKm float64) ([]repository.CheapestPriceResult, error) {
 	args := m.Called(lat, lon, radiusKm)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.FuelPrice), args.Error(1)
+	return args.Get(0).([]repository.CheapestPriceResult), args.Error(1)
 }
 
 // MockPriceSubmissionService is a mock implementation of service.PriceSubmissionService
@@ -248,12 +250,12 @@ func (m *MockBroadcastService) GetBroadcast(id, userID string) (*models.Broadcas
 	return args.Get(0).(*models.Broadcast), args.Error(1)
 }
 
-func (m *MockBroadcastService) GetEngagement(id, userID string) (interface{}, error) {
+func (m *MockBroadcastService) GetEngagement(id, userID string) ([]map[string]interface{}, error) {
 	args := m.Called(id, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).([]map[string]interface{}), args.Error(1)
 }
 
 func (m *MockBroadcastService) SaveDraft(userID string, input repository.CreateBroadcastInput) (*models.Broadcast, error) {
@@ -272,7 +274,7 @@ func (m *MockBroadcastService) SendBroadcast(id, userID string) (*models.Broadca
 	return args.Get(0).(*models.Broadcast), args.Error(1)
 }
 
-func (m *MockBroadcastService) ScheduleBroadcast(id, userID string, scheduledFor interface{}) (*models.Broadcast, error) {
+func (m *MockBroadcastService) ScheduleBroadcast(id, userID string, scheduledFor time.Time) (*models.Broadcast, error) {
 	args := m.Called(id, userID, scheduledFor)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -316,36 +318,44 @@ func (m *MockStationOwnerService) VerifyOwnership(userID string, input repositor
 	return args.Get(0).(*models.StationOwner), args.Error(1)
 }
 
-func (m *MockStationOwnerService) GetStations(userID string) ([]models.Station, error) {
+func (m *MockStationOwnerService) GetStations(userID string) ([]map[string]interface{}, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.Station), args.Error(1)
+	return args.Get(0).([]map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) GetProfile(userID string) (*models.StationOwner, error) {
+func (m *MockStationOwnerService) GetProfile(userID string) (map[string]interface{}, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*models.StationOwner), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) GetStats(userID string) (interface{}, error) {
-	args := m.Called(userID)
+func (m *MockStationOwnerService) UpdateProfile(userID string, input repository.UpdateOwnerProfileInput) (map[string]interface{}, error) {
+	args := m.Called(userID, input)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) GetFuelPrices(userID string) ([]models.FuelPrice, error) {
+func (m *MockStationOwnerService) GetStats(userID string) (map[string]interface{}, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.FuelPrice), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
+}
+
+func (m *MockStationOwnerService) GetFuelPrices(userID string) (map[string]interface{}, error) {
+	args := m.Called(userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
 func (m *MockStationOwnerService) SearchAvailableStations(query, lat, lon, radius string) ([]map[string]interface{}, error) {
@@ -356,36 +366,36 @@ func (m *MockStationOwnerService) SearchAvailableStations(query, lat, lon, radiu
 	return args.Get(0).([]map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (interface{}, error) {
+func (m *MockStationOwnerService) ClaimStation(userID, stationID, verificationMethod string, documentUrls []string, phoneNumber, email string) (map[string]interface{}, error) {
 	args := m.Called(userID, stationID, verificationMethod, documentUrls, phoneNumber, email)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) GetStationDetails(userID, stationID string) (interface{}, error) {
+func (m *MockStationOwnerService) GetStationDetails(userID, stationID string) (map[string]interface{}, error) {
 	args := m.Called(userID, stationID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) UpdateStation(userID, stationID string, req interface{}) (interface{}, error) {
+func (m *MockStationOwnerService) UpdateStation(userID, stationID string, req interface{}) (map[string]interface{}, error) {
 	args := m.Called(userID, stationID, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *MockStationOwnerService) SavePhotos(userID, stationID string, photoURLs []string) (interface{}, error) {
+func (m *MockStationOwnerService) SavePhotos(userID, stationID string, photoURLs []string) ([]string, error) {
 	args := m.Called(userID, stationID, photoURLs)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).([]string), args.Error(1)
 }
 
 func (m *MockStationOwnerService) UnclaimStation(userID, stationID string) error {
@@ -393,10 +403,10 @@ func (m *MockStationOwnerService) UnclaimStation(userID, stationID string) error
 	return args.Error(0)
 }
 
-func (m *MockStationOwnerService) ReVerifyStation(userID, stationID string) (interface{}, error) {
+func (m *MockStationOwnerService) ReVerifyStation(userID, stationID string) (map[string]interface{}, error) {
 	args := m.Called(userID, stationID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
