@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapView from '../components/MapView';
 import { Station } from '../types';
@@ -28,6 +28,7 @@ const stations: Station[] = [
 	{
 		id: '1',
 		name: 'Station One',
+		brand: 'Shell',
 		address: '123 Main St',
 		latitude: 40.7128,
 		longitude: -74.006,
@@ -77,5 +78,21 @@ describe('MapView', () => {
 		render(<MapView stations={stations} onStationSelect={() => {}} selectedStationId="1" />);
 		expect(screen.getByText('Station One')).toBeInTheDocument();
 		expect(screen.getByText('Click for details')).toBeInTheDocument();
+	});
+
+	it('prefers official brand icon and falls back to generated icon', () => {
+		render(<MapView stations={stations} onStationSelect={() => {}} />);
+
+		const firstIcon = screen.getByAltText('Shell') as HTMLImageElement;
+		expect(firstIcon.src).toContain('/icons-brand/Shell.svg');
+
+		fireEvent.error(firstIcon);
+
+		const fallbackIcon = screen.getByAltText('Shell') as HTMLImageElement;
+		expect(fallbackIcon.src).toContain('/icons-svg/Shell.svg');
+
+		fireEvent.error(fallbackIcon);
+
+		expect(within(screen.getByTitle('Shell')).getByText('⛽')).toBeInTheDocument();
 	});
 });

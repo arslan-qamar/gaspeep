@@ -1,6 +1,7 @@
 7-Eleven
 AGL
-AM/PM
+AMPM
+Metro
 APW
 AUS
 Ampol
@@ -33,7 +34,6 @@ Gull
 Independent Stations
 Liberty
 Matilda
-Metro Petroleum
 Mobil
 Neumann
 On The Run (OTR)

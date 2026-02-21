@@ -13,7 +13,7 @@ This directory now uses **generated vector icons** instead of PNG-to-pixel-SVG c
 ## Files
 
 - **generate_quality_icons.py** - Generates high-quality SVG icons for every brand
-- **brands to process for svg icons** - Source list of brands
+- **../icon-brands.txt** - Shared source list of brands
 - **README.md** - This documentation
 
 ## Usage
@@ -32,18 +32,23 @@ The script outputs:
 
 ## Runtime integration
 
-Use URL encoding when resolving icon paths so brands with `/` or spaces work reliably:
+Use official brand icons as the first choice, and fall back to generated vectors when needed:
 
 ```ts
-const getBrandIconUrl = (brand?: string): string | null => {
-  if (!brand) return null;
-  return `/icons-svg/${encodeURIComponent(brand)}.svg`;
+const getBrandIconUrls = (brand?: string): string[] => {
+  if (!brand) return [];
+  const encodedBrand = encodeURIComponent(brand);
+  return [
+    `/icons-brand/${encodedBrand}.svg`, // preferred official brand icon
+    `/icons-svg/${encodedBrand}.svg`,   // generated vector fallback
+  ];
 };
 ```
+
+If both paths fail, render a neutral fallback marker (for example `⛽`).
 
 ## Notes
 
 - These are clean, consistent **brand markers** (vector monograms), not trademark logo downloads.
-- If you later want official logos, the recommended next layer is:
-  - `simple-icons` where available
-  - fallback to these generated markers for unsupported brands
+- Official logos now live in `../icons-brand` and are fetched with its dedicated scripts.
+- Keep this folder as deterministic fallback markers for unsupported or missing brand logos.

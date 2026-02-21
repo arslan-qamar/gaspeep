@@ -17,7 +17,8 @@ from datetime import datetime
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
-BRANDS_FILE = SCRIPT_DIR / "brands to process for svg icons"
+SHARED_BRANDS_FILE = SCRIPT_DIR.parent / "icon-brands.txt"
+LEGACY_BRANDS_FILE = SCRIPT_DIR / "brands to process for svg icons"
 PROGRESS_FILE = SCRIPT_DIR / "process_log.json"
 TEMP_DIR = Path("/tmp/gaspeep_logos")
 DOWNLOAD_SCRIPT = SCRIPT_DIR / "download_logo.py"
@@ -73,14 +74,15 @@ class BrandProcessor:
 
     def load_brands(self):
         """Load brands from file."""
-        if not BRANDS_FILE.exists():
-            print(f"✗ Brands file not found: {BRANDS_FILE}")
+        brands_file = SHARED_BRANDS_FILE if SHARED_BRANDS_FILE.exists() else LEGACY_BRANDS_FILE
+        if not brands_file.exists():
+            print(f"✗ Brands file not found: {SHARED_BRANDS_FILE}")
             sys.exit(1)
 
-        with open(BRANDS_FILE, 'r') as f:
+        with open(brands_file, 'r') as f:
             brands = [line.strip() for line in f if line.strip()]
 
-        print(f"✓ Loaded {len(brands)} brands from {BRANDS_FILE}")
+        print(f"✓ Loaded {len(brands)} brands from {brands_file}")
         return brands
 
     def is_brand_done(self, brand):

@@ -4,9 +4,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
 import { Loader2 } from 'lucide-react';
 
-const getBrandIconUrl = (brand: string | undefined): string | null => {
-  if (!brand) return null;
-  return `/icons-svg/${encodeURIComponent(brand)}.svg`;
+const BRAND_ICON_BASE_PATHS = ['/icons-brand', '/icons-svg'];
+
+const getBrandIconUrls = (brand: string | undefined): string[] => {
+  if (!brand) return [];
+  const encodedBrand = encodeURIComponent(brand);
+  return BRAND_ICON_BASE_PATHS.map((basePath) => `${basePath}/${encodedBrand}.svg`);
 };
 
 interface MapViewProps {
@@ -30,7 +33,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
 }, _ref) => {
   const mapRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [iconLoadErrors, setIconLoadErrors] = useState<Record<string, boolean>>({});
+  const [iconLoadErrorCounts, setIconLoadErrorCounts] = useState<Record<string, number>>({});
   const getMapInstance = useCallback(() => {
     if (!mapRef.current) return null;
     if (typeof mapRef.current.getMap === 'function') return mapRef.current.getMap();
@@ -169,9 +172,11 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
       {stations
         .filter((station) => typeof station.latitude === 'number' && typeof station.longitude === 'number')
         .map((station) => {
-          const iconUrl = getBrandIconUrl(station.brand);
-          const hasIconError = iconLoadErrors[station.id] === true;
-          const showIcon = Boolean(iconUrl) && !hasIconError;
+          const stationIconKey = `${station.id}:${station.brand ?? ''}`;
+          const iconUrls = getBrandIconUrls(station.brand);
+          const iconErrorCount = iconLoadErrorCounts[stationIconKey] ?? 0;
+          const iconUrl = iconUrls[iconErrorCount] ?? null;
+          const showIcon = Boolean(iconUrl);
 
           return (
             <Marker
@@ -198,9 +203,9 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
                     className="w-8 h-8"
                     loading="lazy"
                     onError={() =>
-                      setIconLoadErrors((prev) => ({
+                      setIconLoadErrorCounts((prev) => ({
                         ...prev,
-                        [station.id]: true,
+                        [stationIconKey]: iconErrorCount + 1,
                       }))
                     }
                   />

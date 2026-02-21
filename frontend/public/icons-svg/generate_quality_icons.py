@@ -16,7 +16,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 SCRIPT_DIR = Path(__file__).parent
-BRANDS_FILE = SCRIPT_DIR / "brands to process for svg icons"
+SHARED_BRANDS_FILE = SCRIPT_DIR.parent / "icon-brands.txt"
+LEGACY_BRANDS_FILE = SCRIPT_DIR / "brands to process for svg icons"
 MANIFEST_FILE = SCRIPT_DIR / "manifest.json"
 
 PALETTE = [
@@ -74,9 +75,12 @@ def svg_icon(brand: str) -> str:
 
 
 def read_brands() -> list[str]:
-    if not BRANDS_FILE.exists():
-        raise FileNotFoundError(f"Missing brands file: {BRANDS_FILE}")
-    return [line.strip() for line in BRANDS_FILE.read_text().splitlines() if line.strip()]
+    brands_file = SHARED_BRANDS_FILE if SHARED_BRANDS_FILE.exists() else LEGACY_BRANDS_FILE
+    if not brands_file.exists():
+        raise FileNotFoundError(
+            f"Missing brands file: {SHARED_BRANDS_FILE} (or legacy {LEGACY_BRANDS_FILE})"
+        )
+    return [line.strip() for line in brands_file.read_text().splitlines() if line.strip()]
 
 
 def main() -> None:
