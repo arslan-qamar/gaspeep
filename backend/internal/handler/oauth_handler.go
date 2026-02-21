@@ -15,6 +15,13 @@ type OAuthHandler struct {
 	userRepo repository.UserRepository
 }
 
+var (
+	buildGoogleAuthURL = auth.BuildGoogleAuthURL
+	exchangeGoogleCode = auth.ExchangeCode
+	fetchGoogleProfile = auth.FetchProfile
+	generateJWTToken   = auth.GenerateToken
+)
+
 func NewOAuthHandler(userRepo repository.UserRepository) *OAuthHandler {
 	return &OAuthHandler{userRepo: userRepo}
 }
@@ -25,7 +32,7 @@ func (h *OAuthHandler) StartGoogle(c *gin.Context) {
 	// set state cookie for basic CSRF protection
 	c.SetCookie("oauth_state", state, 300, "/", "", false, true)
 
-	authURL, err := auth.BuildGoogleAuthURL(state)
+	authURL, err := buildGoogleAuthURL(state)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -46,14 +53,14 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Exchange code for tokens
-	tr, err := auth.ExchangeCode(code)
+	tr, err := exchangeGoogleCode(code)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token exchange failed"})
 		return
 	}
 
 	// Fetch profile
-	profile, err := auth.FetchProfile(tr.AccessToken)
+	profile, err := fetchGoogleProfile(tr.AccessToken)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch profile"})
 		return
@@ -80,7 +87,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Generate internal JWT
-	token, err := auth.GenerateToken(user.ID, user.Email)
+	token, err := generateJWTToken(user.ID, user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return
