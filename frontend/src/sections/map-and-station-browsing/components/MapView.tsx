@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
+import MapViewGL, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Station } from '../types';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,15 @@ const getBrandIconUrls = (brand: string | undefined): string[] => {
   if (!brand) return [];
   const encodedBrand = encodeURIComponent(brand);
   return BRAND_ICON_BASE_PATHS.map((basePath) => `${basePath}/${encodedBrand}.svg`);
+};
+
+const getLowestStationPrice = (station: Station): number | null => {
+  if (!Array.isArray(station.prices) || station.prices.length === 0) return null;
+  const validPrices = station.prices
+    .map((priceEntry) => priceEntry.price)
+    .filter((priceValue) => Number.isFinite(priceValue));
+  if (validPrices.length === 0) return null;
+  return Math.min(...validPrices);
 };
 
 interface MapViewProps {
@@ -95,6 +104,44 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
     [stations, selectedStationId],
   );
 
+  const { stationLowestPriceById, lowPriceThreshold, highPriceThreshold } = useMemo(() => {
+    const lowestPriceById = new Map<string, number>();
+    const allLowestPrices: number[] = [];
+
+    for (const station of stations) {
+      const lowestPrice = getLowestStationPrice(station);
+      if (lowestPrice === null) continue;
+      lowestPriceById.set(station.id, lowestPrice);
+      allLowestPrices.push(lowestPrice);
+    }
+
+    if (allLowestPrices.length === 0) {
+      return {
+        stationLowestPriceById: lowestPriceById,
+        lowPriceThreshold: null,
+        highPriceThreshold: null,
+      };
+    }
+
+    const minPrice = Math.min(...allLowestPrices);
+    const maxPrice = Math.max(...allLowestPrices);
+
+    if (minPrice === maxPrice) {
+      return {
+        stationLowestPriceById: lowestPriceById,
+        lowPriceThreshold: minPrice,
+        highPriceThreshold: maxPrice,
+      };
+    }
+
+    const spread = maxPrice - minPrice;
+    return {
+      stationLowestPriceById: lowestPriceById,
+      lowPriceThreshold: minPrice + spread / 3,
+      highPriceThreshold: minPrice + (2 * spread) / 3,
+    };
+  }, [stations]);
+
   useEffect(() => {
     if (!focusLocation || !mapRef.current) return;
 
@@ -109,7 +156,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
   }, [focusLocation, getMapInstance]);
 
   return (
-    <Map
+    <MapViewGL
       ref={mapRef}
       initialViewState={{
         latitude: userLocation.lat,
@@ -177,6 +224,22 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
           const iconErrorCount = iconLoadErrorCounts[stationIconKey] ?? 0;
           const iconUrl = iconUrls[iconErrorCount] ?? null;
           const showIcon = Boolean(iconUrl);
+          const lowestPrice = stationLowestPriceById.get(station.id);
+
+          let badgeClassName = 'bg-gray-400';
+          let badgeTitle = 'No price data available';
+          if (typeof lowestPrice === 'number' && lowPriceThreshold !== null && highPriceThreshold !== null) {
+            if (lowestPrice <= lowPriceThreshold) {
+              badgeClassName = 'bg-green-500';
+              badgeTitle = 'Lower-end price';
+            } else if (lowestPrice >= highPriceThreshold) {
+              badgeClassName = 'bg-red-500';
+              badgeTitle = 'Higher-end price';
+            } else {
+              badgeClassName = 'bg-yellow-500';
+              badgeTitle = 'Median-range price';
+            }
+          }
 
           return (
             <Marker
@@ -214,16 +277,16 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
                 )}
               </button>
                 {/* Price Badge */}
-                {Array.isArray(station.prices) && station.prices.length > 0 ? (
+                {typeof lowestPrice === 'number' ? (
                   <div
-                    className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
-                    title="Lowest fuel price"
+                    className={`absolute -bottom-2 -right-2 ${badgeClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
+                    title={badgeTitle}
                   >
-                    ${Math.min(...station.prices.map((p) => (typeof p.price === 'number' ? p.price : Infinity))).toFixed(2)}
+                    ${lowestPrice.toFixed(2)}
                   </div>
                 ) : (
                   <div
-                    className="absolute -bottom-2 -right-2 bg-gray-400 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white"
+                    className={`absolute -bottom-2 -right-2 ${badgeClassName} text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border border-white`}
                     title="No price data available"
                   >
                     ?
@@ -248,7 +311,7 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
           </div>
         </Popup>
       )}
-    </Map>
+    </MapViewGL>
   );
 });
 
