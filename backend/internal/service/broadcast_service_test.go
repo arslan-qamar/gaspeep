@@ -643,3 +643,73 @@ func TestDuplicateBroadcast_BroadcastNotFound_ReturnsError(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+// ============ UpdateBroadcast Tests ============
+
+func TestUpdateBroadcast_Success(t *testing.T) {
+	service, mockBroadcastRepo, mockOwnerRepo := setupBroadcastTest(t)
+
+	owner := &models.StationOwner{ID: "owner-123"}
+	mockOwnerRepo.On("GetByUserID", "user-1").Return(owner, nil)
+
+	input := repository.UpdateBroadcastInput{
+		Title:           "Updated title",
+		Message:         "Updated message",
+		BroadcastStatus: "scheduled",
+	}
+	mockBroadcastRepo.On("Update", "bc-123", "owner-123", input).Return("bc-123", nil)
+
+	result, err := service.UpdateBroadcast("bc-123", "user-1", input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "bc-123", result)
+	mockOwnerRepo.AssertExpectations(t)
+	mockBroadcastRepo.AssertExpectations(t)
+}
+
+// ============ GetBroadcast Tests ============
+
+func TestGetBroadcast_Success(t *testing.T) {
+	service, mockBroadcastRepo, mockOwnerRepo := setupBroadcastTest(t)
+
+	owner := &models.StationOwner{ID: "owner-123"}
+	mockOwnerRepo.On("GetByUserID", "user-1").Return(owner, nil)
+
+	expected := &models.Broadcast{ID: "bc-123", Title: "One broadcast"}
+	mockBroadcastRepo.On("GetByID", "bc-123", "owner-123").Return(expected, nil)
+
+	result, err := service.GetBroadcast("bc-123", "user-1")
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+	mockOwnerRepo.AssertExpectations(t)
+	mockBroadcastRepo.AssertExpectations(t)
+}
+
+// ============ GetEngagement Tests ============
+
+func TestGetEngagement_Success_ReturnsEmptyArray(t *testing.T) {
+	service, mockBroadcastRepo, mockOwnerRepo := setupBroadcastTest(t)
+
+	owner := &models.StationOwner{ID: "owner-123"}
+	mockOwnerRepo.On("GetByUserID", "user-1").Return(owner, nil)
+	mockBroadcastRepo.On("GetByID", "bc-123", "owner-123").Return(&models.Broadcast{ID: "bc-123"}, nil)
+
+	result, err := service.GetEngagement("bc-123", "user-1")
+
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{}, result)
+	mockOwnerRepo.AssertExpectations(t)
+	mockBroadcastRepo.AssertExpectations(t)
+}
+
+// ============ EstimateRecipients Tests ============
+
+func TestEstimateRecipients_ReturnsZero(t *testing.T) {
+	service, _, _ := setupBroadcastTest(t)
+
+	result, err := service.EstimateRecipients("station-1", "10")
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, result)
+}

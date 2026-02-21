@@ -312,3 +312,114 @@ func TestGetFuelPrices_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, fuelPrices, result)
 }
+
+// ============ VerifyOwnership Tests ============
+
+func TestVerifyOwnership_Success(t *testing.T) {
+	service, mockOwnerRepo := setupStationOwnerTest(t)
+
+	input := repository.CreateOwnerVerificationInput{
+		BusinessName:          "Station Co",
+		VerificationDocuments: "doc-url",
+		ContactInfo:           "owner@example.com",
+	}
+	expected := &models.StationOwner{ID: "owner-123", UserID: "user-1", BusinessName: "Station Co"}
+	mockOwnerRepo.On("CreateVerificationRequest", "user-1", input).Return(expected, nil)
+
+	result, err := service.VerifyOwnership("user-1", input)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+	mockOwnerRepo.AssertExpectations(t)
+}
+
+// ============ UpdateProfile Tests ============
+
+func TestUpdateProfile_Success(t *testing.T) {
+	service, mockOwnerRepo := setupStationOwnerTest(t)
+
+	input := repository.UpdateOwnerProfileInput{
+		BusinessName: "Updated Business",
+		ContactName:  "Alex",
+		ContactEmail: "alex@example.com",
+		ContactPhone: "0400000000",
+	}
+	contactName := "Alex"
+	contactEmail := "alex@example.com"
+	contactPhone := "0400000000"
+	owner := &models.StationOwner{
+		ID:                 "owner-123",
+		UserID:             "user-1",
+		BusinessName:       "Updated Business",
+		VerificationStatus: "verified",
+		ContactName:        &contactName,
+		ContactEmail:       &contactEmail,
+		ContactPhone:       &contactPhone,
+		Plan:               "basic",
+		CreatedAt:          time.Now(),
+	}
+	mockOwnerRepo.On("UpdateProfile", "user-1", input).Return(owner, nil)
+
+	result, err := service.UpdateProfile("user-1", input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "owner-123", result["id"])
+	assert.Equal(t, "Updated Business", result["businessName"])
+	assert.Equal(t, "Alex", result["contactName"])
+	assert.Equal(t, "alex@example.com", result["email"])
+	assert.Equal(t, "0400000000", result["phone"])
+	mockOwnerRepo.AssertExpectations(t)
+}
+
+// ============ ClaimStation Tests ============
+
+func TestClaimStation_Success(t *testing.T) {
+	service, mockOwnerRepo := setupStationOwnerTest(t)
+
+	expected := map[string]interface{}{
+		"claimId": "claim-1",
+		"status":  "pending",
+	}
+	documentURLs := []string{"doc-1"}
+	mockOwnerRepo.On("ClaimStation", "user-1", "station-1", "document", documentURLs, "0400000000", "owner@example.com").Return(expected, nil)
+
+	result, err := service.ClaimStation("user-1", "station-1", "document", documentURLs, "0400000000", "owner@example.com")
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+	mockOwnerRepo.AssertExpectations(t)
+}
+
+// ============ UpdateStation Tests ============
+
+func TestUpdateStation_ReturnsEmptyMapUntilImplemented(t *testing.T) {
+	service, _ := setupStationOwnerTest(t)
+
+	result, err := service.UpdateStation("user-1", "station-1", map[string]interface{}{"name": "New Name"})
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{}, result)
+}
+
+// ============ SavePhotos Tests ============
+
+func TestSavePhotos_ReturnsInputURLsUntilImplemented(t *testing.T) {
+	service, _ := setupStationOwnerTest(t)
+
+	photos := []string{"photo-1.jpg", "photo-2.jpg"}
+	result, err := service.SavePhotos("user-1", "station-1", photos)
+
+	require.NoError(t, err)
+	assert.Equal(t, photos, result)
+}
+
+// ============ ReVerifyStation Tests ============
+
+func TestReVerifyStation_ReturnsEmptyMapUntilImplemented(t *testing.T) {
+	service, _ := setupStationOwnerTest(t)
+
+	result, err := service.ReVerifyStation("user-1", "station-1")
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{}, result)
+}

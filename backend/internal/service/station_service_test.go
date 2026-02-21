@@ -102,3 +102,97 @@ func TestStationService_GetStationByID_CallsRepository(t *testing.T) {
 	assert.Equal(t, expectedStation, result)
 	mockRepo.AssertExpectations(t)
 }
+
+func TestStationService_CreateStation_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	input := repository.CreateStationInput{
+		Name:      "New Station",
+		Brand:     "Brand A",
+		Address:   "1 Main St",
+		Latitude:  -33.8,
+		Longitude: 151.2,
+	}
+	expected := &models.Station{ID: "station-2", Name: "New Station"}
+	mockRepo.On("CreateStation", input).Return(expected, nil)
+
+	result, err := service.CreateStation(input)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestStationService_UpdateStation_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	input := repository.UpdateStationInput{
+		Name: "Updated Station",
+	}
+	mockRepo.On("UpdateStation", "station-1", input).Return(true, nil)
+
+	result, err := service.UpdateStation("station-1", input)
+
+	require.NoError(t, err)
+	assert.True(t, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestStationService_DeleteStation_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	mockRepo.On("DeleteStation", "station-1").Return(true, nil)
+
+	result, err := service.DeleteStation("station-1")
+
+	require.NoError(t, err)
+	assert.True(t, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestStationService_GetStationsNearby_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	fuelTypes := []string{"e10", "diesel"}
+	expectedStations := []models.Station{{ID: "nearby-1"}}
+	mockRepo.On("GetStationsNearby", -33.8, 151.2, 10, fuelTypes, 2.2).Return(expectedStations, nil)
+
+	result, err := service.GetStationsNearby(-33.8, 151.2, 10, fuelTypes, 2.2)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedStations, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestStationService_SearchStations_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	expectedStations := []models.Station{{ID: "search-1"}}
+	mockRepo.On("SearchStations", "shell", 5).Return(expectedStations, nil)
+
+	result, err := service.SearchStations("shell", 5)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedStations, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestStationService_SearchStationsNearby_CallsRepository(t *testing.T) {
+	mockRepo := new(MockStationRepository)
+	service := NewStationService(mockRepo)
+
+	fuelTypes := []string{"premium"}
+	expectedStations := []models.Station{{ID: "nearby-search-1"}}
+	mockRepo.On("SearchStationsNearby", -33.8, 151.2, 15, "bp", fuelTypes, 2.0).Return(expectedStations, nil)
+
+	result, err := service.SearchStationsNearby(-33.8, 151.2, 15, "bp", fuelTypes, 2.0)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedStations, result)
+	mockRepo.AssertExpectations(t)
+}

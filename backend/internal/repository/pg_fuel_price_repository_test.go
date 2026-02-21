@@ -1,7 +1,11 @@
 package repository
 
 import (
+	"database/sql"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"gaspeep/backend/internal/repository/testhelpers"
 	"github.com/stretchr/testify/assert"
@@ -374,4 +378,288 @@ func TestGetFuelPrices_OrderedByDistance(t *testing.T) {
 
 	// Verify ordering - first should be s1 (closest)
 	assert.Equal(t, s1.ID, results[0].StationID, "Closest price should be first")
+}
+
+func TestPriceSubmissionRepository_Create_WithOptionalFields(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoCreateE10")
+
+	repo := NewPgPriceSubmissionRepository(db)
+	result, err := repo.Create(CreateSubmissionInput{
+		UserID:            user.ID,
+		StationID:         station.ID,
+		FuelTypeID:        fuelTypeID,
+		Price:             1.689,
+		SubmissionMethod:  "manual",
+		Confidence:        0.93,
+		PhotoURL:          "https://example.com/photo.jpg",
+		VoiceRecordingURL: "https://example.com/voice.wav",
+		OCRData:           `{"price":"1.689"}`,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, user.ID, result.UserID)
+	assert.Equal(t, station.ID, result.StationID)
+	assert.Equal(t, fuelTypeID, result.FuelTypeID)
+	assert.Equal(t, 1.689, result.Price)
+	assert.Equal(t, "pending", result.ModerationStatus)
+	require.NotNil(t, result.PhotoURL)
+	require.NotNil(t, result.VoiceRecordingURL)
+	require.NotNil(t, result.OCRData)
+	assert.Equal(t, "https://example.com/photo.jpg", *result.PhotoURL)
+	assert.Equal(t, "https://example.com/voice.wav", *result.VoiceRecordingURL)
+	assert.Equal(t, `{"price":"1.689"}`, *result.OCRData)
+}
+
+func TestPriceSubmissionRepository_Create_EmptyOptionalFieldsBecomeNil(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoCreateNilE10")
+
+	repo := NewPgPriceSubmissionRepository(db)
+	result, err := repo.Create(CreateSubmissionInput{
+		UserID:           user.ID,
+		StationID:        station.ID,
+		FuelTypeID:       fuelTypeID,
+		Price:            1.701,
+		SubmissionMethod: "ocr",
+		Confidence:       0.70,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Nil(t, result.PhotoURL)
+	assert.Nil(t, result.VoiceRecordingURL)
+	assert.Nil(t, result.OCRData)
+}
+
+func TestPriceSubmissionRepository_GetByUserID(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoByUserE10")
+	submittedAtOld := time.Now().Add(-2 * time.Hour).UTC().Truncate(time.Second)
+	submittedAtNew := time.Now().Add(-30 * time.Minute).UTC().Truncate(time.Second)
+
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     uuid.NewString(),
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.62,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            submittedAtOld,
+		ModerationStatus:       "pending",
+		VerificationConfidence: 0.9,
+	})
+
+	photoURL := "https://example.com/submission.jpg"
+	moderatorNotes := "looks valid"
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     uuid.NewString(),
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.59,
+		SubmissionMethod:       "voice",
+		SubmittedAt:            submittedAtNew,
+		ModerationStatus:       "approved",
+		VerificationConfidence: 0.95,
+		PhotoURL:               &photoURL,
+		ModeratorNotes:         &moderatorNotes,
+	})
+
+	repo := NewPgPriceSubmissionRepository(db)
+	submissions, total, err := repo.GetByUserID(user.ID, 10, 0)
+
+	require.NoError(t, err)
+	require.Len(t, submissions, 2)
+	assert.Equal(t, 2, total)
+	assert.Equal(t, 1.59, submissions[0].Price)
+	assert.Equal(t, 1.62, submissions[1].Price)
+	assert.Equal(t, station.Name, submissions[0].StationName)
+	assert.Equal(t, station.Brand, submissions[0].StationBrand)
+	assert.NotEmpty(t, submissions[0].FuelTypeName)
+	require.NotNil(t, submissions[0].PhotoURL)
+	assert.Equal(t, photoURL, *submissions[0].PhotoURL)
+	require.NotNil(t, submissions[0].ModeratorNotes)
+	assert.Equal(t, moderatorNotes, *submissions[0].ModeratorNotes)
+}
+
+func TestPriceSubmissionRepository_GetModerationQueue(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoQueueE10")
+
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     uuid.NewString(),
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.61,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            time.Now().Add(-90 * time.Minute),
+		ModerationStatus:       "pending",
+		VerificationConfidence: 0.88,
+	})
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     uuid.NewString(),
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.58,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            time.Now().Add(-30 * time.Minute),
+		ModerationStatus:       "approved",
+		VerificationConfidence: 0.91,
+	})
+
+	repo := NewPgPriceSubmissionRepository(db)
+	submissions, total, err := repo.GetModerationQueue("pending", 10, 0)
+
+	require.NoError(t, err)
+	require.Len(t, submissions, 1)
+	assert.Equal(t, 1, total)
+	assert.Equal(t, "pending", submissions[0].ModerationStatus)
+	assert.Equal(t, user.DisplayName, submissions[0].UserDisplayName)
+	assert.Equal(t, station.Name, submissions[0].StationName)
+}
+
+func TestPriceSubmissionRepository_GetSubmissionDetails(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoDetailsE10")
+	id := uuid.NewString()
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     id,
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.64,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            time.Now(),
+		ModerationStatus:       "pending",
+		VerificationConfidence: 0.8,
+	})
+
+	repo := NewPgPriceSubmissionRepository(db)
+	details, err := repo.GetSubmissionDetails(id)
+
+	require.NoError(t, err)
+	require.NotNil(t, details)
+	assert.Equal(t, station.ID, details.StationID)
+	assert.Equal(t, fuelTypeID, details.FuelTypeID)
+	assert.Equal(t, 1.64, details.Price)
+}
+
+func TestPriceSubmissionRepository_GetSubmissionDetails_NotFound(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+	repo := NewPgPriceSubmissionRepository(db)
+
+	details, err := repo.GetSubmissionDetails("00000000-0000-0000-0000-000000000000")
+
+	require.Error(t, err)
+	assert.Nil(t, details)
+}
+
+func TestPriceSubmissionRepository_UpdateModerationStatus(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoUpdateE10")
+	id := uuid.NewString()
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     id,
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.66,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            time.Now(),
+		ModerationStatus:       "pending",
+		VerificationConfidence: 0.8,
+	})
+
+	repo := NewPgPriceSubmissionRepository(db)
+	updated, err := repo.UpdateModerationStatus(id, "approved", "verified by moderator")
+	require.NoError(t, err)
+	assert.True(t, updated)
+
+	updated, err = repo.UpdateModerationStatus("00000000-0000-0000-0000-000000000000", "approved", "missing")
+	require.NoError(t, err)
+	assert.False(t, updated)
+}
+
+func TestPriceSubmissionRepository_AutoApprove(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	station := testhelpers.CreateTestStation(t, db, -33.8568, 151.2153)
+	fuelTypeID := testhelpers.CreateTestFuelType(t, db, "RepoAutoE10")
+	id := uuid.NewString()
+	insertSubmissionRow(t, db, submissionRow{
+		ID:                     id,
+		UserID:                 user.ID,
+		StationID:              station.ID,
+		FuelTypeID:             fuelTypeID,
+		Price:                  1.63,
+		SubmissionMethod:       "manual",
+		SubmittedAt:            time.Now(),
+		ModerationStatus:       "pending",
+		VerificationConfidence: 0.8,
+	})
+
+	repo := NewPgPriceSubmissionRepository(db)
+	err := repo.AutoApprove(id)
+	require.NoError(t, err)
+
+	var status string
+	err = db.QueryRow("SELECT moderation_status FROM price_submissions WHERE id = $1", id).Scan(&status)
+	require.NoError(t, err)
+	assert.Equal(t, "approved", status)
+}
+
+type submissionRow struct {
+	ID                     string
+	UserID                 string
+	StationID              string
+	FuelTypeID             string
+	Price                  float64
+	SubmissionMethod       string
+	SubmittedAt            time.Time
+	ModerationStatus       string
+	VerificationConfidence float64
+	PhotoURL               *string
+	VoiceRecordingURL      *string
+	OCRData                *string
+	ModeratorNotes         *string
+}
+
+func insertSubmissionRow(t *testing.T, db *sql.DB, row submissionRow) {
+	t.Helper()
+
+	_, err := db.Exec(`
+		INSERT INTO price_submissions (
+			id, user_id, station_id, fuel_type_id, price,
+			submission_method, submitted_at, moderation_status,
+			verification_confidence, photo_url, voice_recording_url, ocr_data, moderator_notes
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`,
+		row.ID, row.UserID, row.StationID, row.FuelTypeID, row.Price,
+		row.SubmissionMethod, row.SubmittedAt, row.ModerationStatus,
+		row.VerificationConfidence, row.PhotoURL, row.VoiceRecordingURL, row.OCRData, row.ModeratorNotes,
+	)
+	require.NoError(t, err)
 }

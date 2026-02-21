@@ -83,3 +83,19 @@ func TestFuelPriceService_GetStationPrices_CallsRepository(t *testing.T) {
 	assert.Equal(t, expectedResults, result)
 	mockRepo.AssertExpectations(t)
 }
+
+func TestFuelPriceService_GetCheapestPrices_CallsRepository(t *testing.T) {
+	mockRepo := new(MockFuelPriceRepositoryTest)
+	service := NewFuelPriceService(mockRepo)
+
+	expectedResults := []repository.CheapestPriceResult{
+		{FuelTypeID: "fuel-1", FuelTypeName: "E10", Price: 1.49},
+	}
+	mockRepo.On("GetCheapestPrices", -33.8, 151.2, 25.0).Return(expectedResults, nil)
+
+	result, err := service.GetCheapestPrices(-33.8, 151.2, 25.0)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedResults, result)
+	mockRepo.AssertExpectations(t)
+}

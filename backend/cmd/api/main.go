@@ -14,6 +14,31 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var runHTTPServer = func(router *gin.Engine, addr string) error {
+	return router.Run(addr)
+}
+
+var runTLSServer = func(router *gin.Engine, addr, certFile, keyFile string) error {
+	return router.RunTLS(addr, certFile, keyFile)
+}
+
+func startServer(router *gin.Engine, getenv func(string) string) error {
+	port := getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	tlsCert := getenv("TLS_CERT")
+	tlsKey := getenv("TLS_KEY")
+	if tlsCert != "" && tlsKey != "" {
+		log.Printf("Starting TLS server on port %s", port)
+		return runTLSServer(router, ":"+port, tlsCert, tlsKey)
+	}
+
+	log.Printf("Starting server on port %s", port)
+	return runHTTPServer(router, ":"+port)
+}
+
 func main() {
 	// Load .env file
 	godotenv.Load()
@@ -214,23 +239,7 @@ func main() {
 		admin.POST("/service-nsw-sync", serviceNSWSyncHandler.TriggerSync)
 	}
 
-	// Start server (support TLS when cert and key paths provided)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	tlsCert := os.Getenv("TLS_CERT")
-	tlsKey := os.Getenv("TLS_KEY")
-	if tlsCert != "" && tlsKey != "" {
-		log.Printf("Starting TLS server on port %s", port)
-		if err := router.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
-			log.Fatalf("Server failed to start (TLS): %v", err)
-		}
-	} else {
-		log.Printf("Starting server on port %s", port)
-		if err := router.Run(":" + port); err != nil {
-			log.Fatalf("Server failed to start: %v", err)
-		}
+	if err := startServer(router, os.Getenv); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }

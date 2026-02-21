@@ -119,3 +119,54 @@ func TestAlertService_GetPriceContext_CallsRepository(t *testing.T) {
 	assert.Equal(t, expected, result)
 	mockRepo.AssertExpectations(t)
 }
+
+func TestAlertService_UpdateAlert_CallsRepository(t *testing.T) {
+	mockRepo := new(MockAlertRepository)
+	service := NewAlertService(mockRepo)
+
+	input := repository.UpdateAlertInput{
+		PriceThreshold: 1.75,
+		RadiusKm:       12,
+		AlertName:      "Daily Alert",
+	}
+	mockRepo.On("Update", "alert-1", "user-1", input).Return("alert-1", nil)
+
+	result, err := service.UpdateAlert("alert-1", "user-1", input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "alert-1", result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAlertService_DeleteAlert_CallsRepository(t *testing.T) {
+	mockRepo := new(MockAlertRepository)
+	service := NewAlertService(mockRepo)
+
+	mockRepo.On("Delete", "alert-1", "user-1").Return(true, nil)
+
+	result, err := service.DeleteAlert("alert-1", "user-1")
+
+	require.NoError(t, err)
+	assert.True(t, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAlertService_GetMatchingStations_CallsRepository(t *testing.T) {
+	mockRepo := new(MockAlertRepository)
+	service := NewAlertService(mockRepo)
+
+	expected := []repository.MatchingStationResult{
+		{
+			StationID:   "station-1",
+			StationName: "Test Station",
+			Price:       1.61,
+		},
+	}
+	mockRepo.On("GetMatchingStations", "alert-1", "user-1").Return(expected, nil)
+
+	result, err := service.GetMatchingStations("alert-1", "user-1")
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+	mockRepo.AssertExpectations(t)
+}
