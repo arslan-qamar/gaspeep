@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"log"
 	"net/http"
 	"os"
@@ -129,6 +130,43 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Set user ID in context for downstream handlers
 		c.Set("userID", claims.UserID)
 		c.Set("email", claims.Email)
+
+		c.Next()
+	}
+}
+
+func ServiceNSWSyncAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKey := strings.TrimSpace(os.Getenv("SERVICE_NSW_API_KEY"))
+		apiSecret := strings.TrimSpace(os.Getenv("SERVICE_NSW_API_SECRET"))
+		if apiKey == "" || apiSecret == "" {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "service NSW credentials are not configured"})
+			c.Abort()
+			return
+		}
+
+		expected := base64.StdEncoding.EncodeToString([]byte(apiKey + ":" + apiSecret))
+		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization token"})
+			c.Abort()
+			return
+		}
+
+		valid := false
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+			valid = token == expected
+		} else if strings.HasPrefix(authHeader, "Basic ") {
+			token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Basic "))
+			valid = token == expected
+		}
+
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid service NSW sync authorization token"})
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}

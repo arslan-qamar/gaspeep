@@ -1,0 +1,1652 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "2.0.05",
+    "title": "Fuel API",
+    "description": "The Fuel API has been developed as a means of accessing live pricing across all current Australian service stations. It is advised that you read the contents of this documentation carefully which includes restrictions and responsibilities that would be necessary to allow appropriate interaction with the API. The v1 API can only access data for NSW. The v2 API includes data for Tasmania (TAS) as well as NSW.",
+    "contact": {}
+  },
+  "host": "api.onegov.nsw.gov.au",
+  "basePath": "/",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/oauth/client_credential/accesstoken": {
+      "get": {
+        "tags": ["Security"],
+        "description": "The client can request an access token using only its client credentials (or other supported means of authentication) when the client is requesting access to the protected resources under its control, or those of another resource owner that have been previously arranged with the authorization server.",
+        "summary": "Oauth",
+        "operationId": "OauthClientCredentialAccesstokenGet",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "grant_type",
+            "required": true,
+            "type": "string",
+            "description": "client_credentials"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string",
+            "description": "Base64 encoded value of <b>api_key:api_secret</b>. Eg 'Basic {Base64 encoded value of <b>api_key:api_secret</b>}'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/access_token_response" },
+            "description": "Success",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/access_token_failed_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/FuelCheckRefData/v1/fuel/lovs": {
+      "get": {
+        "tags": ["v1"],
+        "description": "Returns lists of reference data to be used in subsequent requests. <b>It is recommended to execute this call in a separate api client as response can be over 2 mb.</b> This API returns data for NSW.",
+        "summary": "Get Reference Data",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          },
+          {
+            "name": "if-modified-since",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/reference_data" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelCheckRefData/v2/fuel/lovs": {
+      "get": {
+        "tags": ["v2"],
+        "description": "Returns lists of reference data to be used in subsequent requests. <b>It is recommended to execute this call in a separate api client as response can be over 2 mb.</b> This API can return data for NSW and TAS.",
+        "summary": "Get Reference Data",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          },
+          {
+            "name": "if-modified-since",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          },
+          {
+            "name": "states",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "A '|' delimited list of the states that you want a List of Values (LOVs) for, e.g. 'NSW|TAS' will give you the LOVs for NSW and TAS. Omitting this argument (or leaving it empty) will result in LOVs for NSW."
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/reference_data_v2" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v1/fuel/prices/location": {
+      "post": {
+        "tags": ["v1"],
+        "description": "Returns current fuel prices for a single fuel type and a named location (ie Suburb or postcode). This API returns data for NSW.",
+        "summary": "Get fuel prices for location",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/get_fuel_prices_for_location_request"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/location_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v2/fuel/prices/location": {
+      "post": {
+        "tags": ["v2"],
+        "description": "Returns current fuel prices for a single fuel type and a named location (ie Suburb or postcode). This API can return data for NSW and TAS.",
+        "summary": "Get fuel prices for location",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/get_fuel_prices_for_location_request"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/location_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v1/fuel/prices/nearby": {
+      "post": {
+        "tags": ["v1"],
+        "description": "Returns current fuel prices for a single fuel type within a specified radius from a reference point. If no stations exist within the radius then fuel prices for the closest 10 stations are returned. This API returns data for NSW.",
+        "summary": "Get fuel prices with in radius",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/get_fuel_prices_within_radius_request"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be ''application/json; charset=utf-8''"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/nearby_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v2/fuel/prices/nearby": {
+      "post": {
+        "tags": ["v2"],
+        "description": "Returns current fuel prices for a single fuel type within a specified radius from a reference point. If no stations exist within the radius then fuel prices for the closest 10 stations are returned. This API can return data for NSW and TAS.",
+        "summary": "Get fuel prices with in radius",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/get_fuel_prices_within_radius_request"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/nearby_prices_v2" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v1/fuel/prices": {
+      "get": {
+        "tags": ["v1"],
+        "description": "Returns all current fuel prices for all service stations. There may be restrictions on how often this API request can be made. <b>It is recommended to execute this call in a separate api client as response can be over 2 mb.</b> This API returns data for NSW.",
+        "summary": "Get all current prices",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/current_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v2/fuel/prices": {
+      "get": {
+        "tags": ["v2"],
+        "description": "Returns all current fuel prices for all service stations. There may be restrictions on how often this API request can be made. <b>It is recommended to execute this call in a separate api client as response can be over 2 mb.</b> This API can return data for NSW and TAS.",
+        "summary": "Get all current prices",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.'",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          },
+          {
+            "name": "states",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "A '|' delimited list of the states that you want fuel prices for, e.g. 'NSW|TAS' will give you the fuel prices for NSW and TAS. Omitting this argument (or leaving it empty) will result in fuel prices for NSW."
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/current_prices_v2" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v1/fuel/prices/new": {
+      "get": {
+        "tags": ["v1"],
+        "description": "Returns all new current prices that have been submitted since the last <b>\"/fuelpricecheck/v1/fuel/prices\"</b> or <b>\"/fuelpricecheck/v1/fuel/prices/new\"</b> request using the apikey on the current day. This API returns data for NSW.",
+        "summary": "Get new fuel prices",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/current_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v2/fuel/prices/new": {
+      "get": {
+        "tags": ["v2"],
+        "description": "Returns all new current prices that have been submitted since the last <b>\"/fuelpricecheck/v2/fuel/prices\"</b> or <b>\"/fuelpricecheck/v2/fuel/prices/new\"</b> request using the apikey on the current day. This API can return data for NSW and TAS.",
+        "summary": "Get new fuel prices",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          },
+          {
+            "name": "states",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "A '|' delimited list of the states that you want new fuel prices for, e.g. 'NSW|TAS' will give you the new fuel prices for NSW and TAS. Omitting this argument (or leaving it empty) will result in new fuel prices for NSW."
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/current_prices_v2" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v1/fuel/prices/station/{stationCode}": {
+      "get": {
+        "tags": ["v1"],
+        "description": "Returns current fuel prices for a single fuel type and a named location (ie Suburb or postcode). This API returns data for NSW.",
+        "summary": "Get fuel prices for station",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "stationCode",
+            "in": "path",
+            "required": true,
+            "description": "Station code value from reference data, e.g. 6",
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/station_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/FuelPriceCheck/v2/fuel/prices/station/{stationCode}": {
+      "get": {
+        "tags": ["v2"],
+        "description": "Returns current fuel prices for a single fuel type and a named location (ie Suburb or postcode). This API can return data for NSW and TAS.",
+        "summary": "Get fuel prices for station",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "stationCode",
+            "in": "path",
+            "required": true,
+            "description": "Station code value from reference data, e.g. 6",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The state that the station is in (as stationCode is not guaranteed to be unique across states), e.g. 'NSW' or 'TAS'. Omitting this argument (or leaving it empty) will default the state to 'NSW'.        "
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "'Bearer {token}', where <b>{token}</b> is the value obtained from accesstoken call under security.'",
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Content-Type should be 'application/json; charset=utf-8'"
+          },
+          {
+            "name": "apikey",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Api key value obtained from your approved app."
+          },
+          {
+            "name": "transactionid",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Unique ID of this call"
+          },
+          {
+            "name": "requesttimestamp",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "UTC date and time of request. Format dd/MM/yyyy hh:mm:ss AM/PM"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": { "$ref": "#/definitions/station_prices" },
+            "description": "Success",
+            "headers": {}
+          },
+          "400": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Bad Request",
+            "headers": {}
+          },
+          "401": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Unauthorized",
+            "headers": {}
+          },
+          "500": {
+            "schema": { "$ref": "#/definitions/error_response" },
+            "description": "Internal Server Error",
+            "headers": {}
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "access_token_failed_response": {
+      "type": "object",
+      "title": "access_token_failed_response",
+      "required": ["ErrorCode", "Error"],
+      "properties": {
+        "ErrorCode": { "type": "string", "example": "invalid_client" },
+        "Error": {
+          "type": "string",
+          "example": "Client credentials are invalid"
+        }
+      }
+    },
+    "access_token_response": {
+      "type": "object",
+      "title": "access_token_response",
+      "required": [
+        "refresh_token_expires_in",
+        "api_product_list",
+        "api_product_list_json",
+        "organization_name",
+        "developer.email",
+        "token_type",
+        "issued_at",
+        "client_id",
+        "access_token",
+        "application_name",
+        "scope",
+        "expires_in",
+        "refresh_count",
+        "status"
+      ],
+      "properties": {
+        "refresh_token_expires_in": { "type": "string" },
+        "api_product_list_json": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "organization_name": { "type": "string", "example": "onegov" },
+        "developer.email": { "type": "string" },
+        "token_type": { "type": "string", "example": "BearerToken" },
+        "issued_at": { "type": "string", "example": "1569816768267" },
+        "client_id": { "type": "string" },
+        "access_token": { "type": "string" },
+        "application_name": { "type": "string" },
+        "scope": { "type": "string" },
+        "expires_in": { "type": "string" },
+        "refresh_count": { "type": "string" },
+        "status": { "type": "string", "example": "approved" }
+      }
+    },
+    "get_fuel_prices_for_location_request": {
+      "title": "get_fuel_prices_for_location_request",
+      "example": {
+        "fueltype": "P95",
+        "brand": ["Caltex", "Shell", "BP"],
+        "namedlocation": "2065",
+        "referencepoint": {
+          "latitude": "-33.4362551",
+          "longitude": "151.2966549"
+        },
+        "sortby": "Price",
+        "sortascending": "true"
+      },
+      "type": "object",
+      "properties": {
+        "fueltype": { "type": "string" },
+        "brand": { "type": "array", "items": { "type": "string" } },
+        "namedlocation": { "type": "string" },
+        "referencepoint": { "$ref": "#/definitions/reference_point" },
+        "sortby": { "type": "string" },
+        "sortascending": { "type": "string" }
+      },
+      "required": [
+        "fueltype",
+        "brand",
+        "namedlocation",
+        "referencepoint",
+        "sortby",
+        "sortascending"
+      ]
+    },
+    "reference_point": {
+      "title": "reference_point",
+      "example": { "latitude": "-33.4362551", "longitude": "151.2966549" },
+      "type": "object",
+      "properties": {
+        "latitude": { "type": "string" },
+        "longitude": { "type": "string" }
+      },
+      "required": ["latitude", "longitude"]
+    },
+    "get_fuel_prices_within_radius_request": {
+      "title": "get_fuel_prices_within_radius_request",
+      "example": {
+        "fueltype": "P95",
+        "brand": ["BP"],
+        "namedlocation": "2065",
+        "latitude": "-33.4362551",
+        "longitude": "151.2966549",
+        "radius": "",
+        "sortby": "price",
+        "sortascending": "true"
+      },
+      "type": "object",
+      "properties": {
+        "fueltype": { "type": "string" },
+        "brand": { "type": "array", "items": { "type": "string" } },
+        "namedlocation": { "type": "string" },
+        "latitude": { "type": "string" },
+        "longitude": { "type": "string" },
+        "radius": { "type": "string" },
+        "sortby": { "type": "string" },
+        "sortascending": { "type": "string" }
+      },
+      "required": [
+        "fueltype",
+        "brand",
+        "namedlocation",
+        "latitude",
+        "longitude",
+        "sortby",
+        "sortascending"
+      ]
+    },
+    "location_prices": {
+      "type": "object",
+      "required": ["stations", "prices"],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "station",
+            "required": ["brand", "code", "name", "address", "location"],
+            "properties": {
+              "brand": { "type": "string", "example": "BP" },
+              "code": { "type": "string", "example": "301" },
+              "name": { "type": "string", "example": "BP Naremburn" },
+              "address": {
+                "type": "string",
+                "example": "169 Willoughby Road, Naremburn NSW 2065"
+              },
+              "location": {
+                "type": "object",
+                "required": ["latitude", "longitude", "distance"],
+                "properties": {
+                  "latitude": { "type": "number", "example": "-33.820024" },
+                  "longitude": { "type": "number", "example": "151.201159" },
+                  "distance": {
+                    "type": "number",
+                    "example": "43.4784276203896"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "price",
+            "required": ["stationcode", "fueltype", "price", "lastupdated"],
+            "properties": {
+              "stationcode": { "type": "string", "example": "301" },
+              "fueltype": { "type": "string", "example": "P95" },
+              "price": { "type": "number", "example": "186.9" },
+              "lastupdated": {
+                "type": "string",
+                "example": "26/09/2019 02:51:27"
+              }
+            }
+          }
+        }
+      }
+    },
+    "nearby_prices": {
+      "type": "object",
+      "required": ["stations", "prices"],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "items": {
+            "title": "station",
+            "type": "object",
+            "required": [
+              "stationid",
+              "brandid",
+              "brand",
+              "code",
+              "name",
+              "address",
+              "location"
+            ],
+            "properties": {
+              "stationid": { "type": "string", "example": "1-GN9E-441" },
+              "brandid": { "type": "string", "example": "1-GFYV-0" },
+              "brand": { "type": "string", "example": "BP" },
+              "code": { "type": "integer", "example": "382" },
+              "name": { "type": "string", "example": "BP Wyoming" },
+              "address": {
+                "type": "string",
+                "example": "481 Pacific Highway, Wyoming NSW 2250"
+              },
+              "location": {
+                "type": "object",
+                "required": ["latitude", "longitude", "distance"],
+                "properties": {
+                  "latitude": { "type": "number", "example": "-33.408004" },
+                  "longitude": { "type": "number", "example": "151.351119" },
+                  "distance": { "type": "number", "example": "5.96" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "nearby_prices_v2": {
+      "type": "object",
+      "required": ["stations", "prices"],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "items": {
+            "title": "station",
+            "type": "object",
+            "required": [
+              "stationid",
+              "brandid",
+              "brand",
+              "code",
+              "name",
+              "address",
+              "location",
+              "state"
+            ],
+            "properties": {
+              "stationid": { "type": "string", "example": "1-GN9E-441" },
+              "brandid": { "type": "string", "example": "1-GFYV-0" },
+              "brand": { "type": "string", "example": "BP" },
+              "code": { "type": "integer", "example": "382" },
+              "name": { "type": "string", "example": "BP Wyoming" },
+              "address": {
+                "type": "string",
+                "example": "481 Pacific Highway, Wyoming NSW 2250"
+              },
+              "location": {
+                "type": "object",
+                "required": ["latitude", "longitude", "distance"],
+                "properties": {
+                  "latitude": { "type": "number", "example": "-33.408004" },
+                  "longitude": { "type": "number", "example": "151.351119" },
+                  "distance": { "type": "number", "example": "5.96" }
+                }
+              },
+              "state": { "type": "string", "example": "TAS" }
+            }
+          }
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "price",
+            "required": [
+              "stationcode",
+              "fueltype",
+              "price",
+              "priceunit",
+              "description",
+              "lastupdated"
+            ],
+            "properties": {
+              "stationcode": { "type": "integer", "example": "322" },
+              "fueltype": { "type": "string", "example": "P95" },
+              "price": { "type": "number", "example": "186.9" },
+              "priceunit": { "type": "string", "example": "litre" },
+              "description": { "type": "string" },
+              "lastupdated": {
+                "type": "string",
+                "example": "2019-09-29 22:48:51"
+              },
+              "state": { "type": "string", "example": "TAS" }
+            }
+          }
+        }
+      }
+    },
+    "current_prices": {
+      "type": "object",
+      "required": ["stations", "prices"],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "items": {
+            "title": "station",
+            "type": "object",
+            "required": [
+              "brandid",
+              "stationid",
+              "brand",
+              "code",
+              "name",
+              "address",
+              "location"
+            ],
+            "properties": {
+              "brandid": { "type": "string" },
+              "stationid": { "type": "string" },
+              "brand": { "type": "string", "example": "United" },
+              "code": { "type": "string", "example": "2051" },
+              "name": {
+                "type": "string",
+                "example": "United Petroleum Wilberforce"
+              },
+              "address": {
+                "type": "string",
+                "example": "539 Wilberforce Rd, WILBERFORCE NSW 2756"
+              },
+              "location": {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": { "example": "-33.563205" },
+                  "longitude": { "type": "number", "example": "150.8372818" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "current_prices_v2": {
+      "type": "object",
+      "required": ["stations", "prices"],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "items": {
+            "title": "station",
+            "type": "object",
+            "required": [
+              "brandid",
+              "stationid",
+              "brand",
+              "code",
+              "name",
+              "address",
+              "location",
+              "state"
+            ],
+            "properties": {
+              "brandid": { "type": "string" },
+              "stationid": { "type": "string" },
+              "brand": { "type": "string", "example": "United" },
+              "code": { "type": "string", "example": "2051" },
+              "name": {
+                "type": "string",
+                "example": "United Petroleum Wilberforce"
+              },
+              "address": {
+                "type": "string",
+                "example": "539 Wilberforce Rd, WILBERFORCE NSW 2756"
+              },
+              "location": {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": { "example": "-33.563205" },
+                  "longitude": { "type": "number", "example": "150.8372818" }
+                }
+              },
+              "state": { "type": "string", "example": "TAS" }
+            }
+          }
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "price",
+            "required": ["stationcode", "fueltype", "price", "lastupdated"],
+            "properties": {
+              "stationcode": { "type": "string", "example": "1" },
+              "fueltype": { "type": "string", "example": "DL" },
+              "price": { "type": "number", "example": "154.9" },
+              "lastupdated": {
+                "type": "string",
+                "example": "01/10/2019 22:09:55"
+              },
+              "state": { "type": "string", "example": "TAS" }
+            }
+          }
+        }
+      }
+    },
+    "station_prices": {
+      "type": "object",
+      "required": ["prices"],
+      "properties": {
+        "prices": {
+          "type": "array",
+          "items": {
+            "title": "price",
+            "type": "object",
+            "required": ["fueltype", "price", "lastupdated"],
+            "properties": {
+              "fueltype": { "type": "string", "example": "U91" },
+              "price": { "type": "number", "example": "151.9" },
+              "lastupdated": {
+                "type": "string",
+                "example": "30/09/2019 00:01:55"
+              }
+            }
+          }
+        }
+      }
+    },
+    "reference_data": {
+      "type": "object",
+      "required": [
+        "brands",
+        "fueltypes",
+        "stations",
+        "trendperiods",
+        "sortfields",
+        "priceunits",
+        "lastmodifiedtimestamps"
+      ],
+      "properties": {
+        "brands": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "brand",
+                "required": ["name"],
+                "properties": { "name": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "fueltypes": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "fueltype",
+                "required": ["code", "name"],
+                "properties": {
+                  "code": { "type": "string", "example": "EV" },
+                  "name": { "type": "string", "example": "EV charge" }
+                }
+              }
+            }
+          }
+        },
+        "stations": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "title": "station",
+                "type": "object",
+                "required": [
+                  "brandid",
+                  "stationid",
+                  "brand",
+                  "code",
+                  "name",
+                  "address",
+                  "location"
+                ],
+                "properties": {
+                  "brandid": { "type": "string" },
+                  "stationid": { "type": "string" },
+                  "brand": { "type": "string" },
+                  "code": { "type": "string" },
+                  "name": { "type": "string" },
+                  "address": { "type": "string" },
+                  "location": {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": { "type": "number", "example": "-30.286083" },
+                      "longitude": { "type": "number", "example": "153.124146" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "trendperiods": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "trendperiod",
+                "required": ["period", "description"],
+                "properties": {
+                  "period": { "type": "string", "example": "Day" },
+                  "description": {
+                    "type": "string",
+                    "example": "Price trend today"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sortfields": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "sortfield",
+                "required": ["code", "name"],
+                "properties": {
+                  "code": { "type": "string", "example": "Distance" },
+                  "name": {
+                    "type": "string",
+                    "example": "Sort results by distance from specified location"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reference_data_v2": {
+      "type": "object",
+      "required": [
+        "brands",
+        "fueltypes",
+        "stations",
+        "trendperiods",
+        "sortfields",
+        "priceunits",
+        "lastmodifiedtimestamps"
+      ],
+      "properties": {
+        "brands": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "brand",
+                "required": ["name", "state"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "state": { "type": "string", "example": "NSW" }
+                }
+              }
+            }
+          }
+        },
+        "fueltypes": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "fueltype",
+                "required": ["code", "name", "state"],
+                "properties": {
+                  "code": { "type": "string", "example": "EV" },
+                  "name": { "type": "string", "example": "EV charge" },
+                  "state": { "type": "string", "example": "NSW" }
+                }
+              }
+            }
+          }
+        },
+        "stations": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "title": "station",
+                "type": "object",
+                "required": [
+                  "brandid",
+                  "stationid",
+                  "brand",
+                  "code",
+                  "name",
+                  "address",
+                  "location",
+                  "state"
+                ],
+                "properties": {
+                  "brandid": { "type": "string" },
+                  "stationid": { "type": "string" },
+                  "brand": { "type": "string" },
+                  "code": { "type": "string" },
+                  "name": { "type": "string" },
+                  "address": { "type": "string" },
+                  "location": {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": { "type": "number", "example": "-30.286083" },
+                      "longitude": { "type": "number", "example": "153.124146" }
+                    }
+                  },
+                  "state": { "type": "string", "example": "NSW" }
+                }
+              }
+            }
+          }
+        },
+        "trendperiods": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "trendperiod",
+                "required": ["period", "description"],
+                "properties": {
+                  "period": { "type": "string", "example": "Day" },
+                  "description": {
+                    "type": "string",
+                    "example": "Price trend today"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sortfields": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "title": "sortfield",
+                "required": ["code", "name"],
+                "properties": {
+                  "code": { "type": "string", "example": "Distance" },
+                  "name": {
+                    "type": "string",
+                    "example": "Sort results by distance from specified location"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "error_response": {
+      "type": "object",
+      "required": ["errorDetails"],
+      "properties": {
+        "errorDetails": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string", "example": "-2146233033" },
+            "message": {
+              "type": "string",
+              "example": "String was not recognized as a valid DateTime."
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

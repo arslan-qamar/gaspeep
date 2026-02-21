@@ -1,4 +1,7 @@
-.PHONY: dev install-go install-air build install-dlv dlv-headless setup-https https-dev
+.PHONY: dev install-go install-air build install-dlv dlv-headless dlv-stop setup-https https-dev
+
+DLV := $(shell command -v dlv 2>/dev/null || echo "$$(go env GOPATH)/bin/dlv")
+DLV_PORT ?= 2345
 
 dev:
 	./scripts/dev.sh
@@ -40,5 +43,19 @@ install-dlv:
 	go install github.com/go-delve/delve/cmd/dlv@latest
 
 dlv-headless:
-	@echo "Starting Delve in headless mode on :2345 (builds ./cmd/api)"
-	dlv debug ./cmd/api --headless --listen=:2345 --api-version=2 --accept-multiclient
+	@echo "Starting Delve in headless mode on :$(DLV_PORT) (builds ./cmd/api)"
+	@if [ ! -x "$(DLV)" ]; then \
+		echo "Delve not found. Run: make -C backend install-dlv"; \
+		exit 1; \
+	fi
+	@if ss -ltn "sport = :$(DLV_PORT)" 2>/dev/null | grep -q LISTEN; then \
+		echo "Port $(DLV_PORT) is already in use."; \
+		echo "If Delve is already running, attach to it instead of starting a new instance."; \
+		echo "Otherwise, use another port, e.g. make -C backend DLV_PORT=2346 dlv-headless"; \
+		exit 1; \
+	fi
+	"$(DLV)" debug ./cmd/api --headless --listen=:$(DLV_PORT) --api-version=2 --accept-multiclient
+
+dlv-stop:
+	@echo "Stopping Delve listeners on :$(DLV_PORT) if present"
+	@pkill -f "^$(DLV) debug ./cmd/api --headless --listen=:$(DLV_PORT)( |$$)" >/dev/null 2>&1 || true

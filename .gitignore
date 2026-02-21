@@ -7,3 +7,4 @@ build/
 .playwright-mcp
 backend/bin/api
 cookies.txt
+backend/__debug*

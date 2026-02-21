@@ -61,6 +61,7 @@ func main() {
 	broadcastService := service.NewBroadcastService(broadcastRepo, stationOwnerRepo)
 	notificationService := service.NewNotificationService(notificationRepo)
 	stationOwnerService := service.NewStationOwnerService(stationOwnerRepo)
+	serviceNSWSyncService := service.NewServiceNSWSyncService(database)
 
 	// --- Handlers ---
 	authHandler := handler.NewAuthHandler(userRepo, passwordResetRepo)
@@ -75,6 +76,7 @@ func main() {
 	broadcastHandler := handler.NewBroadcastHandler(broadcastService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	stationOwnerHandler := handler.NewStationOwnerHandler(stationOwnerService)
+	serviceNSWSyncHandler := handler.NewServiceNSWSyncHandler(serviceNSWSyncService)
 
 	// Create Gin router
 	router := gin.Default()
@@ -204,6 +206,12 @@ func main() {
 	{
 		users.GET("/profile", userProfileHandler.GetProfile)
 		users.PUT("/profile", userProfileHandler.UpdateProfile)
+	}
+
+	admin := router.Group("/api/admin")
+	admin.Use(middleware.ServiceNSWSyncAuthMiddleware())
+	{
+		admin.POST("/service-nsw-sync", serviceNSWSyncHandler.TriggerSync)
 	}
 
 	// Start server (support TLS when cert and key paths provided)

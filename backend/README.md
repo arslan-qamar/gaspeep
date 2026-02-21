@@ -106,6 +106,47 @@ internal/
 
 See `.env.example` for all available configuration options.
 
+### Service NSW v2 Sync
+
+The backend can ingest Service NSW Fuel API v2 data via a manual trigger endpoint and stores:
+- current prices in `fuel_prices`
+- historical ingestion events in `price_submissions`
+- station identity/state mapping in `stations`
+
+Set these env vars in `backend/.env`:
+
+```dotenv
+SERVICE_NSW_SYNC_ENABLED=true
+SERVICE_NSW_API_KEY=your_api_key
+SERVICE_NSW_API_SECRET=your_api_secret
+
+# Optional (defaults shown)
+SERVICE_NSW_BASE_URL=https://api.onegov.nsw.gov.au
+SERVICE_NSW_SYNC_STATES=NSW|TAS
+SERVICE_NSW_INCREMENTAL_INTERVAL_MINUTES=60
+SERVICE_NSW_FULL_SYNC_INTERVAL_HOURS=24
+SERVICE_NSW_REQUEST_TIMEOUT_SECONDS=30
+```
+
+Notes:
+- Sync is manual via API endpoint (it is not started automatically on app startup).
+- Incremental sync uses `/FuelPriceCheck/v2/fuel/prices/new`.
+- Full sync uses `/FuelPriceCheck/v2/fuel/prices` (and runs reference sync first).
+- Reference sync uses `/FuelCheckRefData/v2/fuel/lovs`.
+
+Trigger endpoint (authenticated):
+
+```bash
+curl -k -X POST "https://api.gaspeep.com/api/admin/service-nsw-sync" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <base64(SERVICE_NSW_API_KEY:SERVICE_NSW_API_SECRET)>" \
+  -d '{"mode":"full"}'
+```
+
+Supported modes:
+- `full`
+- `incremental`
+
 ## Google OAuth Setup
 
 1. Create OAuth credentials in Google Cloud Console:

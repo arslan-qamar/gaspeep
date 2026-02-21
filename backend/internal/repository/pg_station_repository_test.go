@@ -363,6 +363,38 @@ func TestGetStationsNearby_MultipleFuelTypes(t *testing.T) {
 	assert.GreaterOrEqual(t, len(station.Prices), 2, "Station should have prices for multiple fuel types")
 }
 
+// TestSearchStationsNearby_ExcludesNonPositivePrices ensures search-nearby never returns price values <= 0.
+func TestSearchStationsNearby_ExcludesNonPositivePrices(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	centerLat, centerLon := -33.8568, 151.2153
+
+	// Create stations near the search center.
+	s1 := testhelpers.CreateTestStation(t, db, centerLat+0.01, centerLon)
+	s2 := testhelpers.CreateTestStation(t, db, centerLat+0.02, centerLon)
+
+	fuelType := testhelpers.CreateTestFuelType(t, db, "E10")
+	testhelpers.CreateTestFuelPrice(t, db, s1.ID, fuelType, 0.00)
+	testhelpers.CreateTestFuelPrice(t, db, s2.ID, fuelType, 1.59)
+
+	repo := NewPgStationRepository(db)
+	results, err := repo.SearchStationsNearby(centerLat, centerLon, 10, "", nil, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, results)
+
+	positivePriceFound := false
+	for _, station := range results {
+		for _, price := range station.Prices {
+			assert.Greater(t, price.Price, 0.0, "search-nearby should only return prices > 0.00")
+			if price.Price > 0 {
+				positivePriceFound = true
+			}
+		}
+	}
+
+	assert.True(t, positivePriceFound, "expected at least one positive price in search-nearby results")
+}
+
 // TestCreateStation_WithAmenities tests creating station with amenities
 func TestCreateStation_WithAmenities(t *testing.T) {
 	db := testhelpers.SetupTestDBWithCleanup(t)

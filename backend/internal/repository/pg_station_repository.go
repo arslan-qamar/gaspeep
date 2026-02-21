@@ -425,7 +425,7 @@ func (r *PgStationRepository) SearchStationsNearby(
 			fp.fuel_type_id, ft.name as fuel_type_name, fp.price, fp.currency, fp.last_updated_at,
 			CASE WHEN fp.verification_status = 'verified' THEN true ELSE false END as verified
 		FROM stations s
-		LEFT JOIN fuel_prices fp ON s.id = fp.station_id
+		LEFT JOIN fuel_prices fp ON s.id = fp.station_id AND fp.price > 0
 		LEFT JOIN fuel_types ft ON fp.fuel_type_id = ft.id
 		WHERE ST_DWithin(
 			s.location::geography,
