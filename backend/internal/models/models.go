@@ -17,6 +17,12 @@ type User struct {
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
+type MapFilterPreferences struct {
+	FuelTypes    []string `json:"fuelTypes"`
+	MaxPrice     float64  `json:"maxPrice"`
+	OnlyVerified bool     `json:"onlyVerified"`
+}
+
 type Station struct {
 	ID             string          `json:"id"`
 	Name           string          `json:"name"`

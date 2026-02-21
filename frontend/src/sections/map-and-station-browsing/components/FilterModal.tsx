@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Filter } from 'lucide-react';
 
 const MAX_PRICE_CENTS_MIN = 0;
@@ -33,6 +33,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState(filters);
   const formatCents = (price: number): string => `${price.toFixed(1)}¢/L`;
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalFilters(filters);
+    }
+  }, [filters, isOpen]);
 
   if (!isOpen) return null;
 

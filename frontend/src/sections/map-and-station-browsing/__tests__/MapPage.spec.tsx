@@ -35,6 +35,10 @@ jest.mock('@/lib/api', () => ({
     getStationPrices: jest.fn(),
     getCheapestPrices: jest.fn(),
   },
+  mapPreferencesApi: {
+    getMapFilterPreferences: jest.fn(),
+    updateMapFilterPreferences: jest.fn(),
+  },
 }));
 
 // Mock the fetch API
@@ -93,6 +97,19 @@ const mockStations: Station[] = [
 describe('MapPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    const { apiClient, fuelTypeApi, mapPreferencesApi } = jest.requireMock('@/lib/api');
+    apiClient.post.mockResolvedValue({ data: mockStations });
+    fuelTypeApi.getFuelTypes.mockResolvedValue({
+      data: [
+        { id: '1', name: 'Regular', displayName: 'Regular', displayOrder: 1 },
+        { id: '2', name: 'Diesel', displayName: 'Diesel', displayOrder: 2 },
+      ],
+    });
+    mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
+      data: { fuelTypes: [], maxPrice: 400, onlyVerified: false },
+    });
+    mapPreferencesApi.updateMapFilterPreferences.mockResolvedValue({ data: { message: 'ok' } });
+
     // Mock successful geolocation
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
       success({
@@ -339,6 +356,57 @@ describe('MapPage', () => {
     await waitFor(() => {
       expect(screen.queryByTitle('Shell')).not.toBeInTheDocument();
       expect(screen.queryByTitle('BP')).not.toBeInTheDocument();
+    });
+  });
+
+  it('loads saved map filter preferences from backend', async () => {
+    const { mapPreferencesApi } = jest.requireMock('@/lib/api');
+    mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
+      data: { fuelTypes: ['2'], maxPrice: 175.5, onlyVerified: true },
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+    await user.click(filterButton!);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Diesel')).toBeChecked();
+    });
+  });
+
+  it('saves map filter preferences to backend when filters are applied', async () => {
+    const { mapPreferencesApi } = jest.requireMock('@/lib/api');
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+    await user.click(filterButton!);
+    await user.click(screen.getByLabelText('Diesel'));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() => {
+      expect(mapPreferencesApi.updateMapFilterPreferences).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fuelTypes: ['2'],
+        })
+      );
     });
   });
 });

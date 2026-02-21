@@ -3,10 +3,11 @@ package repository
 import (
 	"testing"
 
+	"gaspeep/backend/internal/models"
 	"gaspeep/backend/internal/repository/testhelpers"
-	"golang.org/x/crypto/bcrypt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // TestCreateUser_ValidData tests creating a new user
@@ -281,4 +282,36 @@ func TestUpdateUserOAuth_Success(t *testing.T) {
 	assert.Equal(t, "67890", result.OAuthProviderID)
 	assert.Equal(t, "https://example.com/avatar.jpg", result.AvatarURL)
 	assert.True(t, result.EmailVerified)
+}
+
+func TestMapFilterPreferences_RoundTrip(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	repo := NewPgUserRepository(db)
+
+	updateErr := repo.UpdateMapFilterPreferences(user.ID, models.MapFilterPreferences{
+		FuelTypes:    []string{"u91", "diesel"},
+		MaxPrice:     204.9,
+		OnlyVerified: true,
+	})
+	require.NoError(t, updateErr)
+
+	prefs, err := repo.GetMapFilterPreferences(user.ID)
+	require.NoError(t, err)
+	require.NotNil(t, prefs)
+	assert.Equal(t, []string{"u91", "diesel"}, prefs.FuelTypes)
+	assert.Equal(t, 204.9, prefs.MaxPrice)
+	assert.True(t, prefs.OnlyVerified)
+}
+
+func TestMapFilterPreferences_EmptyWhenUnset(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	user := testhelpers.CreateTestUser(t, db)
+	repo := NewPgUserRepository(db)
+
+	prefs, err := repo.GetMapFilterPreferences(user.ID)
+	require.NoError(t, err)
+	assert.Nil(t, prefs)
 }

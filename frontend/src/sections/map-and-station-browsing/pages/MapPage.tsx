@@ -6,22 +6,42 @@ import StationDetailSheet from '../components/StationDetailSheet';
 import FilterModal, { FuelTypeOption, FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
+import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { searchStationsNearby } from '../../../services/stationsService'
-import { fuelTypeApi } from '@/lib/api';
+import { fuelTypeApi, mapPreferencesApi } from '@/lib/api';
+
+const DEFAULT_MAX_PRICE_CENTS = 400;
+const DEFAULT_FILTERS: FilterState = {
+  fuelTypes: [],
+  maxPrice: DEFAULT_MAX_PRICE_CENTS,
+  onlyVerified: false,
+};
+
+const areFiltersEqual = (a: FilterState, b: FilterState): boolean => (
+  a.maxPrice === b.maxPrice &&
+  a.onlyVerified === b.onlyVerified &&
+  a.fuelTypes.length === b.fuelTypes.length &&
+  a.fuelTypes.every((fuelType) => b.fuelTypes.includes(fuelType))
+);
+
+const sanitizeFilters = (value: Partial<FilterState> | null | undefined): FilterState => ({
+  fuelTypes: Array.isArray(value?.fuelTypes)
+    ? value.fuelTypes.filter((fuelType): fuelType is string => typeof fuelType === 'string')
+    : [],
+  maxPrice: typeof value?.maxPrice === 'number' && Number.isFinite(value.maxPrice)
+    ? Math.min(Math.max(value.maxPrice, 0), DEFAULT_MAX_PRICE_CENTS)
+    : DEFAULT_MAX_PRICE_CENTS,
+  onlyVerified: Boolean(value?.onlyVerified),
+});
 
 export const MapPage: React.FC = () => {
-  const DEFAULT_MAX_PRICE_CENTS = 400;
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterState>({
-    fuelTypes: [],
-    maxPrice: DEFAULT_MAX_PRICE_CENTS,
-    onlyVerified: false,
-  });
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -32,6 +52,7 @@ export const MapPage: React.FC = () => {
   const viewportRef = useRef<{ latitude: number; longitude: number; zoom: number } | null>(null);
   const prevFiltersRef = useRef(filters);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const skipNextSaveRef = useRef(false);
 
   // Params for the current fetch — updating this triggers the React Query fetch
   const [fetchParams, setFetchParams] = useState<{
@@ -96,6 +117,31 @@ export const MapPage: React.FC = () => {
     },
     staleTime: 10 * 60_000,
   })
+  const { data: savedFilters, isLoading: loadingSavedFilters } = useQuery<FilterState>({
+    queryKey: ['map-filter-preferences'],
+    queryFn: async () => {
+      const response = await mapPreferencesApi.getMapFilterPreferences()
+      return sanitizeFilters(response?.data)
+    },
+    staleTime: 5 * 60_000,
+  })
+  const saveFiltersMutation = useMutation({
+    mutationFn: async (nextFilters: FilterState) => {
+      return mapPreferencesApi.updateMapFilterPreferences(nextFilters)
+    },
+  })
+
+  useEffect(() => {
+    if (preferencesHydrated) return
+    if (loadingSavedFilters) return
+
+    const nextFilters = sanitizeFilters(savedFilters)
+    if (!areFiltersEqual(filters, nextFilters)) {
+      skipNextSaveRef.current = true
+      setFilters(nextFilters)
+    }
+    setPreferencesHydrated(true)
+  }, [loadingSavedFilters, savedFilters, filters, preferencesHydrated])
 
     // Ensure fetchedStations are reflected into local `stations` state. This
     // duplicates onSuccess safety and guards against cases where the query
@@ -169,14 +215,16 @@ export const MapPage: React.FC = () => {
 
   // Initial load/geolocation resolution.
   useEffect(() => {
+    if (!preferencesHydrated) return;
     if (!userLocation) return;
     viewportRef.current = { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
     setFetchParams({ lat: userLocation.lat, lng: userLocation.lng, zoom: 14, searchQuery: debouncedSearchQuery, clearExisting: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation]);
+  }, [userLocation, preferencesHydrated]);
 
   // Re-fetch against the current viewport when the debounced search query changes.
   useEffect(() => {
+    if (!preferencesHydrated) return;
     if (!userLocation) return;
 
     const vp = viewportRef.current ?? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 };
@@ -187,18 +235,25 @@ export const MapPage: React.FC = () => {
       searchQuery: debouncedSearchQuery,
       clearExisting: true,
     });
-  }, [debouncedSearchQuery, userLocation]);
+  }, [debouncedSearchQuery, userLocation, preferencesHydrated]);
 
   // Re-fetch when filters change (skip initial render via reference comparison)
   useEffect(() => {
     if (prevFiltersRef.current === filters) return;
     prevFiltersRef.current = filters;
+    if (!preferencesHydrated) return;
+
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false
+    } else {
+      saveFiltersMutation.mutate(filters)
+    }
 
     const vp = viewportRef.current ?? (userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng, zoom: 14 } : null);
     if (!vp) return;
 
     setFetchParams({ lat: vp.latitude, lng: vp.longitude, zoom: vp.zoom, searchQuery: debouncedSearchQuery, clearExisting: true });
-  }, [filters, userLocation, debouncedSearchQuery]);
+  }, [filters, userLocation, debouncedSearchQuery, preferencesHydrated, saveFiltersMutation]);
 
   // Reflect React Query's fetching state into local loading flags for UI
   useEffect(() => {

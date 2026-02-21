@@ -231,6 +231,8 @@ func main() {
 	{
 		users.GET("/profile", userProfileHandler.GetProfile)
 		users.PUT("/profile", userProfileHandler.UpdateProfile)
+		users.GET("/preferences/map-filters", userProfileHandler.GetMapFilterPreferences)
+		users.PUT("/preferences/map-filters", userProfileHandler.UpdateMapFilterPreferences)
 	}
 
 	admin := router.Group("/api/admin")

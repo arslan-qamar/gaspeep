@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"gaspeep/backend/internal/models"
 	"gaspeep/backend/internal/repository"
 	"gaspeep/backend/internal/service"
 
@@ -27,6 +29,10 @@ func NewUserProfileHandler(userRepo repository.UserRepository, prRepo repository
 		userRepo: userRepo,
 		prRepo:   prRepo,
 	}
+}
+
+func isUserNotFoundError(err error) bool {
+	return errors.Is(err, sql.ErrNoRows) || strings.Contains(strings.ToLower(err.Error()), "not found")
 }
 
 // GetProfile handles GET /api/users/profile
@@ -82,6 +88,70 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"id": updatedID, "message": "profile updated"})
+}
+
+// GetMapFilterPreferences handles GET /api/users/preferences/map-filters
+func (h *UserProfileHandler) GetMapFilterPreferences(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	prefs, err := h.userRepo.GetMapFilterPreferences(userID.(string))
+	if err != nil {
+		if isUserNotFoundError(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get map filter preferences"})
+		return
+	}
+
+	if prefs == nil {
+		c.JSON(http.StatusOK, models.MapFilterPreferences{
+			FuelTypes:    []string{},
+			MaxPrice:     400,
+			OnlyVerified: false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, prefs)
+}
+
+// UpdateMapFilterPreferences handles PUT /api/users/preferences/map-filters
+func (h *UserProfileHandler) UpdateMapFilterPreferences(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	var req models.MapFilterPreferences
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.MaxPrice < 0 || req.MaxPrice > 400 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "maxPrice must be between 0 and 400"})
+		return
+	}
+	if req.FuelTypes == nil {
+		req.FuelTypes = []string{}
+	}
+
+	if err := h.userRepo.UpdateMapFilterPreferences(userID.(string), req); err != nil {
+		if isUserNotFoundError(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update map filter preferences"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "map filter preferences updated"})
 }
 
 // PasswordReset handles POST /api/auth/password-reset

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 
 	"gaspeep/backend/internal/models"
@@ -183,6 +184,54 @@ func (r *PgUserRepository) UpdateProfile(userID, displayName, tier string) (stri
 		displayName, tier, userID,
 	).Scan(&updatedID)
 	return updatedID, err
+}
+
+func (r *PgUserRepository) GetMapFilterPreferences(userID string) (*models.MapFilterPreferences, error) {
+	var raw []byte
+	err := r.db.QueryRow(`SELECT map_filter_preferences FROM users WHERE id = $1`, userID).Scan(&raw)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	if len(raw) == 0 {
+		return nil, nil
+	}
+
+	var prefs models.MapFilterPreferences
+	if err := json.Unmarshal(raw, &prefs); err != nil {
+		return nil, err
+	}
+
+	return &prefs, nil
+}
+
+func (r *PgUserRepository) UpdateMapFilterPreferences(userID string, prefs models.MapFilterPreferences) error {
+	payload, err := json.Marshal(prefs)
+	if err != nil {
+		return err
+	}
+
+	result, err := r.db.Exec(`
+		UPDATE users
+		SET map_filter_preferences = $1::jsonb, updated_at = NOW()
+		WHERE id = $2
+	`, payload, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 var _ UserRepository = (*PgUserRepository)(nil)

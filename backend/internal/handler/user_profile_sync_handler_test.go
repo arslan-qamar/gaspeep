@@ -17,9 +17,11 @@ import (
 )
 
 type mockUserRepoProfile struct {
-	getUserByIDFn    func(id string) (*models.User, error)
-	updateProfileFn  func(userID, displayName, tier string) (string, error)
-	getUserIDByEmail func(email string) (string, error)
+	getUserByIDFn                func(id string) (*models.User, error)
+	updateProfileFn              func(userID, displayName, tier string) (string, error)
+	getUserIDByEmail             func(email string) (string, error)
+	getMapFilterPreferencesFn    func(userID string) (*models.MapFilterPreferences, error)
+	updateMapFilterPreferencesFn func(userID string, prefs models.MapFilterPreferences) error
 }
 
 func (m *mockUserRepoProfile) CreateUser(email, passwordHash, displayName, tier string) (*models.User, error) {
@@ -57,6 +59,18 @@ func (m *mockUserRepoProfile) UpdateProfile(userID, displayName, tier string) (s
 		return m.updateProfileFn(userID, displayName, tier)
 	}
 	return userID, nil
+}
+func (m *mockUserRepoProfile) GetMapFilterPreferences(userID string) (*models.MapFilterPreferences, error) {
+	if m.getMapFilterPreferencesFn != nil {
+		return m.getMapFilterPreferencesFn(userID)
+	}
+	return nil, nil
+}
+func (m *mockUserRepoProfile) UpdateMapFilterPreferences(userID string, prefs models.MapFilterPreferences) error {
+	if m.updateMapFilterPreferencesFn != nil {
+		return m.updateMapFilterPreferencesFn(userID, prefs)
+	}
+	return nil
 }
 
 type mockPasswordResetRepoProfile struct {
@@ -185,6 +199,54 @@ func TestUserProfileHandlerUnauthorized(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestUserProfileHandlerMapFilterPreferences(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &mockUserRepoProfile{}
+	prRepo := &mockPasswordResetRepoProfile{}
+	h := NewUserProfileHandler(repo, prRepo)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("userID", "u1")
+		c.Next()
+	})
+	r.GET("/preferences/map-filters", h.GetMapFilterPreferences)
+	r.PUT("/preferences/map-filters", h.UpdateMapFilterPreferences)
+
+	repo.getMapFilterPreferencesFn = func(userID string) (*models.MapFilterPreferences, error) {
+		assert.Equal(t, "u1", userID)
+		return &models.MapFilterPreferences{
+			FuelTypes:    []string{"diesel"},
+			MaxPrice:     185.4,
+			OnlyVerified: true,
+		}, nil
+	}
+	req := httptest.NewRequest(http.MethodGet, "/preferences/map-filters", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"diesel"`)
+	assert.Contains(t, w.Body.String(), `"maxPrice":185.4`)
+
+	repo.updateMapFilterPreferencesFn = func(userID string, prefs models.MapFilterPreferences) error {
+		assert.Equal(t, "u1", userID)
+		assert.Equal(t, []string{"u91"}, prefs.FuelTypes)
+		assert.Equal(t, 199.9, prefs.MaxPrice)
+		assert.Equal(t, true, prefs.OnlyVerified)
+		return nil
+	}
+	req = httptest.NewRequest(http.MethodPut, "/preferences/map-filters", bytes.NewReader([]byte(`{"fuelTypes":["u91"],"maxPrice":199.9,"onlyVerified":true}`)))
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	req = httptest.NewRequest(http.MethodPut, "/preferences/map-filters", bytes.NewReader([]byte(`{"fuelTypes":["u91"],"maxPrice":401,"onlyVerified":true}`)))
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestServiceNSWSyncHandlerValidation(t *testing.T) {

@@ -142,3 +142,17 @@ export const fuelPriceApi = {
       params: { lat, lon, radius }
     }),
 }
+
+export interface MapFilterPreferences {
+  fuelTypes: string[]
+  maxPrice: number
+  onlyVerified: boolean
+}
+
+export const mapPreferencesApi = {
+  getMapFilterPreferences: () =>
+    apiClient.get<MapFilterPreferences>('/users/preferences/map-filters'),
+
+  updateMapFilterPreferences: (preferences: MapFilterPreferences) =>
+    apiClient.put<{ message: string }>('/users/preferences/map-filters', preferences),
+}

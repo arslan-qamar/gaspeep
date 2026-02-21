@@ -86,6 +86,17 @@ func (m *MockUserRepositoryOAuth) UpdateProfile(userID, displayName, tier string
 	args := m.Called(userID, displayName, tier)
 	return args.String(0), args.Error(1)
 }
+func (m *MockUserRepositoryOAuth) GetMapFilterPreferences(userID string) (*models.MapFilterPreferences, error) {
+	args := m.Called(userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.MapFilterPreferences), args.Error(1)
+}
+func (m *MockUserRepositoryOAuth) UpdateMapFilterPreferences(userID string, prefs models.MapFilterPreferences) error {
+	args := m.Called(userID, prefs)
+	return args.Error(0)
+}
 
 // TestStartGoogle_SetsStateCookie verifies that StartGoogle sets an OAuth state cookie
 func TestStartGoogle_SetsStateCookie(t *testing.T) {

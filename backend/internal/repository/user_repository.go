@@ -18,4 +18,6 @@ type UserRepository interface {
 	UpdatePassword(userID, passwordHash string) error
 	GetUserIDByEmail(email string) (string, error)
 	UpdateProfile(userID, displayName, tier string) (string, error)
+	GetMapFilterPreferences(userID string) (*models.MapFilterPreferences, error)
+	UpdateMapFilterPreferences(userID string, prefs models.MapFilterPreferences) error
 }
