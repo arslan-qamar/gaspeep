@@ -80,6 +80,8 @@ export const PriceSubmissionForm: React.FC = () => {
     }
 
     if (state?.stationId) {
+      setCurrentStep('submit')
+
       ;(async () => {
         try {
           const resp = await stationApi.getStation(state.stationId)

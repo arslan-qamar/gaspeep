@@ -8,6 +8,9 @@ jest.mock('../../../lib/api', () => {
       get: jest.fn(),
       post: jest.fn(),
     },
+    stationApi: {
+      getStation: jest.fn(),
+    },
   }
 })
 
@@ -56,7 +59,7 @@ jest.mock('../PhotoUploadScreen', () => {
   }
 })
 
-import { apiClient } from '../../../lib/api'
+import { apiClient, stationApi } from '../../../lib/api'
 import { PriceSubmissionForm } from '../PriceSubmissionForm'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -308,6 +311,38 @@ describe('PriceSubmissionForm', () => {
         })
       )
     )
+  })
+
+  it('starts on step 2 when arriving with preselected station from map', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({
+      data: [{ id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' }],
+    })
+    ;(apiClient.post as jest.Mock).mockResolvedValue({ data: [] })
+    ;(stationApi.getStation as jest.Mock).mockResolvedValue({
+      data: {
+        id: 's-99',
+        name: 'Map Selected Station',
+        address: '123 Map Rd',
+        latitude: -33.86,
+        longitude: 151.2,
+      },
+    })
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: '/submit', state: { stationId: 's-99', fuelTypeId: 'f-91' } },
+        ]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <QueryClientProvider client={new QueryClient()}>
+          <PriceSubmissionForm />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText(/Step 2 of 3: Submit Price/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Map Selected Station/i)).toBeInTheDocument()
   })
 })
 
