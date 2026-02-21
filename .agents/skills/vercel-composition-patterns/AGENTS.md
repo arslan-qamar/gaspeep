@@ -1,3 +1,9 @@
+# Default Engineering Workflow (Mandatory)
+
+Always apply the `test-driven-development` skill for implementation tasks unless explicitly overridden by the user.
+
+---
+
 # React Composition Patterns
 
 **Version 1.0.0**  

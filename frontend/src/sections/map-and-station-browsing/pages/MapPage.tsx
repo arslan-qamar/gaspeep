@@ -105,7 +105,7 @@ export const MapPage: React.FC = () => {
 
       const newStations = fetchedStations as Station[]
 
-      if (debouncedSearchQuery && debouncedSearchQuery.trim() && newStations.length === 0) {
+      if (fetchParams.clearExisting && newStations.length === 0) {
         setStations(newStations)
         return
       }

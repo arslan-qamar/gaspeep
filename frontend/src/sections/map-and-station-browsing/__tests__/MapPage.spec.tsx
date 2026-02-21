@@ -53,6 +53,7 @@ const mockStations: Station[] = [
   {
     id: '1',
     name: 'Test Station 1',
+    brand: 'Shell',
     address: '123 Test St',
     latitude: 40.7128,
     longitude: -74.006,
@@ -62,6 +63,25 @@ const mockStations: Station[] = [
         fuelTypeId: '1',
         fuelTypeName: 'Regular',
         price: 3.99,
+        currency: 'USD',
+        lastUpdated: '2026-02-07T08:00:00Z',
+        verified: true,
+      },
+    ],
+  },
+  {
+    id: '2',
+    name: 'Test Station 2',
+    brand: 'BP',
+    address: '456 Test Ave',
+    latitude: 40.7138,
+    longitude: -74.007,
+    operatingHours: '6am-11pm',
+    prices: [
+      {
+        fuelTypeId: '2',
+        fuelTypeName: 'Diesel',
+        price: 4.15,
         currency: 'USD',
         lastUpdated: '2026-02-07T08:00:00Z',
         verified: true,
@@ -273,6 +293,52 @@ describe('MapPage', () => {
     // Component should accept the input and trigger a search
     await waitFor(() => {
       expect(searchInput).toHaveValue('test');
+    });
+  });
+
+  it('clears markers when applying filters returns empty results', async () => {
+    const { apiClient, fuelTypeApi } = jest.requireMock('@/lib/api');
+
+    fuelTypeApi.getFuelTypes.mockResolvedValue({
+      data: [
+        { id: 'diesel', name: 'Diesel', displayName: 'Diesel', displayOrder: 1 },
+      ],
+    });
+
+    apiClient.post.mockImplementation((url: string, body: any) => {
+      if (url === '/stations/search-nearby' && body?.fuelTypes?.length > 0) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/stations/search-nearby') {
+        return Promise.resolve({ data: mockStations });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Shell')).toBeInTheDocument();
+      expect(screen.getByTitle('BP')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+
+    await user.click(filterButton!);
+    await user.click(screen.getByLabelText('Diesel'));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() => {
+      expect(screen.queryByTitle('Shell')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('BP')).not.toBeInTheDocument();
     });
   });
 });
