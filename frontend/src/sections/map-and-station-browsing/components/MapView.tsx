@@ -61,6 +61,26 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
     [onStationSelect],
   );
 
+  const handleMarkerFocus = useCallback(
+    (station: Station) => {
+      const map = getMapInstance();
+      if (!map || typeof map.flyTo !== 'function') return;
+
+      const currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : undefined;
+      const zoom =
+        typeof currentZoom === 'number' && Number.isFinite(currentZoom)
+          ? currentZoom
+          : 14;
+
+      map.flyTo({
+        center: [station.longitude, station.latitude],
+        zoom,
+        duration: 600,
+      });
+    },
+    [getMapInstance],
+  );
+
   const handleGeolocate = useCallback(() => {
     if (!mapRef.current) return;
 
@@ -279,17 +299,22 @@ export const MapView = React.forwardRef<HTMLDivElement, MapViewProps>(({
               key={station.id}
               longitude={station.longitude}
               latitude={station.latitude}
-              onClick={() => handleMarkerClick(station)}
             >
-              <div className="relative">
+              <div className="relative" onClick={() => handleMarkerClick(station)}>
                 {/* Brand Icon */}
               <button
+                type="button"
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all cursor-pointer shadow-md border-2 border-white ${
                   selectedStationId === station.id
                     ? 'scale-125 ring-2 ring-blue-500'
                     : 'hover:scale-110'
                 }`}
-
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleMarkerClick(station);
+                }}
+                onFocus={() => handleMarkerFocus(station)}
+                aria-label={`View station: ${station.name}`}
                 title={station.brand || 'Gas Station'}
               >
                 {showIcon ? (

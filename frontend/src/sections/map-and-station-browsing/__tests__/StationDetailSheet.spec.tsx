@@ -199,4 +199,46 @@ describe('StationDetailSheet', () => {
     const sheet = screen.getByRole('dialog');
     expect(sheet).toHaveClass('dark:bg-slate-900');
   });
+
+  it('exposes the sheet as a labeled modal dialog when visible', () => {
+    render(
+      <StationDetailSheet
+        station={mockStation}
+        isOpen={true}
+        onClose={() => {}}
+      />
+    );
+
+    expect(
+      screen.getByRole('dialog', { name: mockStation.name })
+    ).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('moves focus to the update price control when the sheet becomes visible', () => {
+    render(
+      <StationDetailSheet
+        station={mockStation}
+        isOpen={true}
+        onClose={() => {}}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /update price/i })).toHaveFocus();
+  });
+
+  it('closes the sheet when escape is pressed while visible', async () => {
+    const mockClose = jest.fn();
+    render(
+      <StationDetailSheet
+        station={mockStation}
+        isOpen={true}
+        onClose={mockClose}
+      />
+    );
+
+    const user = userEvent.setup();
+    await user.keyboard('{Escape}');
+
+    expect(mockClose).toHaveBeenCalledTimes(1);
+  });
 });

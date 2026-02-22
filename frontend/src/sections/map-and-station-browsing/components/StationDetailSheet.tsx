@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Clock, MapPin, Fuel } from 'lucide-react';
 import { Station } from '../types';
 
@@ -15,6 +15,10 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
   onClose,
   onSubmitPrice,
 }) => {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const updatePriceButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusedElementRef = useRef<HTMLElement | null>(null);
+
   const formatPriceInCents = (price: number): string => `${price.toFixed(1)}¢`;
 
   const formatLastUpdated = (lastUpdated?: string): string | null => {
@@ -29,6 +33,29 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
     });
   };
 
+  useEffect(() => {
+    if (!isOpen || !station) return;
+
+    previousFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    updatePriceButtonRef.current?.focus();
+    if (document.activeElement !== updatePriceButtonRef.current) {
+      closeButtonRef.current?.focus();
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusedElementRef.current?.focus();
+    };
+  }, [isOpen, station, onClose]);
+
   if (!isOpen || !station) return null;
 
   return (
@@ -41,16 +68,25 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
       />
 
       {/* Sheet */}
-      <div className="relative w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-2xl overflow-y-auto" role="dialog">
+      <div
+        className="relative w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-2xl overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`station-detail-title-${station.id}`}
+      >
         {/* Header */}
         <div className="sticky top-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <h2 className="text-xl font-bold">{station.name}</h2>
+          <h2 id={`station-detail-title-${station.id}`} className="text-xl font-bold">
+            {station.name}
+          </h2>
           <button
+            ref={closeButtonRef}
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-            aria-label="Close"
+            aria-label="Close station details"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -121,6 +157,8 @@ export const StationDetailSheet: React.FC<StationDetailSheetProps> = ({
 
           {/* Submit Price Button */}
           <button
+            ref={updatePriceButtonRef}
+            type="button"
             onClick={() => {
               if (station.prices.length > 0) {
                 onSubmitPrice?.(station.id, station.prices[0].fuelTypeId);

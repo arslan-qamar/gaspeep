@@ -207,7 +207,7 @@ export const MapPage: React.FC = () => {
   const maxPriceCommitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipNextFilterSaveRef = useRef(false);
   const skipNextBrandSaveRef = useRef(false);
-  const skipNextSearchFocusOpenRef = useRef(false);
+  const skipNextSearchFocusOpenRef = useRef(true);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const locationOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);

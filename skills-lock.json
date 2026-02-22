@@ -21,10 +21,20 @@
       "sourceType": "github",
       "computedHash": "4fa8f5a772b4eef3d28a54c136b507d070e54e2c326578f65eaf5e5a0118b38a"
     },
+    "programmatic-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "aae6ed1dda8bacf4980860e3ee2cc3c181f31e31d6b524cfd452015930d16a1f"
+    },
     "security-review": {
       "source": "affaan-m/everything-claude-code",
       "sourceType": "github",
       "computedHash": "f2293fda202029f35b4d5175d2b229ad01b59c08a5ba4bb16287f60074d35970"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "6bd4cde58bb701b5dc90a0fae2f0ea3efc7c3e6fd2ae754083fa659930e7d39f"
     },
     "tailwind-design-system": {
       "source": "wshobson/agents",

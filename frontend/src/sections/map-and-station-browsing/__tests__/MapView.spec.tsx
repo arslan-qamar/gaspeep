@@ -4,11 +4,20 @@ import userEvent from '@testing-library/user-event';
 import MapView from '../components/MapView';
 import { Station } from '../types';
 
+const mockFlyTo = jest.fn();
+const mockGetZoom = jest.fn(() => 13);
+
 jest.mock('react-map-gl/maplibre', () => {
 	const React = require('react');
-	const MapMock = React.forwardRef(({ children }: { children: any }, ref: any) => (
-		<div data-testid="mock-map" ref={ref}>{children}</div>
-	));
+	const MapMock = React.forwardRef(({ children }: { children: any }, ref: any) => {
+		React.useImperativeHandle(ref, () => ({
+			getMap: () => ({
+				flyTo: mockFlyTo,
+				getZoom: mockGetZoom,
+			}),
+		}));
+		return <div data-testid="mock-map">{children}</div>;
+	});
 	MapMock.displayName = 'MapMock';
 
 	return {
@@ -48,6 +57,12 @@ const stations: Station[] = [
 ];
 
 describe('MapView', () => {
+	beforeEach(() => {
+		mockFlyTo.mockClear();
+		mockGetZoom.mockClear();
+		mockGetZoom.mockReturnValue(13);
+	});
+
 	it('renders map and station markers', () => {
 		render(<MapView stations={stations} onStationSelect={() => {}} />);
 		// Check for station marker buttons
@@ -94,5 +109,44 @@ describe('MapView', () => {
 		fireEvent.error(fallbackIcon);
 
 		expect(within(screen.getByTitle('Shell')).getByText('⛽')).toBeInTheDocument();
+	});
+
+	it('pans map to station when marker button receives keyboard focus', async () => {
+		render(<MapView stations={stations} onStationSelect={() => {}} />);
+
+		const user = userEvent.setup();
+		await user.tab();
+		await user.tab();
+
+		expect(screen.getByRole('button', { name: /view station: station one/i })).toHaveFocus();
+		expect(mockFlyTo).toHaveBeenCalledWith({
+			center: [stations[0].longitude, stations[0].latitude],
+			zoom: 13,
+			duration: 600,
+		});
+	});
+
+	it('does not select station when marker only receives focus', async () => {
+		const mockSelect = jest.fn();
+		render(<MapView stations={stations} onStationSelect={mockSelect} />);
+
+		const user = userEvent.setup();
+		await user.tab();
+		await user.tab();
+
+		expect(screen.getByRole('button', { name: /view station: station one/i })).toHaveFocus();
+		expect(mockSelect).not.toHaveBeenCalled();
+	});
+
+	it('selects station when focused marker is activated with keyboard', async () => {
+		const mockSelect = jest.fn();
+		render(<MapView stations={stations} onStationSelect={mockSelect} />);
+
+		const user = userEvent.setup();
+		await user.tab();
+		await user.tab();
+		await user.keyboard('{Enter}');
+
+		expect(mockSelect).toHaveBeenCalledWith(expect.objectContaining({ id: '1' }));
 	});
 });

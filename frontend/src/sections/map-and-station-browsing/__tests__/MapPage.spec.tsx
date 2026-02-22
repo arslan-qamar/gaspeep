@@ -194,6 +194,19 @@ describe('MapPage', () => {
     expect(screen.getByPlaceholderText('Search location')).toHaveFocus();
   });
 
+  it('does not show location results dropdown on initial auto-focus', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByPlaceholderText('Search location')).toHaveFocus();
+    expect(screen.queryByTestId('map-unified-search-dropdown')).not.toBeInTheDocument();
+  });
+
   it('links dropdown trigger to its popup via aria-controls', async () => {
     render(
       <MemoryRouter>
