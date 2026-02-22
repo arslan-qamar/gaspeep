@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { VoiceInputScreen } from '../VoiceInputScreen'
 import { PhotoUploadScreen } from '../PhotoUploadScreen'
 import type { VoiceParseResult } from '../voicePriceParser'
@@ -34,20 +34,98 @@ export const EntryMethodModal: React.FC<EntryMethodModalProps> = ({
   onVoiceParsed,
   onPhotoParsed,
 }) => {
+  const dialogRef = useRef<HTMLDivElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null)
+
+  const title = useMemo(
+    () => (method === 'voice' ? (voiceParseResult ? 'Confirm Detected Prices' : 'Voice Entry') : 'Camera / Photo Entry'),
+    [method, voiceParseResult]
+  )
+  const titleId = useMemo(
+    () => `entry-method-modal-title-${method}-${voiceParseResult ? 'review' : 'input'}`,
+    [method, voiceParseResult]
+  )
+
+  useEffect(() => {
+    if (!showModal) return
+
+    previouslyFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeButtonRef.current?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      const dialogElement = dialogRef.current
+      if (!dialogElement) return
+
+      const focusableElements = Array.from(
+        dialogElement.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute('disabled') && element.tabIndex !== -1)
+
+      if (focusableElements.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      const activeElement = document.activeElement as HTMLElement | null
+
+      if (!activeElement || !dialogElement.contains(activeElement)) {
+        event.preventDefault()
+        firstElement.focus()
+        return
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault()
+        lastElement.focus()
+        return
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      previouslyFocusedElementRef.current?.focus()
+    }
+  }, [showModal, onClose])
+
   if (!showModal) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center rounded-xl justify-center p-4">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+      >
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {method === 'voice' ? (voiceParseResult ? 'Confirm Detected Prices' : 'Voice Entry') : 'Camera / Photo Entry'}
-          </h3>
+          <h3 id={titleId} className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
           <button
+            ref={closeButtonRef}
+            type="button"
             onClick={onClose}
+            aria-label="Close entry method dialog"
             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <span className="text-xl">✕</span>
+            <span aria-hidden="true" className="text-xl">✕</span>
           </button>
         </div>
 

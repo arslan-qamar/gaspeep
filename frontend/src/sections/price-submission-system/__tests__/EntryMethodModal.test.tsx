@@ -101,6 +101,7 @@ describe('EntryMethodModal', () => {
   it('renders voice input screen when no parsed voice data exists', () => {
     const { props } = renderModal({ method: 'voice', voiceParseResult: null })
 
+    expect(screen.getByRole('dialog', { name: /voice entry/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /voice entry/i })).toBeInTheDocument()
     expect(screen.getByText('voice-modal:true')).toBeInTheDocument()
     expect(screen.getByText('fuel-count:3')).toBeInTheDocument()
@@ -119,6 +120,7 @@ describe('EntryMethodModal', () => {
   it('renders photo upload screen in photo mode', () => {
     const { props } = renderModal({ method: 'photo' })
 
+    expect(screen.getByRole('dialog', { name: /camera \/ photo entry/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /camera \/ photo entry/i })).toBeInTheDocument()
     expect(screen.getByText('photo-modal:true')).toBeInTheDocument()
 
@@ -173,7 +175,21 @@ describe('EntryMethodModal', () => {
   it('closes modal using header close button', () => {
     const { props } = renderModal({ method: 'photo' })
 
-    fireEvent.click(screen.getByRole('button', { name: '✕' }))
+    fireEvent.click(screen.getByRole('button', { name: /close entry method dialog/i }))
+
+    expect(props.onClose).toHaveBeenCalled()
+  })
+
+  it('moves focus to close button when modal opens', () => {
+    renderModal({ method: 'voice', voiceParseResult: null })
+
+    expect(screen.getByRole('button', { name: /close entry method dialog/i })).toHaveFocus()
+  })
+
+  it('closes modal when Escape is pressed', () => {
+    const { props } = renderModal({ method: 'photo' })
+
+    fireEvent.keyDown(document, { key: 'Escape' })
 
     expect(props.onClose).toHaveBeenCalled()
   })

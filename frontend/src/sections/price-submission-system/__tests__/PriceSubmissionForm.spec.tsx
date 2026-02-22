@@ -140,7 +140,9 @@ describe('PriceSubmissionForm', () => {
 
     // Step 1: select station and continue
     fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
-    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    const stationAddress = await screen.findByText('85 Willoughby Rd')
+    const stationOption = stationAddress.closest('button')
+    expect(stationOption).not.toBeNull()
     fireEvent.click(stationOption)
     fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
 
@@ -235,7 +237,9 @@ describe('PriceSubmissionForm', () => {
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
     fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
-    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    const stationAddress = await screen.findByText('85 Willoughby Rd')
+    const stationOption = stationAddress.closest('button')
+    expect(stationOption).not.toBeNull()
     fireEvent.click(stationOption)
     fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
 
@@ -297,7 +301,9 @@ describe('PriceSubmissionForm', () => {
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
     fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
-    const stationOption = await screen.findByRole('button', { name: /7-Eleven Crows Nest/i })
+    const stationAddress = await screen.findByText('85 Willoughby Rd')
+    const stationOption = stationAddress.closest('button')
+    expect(stationOption).not.toBeNull()
     fireEvent.click(stationOption)
     fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
 
