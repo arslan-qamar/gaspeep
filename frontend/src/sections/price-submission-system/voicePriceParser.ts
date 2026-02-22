@@ -23,8 +23,8 @@ type FuelMatch = {
   spokenFuel: string
 }
 
-const MIN_PRICE = 0.5
-const MAX_PRICE = 10
+const MIN_PRICE_CENTS = 50
+const MAX_PRICE_CENTS = 1000
 
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0,
@@ -115,14 +115,18 @@ export const parseSpokenPrice = (input: string): number | null => {
 
   const numeric = normalized.match(/\b\d+(?:\.\d{1,2})?\b/)?.[0]
   if (numeric) {
-    const parsed = parseFloat(numeric)
-    if (parsed >= MIN_PRICE && parsed <= MAX_PRICE) return parsed
-  }
-
-  const compact = normalized.match(/\b\d{3}\b/)?.[0]
-  if (compact) {
-    const parsed = parseFloat(compact) / 100
-    if (parsed >= MIN_PRICE && parsed <= MAX_PRICE) return parsed
+    if (numeric.includes('.')) {
+      const parsedDollars = parseFloat(numeric)
+      const cents = Math.round(parsedDollars * 100)
+      if (cents >= MIN_PRICE_CENTS && cents <= MAX_PRICE_CENTS) return cents
+    } else {
+      const parsedInt = Number.parseInt(numeric, 10)
+      if (!Number.isNaN(parsedInt)) {
+        if (parsedInt >= 100 && parsedInt <= MAX_PRICE_CENTS) return parsedInt
+        const cents = parsedInt * 100
+        if (cents >= MIN_PRICE_CENTS && cents <= MAX_PRICE_CENTS) return cents
+      }
+    }
   }
 
   const tokens = normalized
@@ -139,7 +143,8 @@ export const parseSpokenPrice = (input: string): number | null => {
     const decimals = tokens.slice(pointIndex + 1)
     if (dollars !== null && decimals.length > 0 && decimals.every((d) => NUMBER_WORDS[d] !== undefined && NUMBER_WORDS[d] < 10)) {
       const parsed = parseFloat(`${dollars}.${decimals.map((d) => NUMBER_WORDS[d]).join('')}`)
-      if (parsed >= MIN_PRICE && parsed <= MAX_PRICE) return parsed
+      const cents = Math.round(parsed * 100)
+      if (cents >= MIN_PRICE_CENTS && cents <= MAX_PRICE_CENTS) return cents
     }
   }
 
@@ -147,13 +152,16 @@ export const parseSpokenPrice = (input: string): number | null => {
     const dollars = NUMBER_WORDS[tokens[0]]
     const cents = parseTwoWordNumber(tokens.slice(1, 3))
     if (dollars !== undefined && dollars < 10 && cents !== null) {
-      const parsed = dollars + cents / 100
-      if (parsed >= MIN_PRICE && parsed <= MAX_PRICE) return parsed
+      const totalCents = dollars * 100 + cents
+      if (totalCents >= MIN_PRICE_CENTS && totalCents <= MAX_PRICE_CENTS) return totalCents
     }
   }
 
   const whole = parseTwoWordNumber(tokens)
-  if (whole !== null && whole >= MIN_PRICE && whole <= MAX_PRICE) return whole
+  if (whole !== null) {
+    const wholeAsDollars = whole * 100
+    if (wholeAsDollars >= MIN_PRICE_CENTS && wholeAsDollars <= MAX_PRICE_CENTS) return wholeAsDollars
+  }
 
   return null
 }
@@ -216,7 +224,7 @@ const dedupe = (items: VoiceCandidate[]): VoiceCandidate[] => {
   const seen = new Set<string>()
   const output: VoiceCandidate[] = []
   items.forEach((candidate) => {
-    const key = `${candidate.normalizedFuelId || candidate.spokenFuel}:${candidate.price.toFixed(2)}`
+    const key = `${candidate.normalizedFuelId || candidate.spokenFuel}:${candidate.price}`
     if (seen.has(key)) return
     seen.add(key)
     output.push(candidate)

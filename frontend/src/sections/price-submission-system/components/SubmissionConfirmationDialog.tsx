@@ -23,13 +23,20 @@ export const SubmissionConfirmationDialog: React.FC<SubmissionConfirmationDialog
 }) => {
   if (currentStep !== 'confirm' || !confirmed) return null
 
+  const formatPrice = (value: number | string | undefined) => {
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return '0.00'
+    const dollars = numericValue > 20 ? numericValue / 100 : numericValue
+    return dollars.toFixed(2)
+  }
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+      className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-4 rounded-xl"
     >
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 p-6">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="text-center">
           <div className="text-5xl mb-3">✅</div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Thanks for contributing!</h2>
@@ -43,7 +50,7 @@ export const SubmissionConfirmationDialog: React.FC<SubmissionConfirmationDialog
           {Array.isArray(confirmed.submittedEntries) && confirmed.submittedEntries.length > 0 ? (
             confirmed.submittedEntries.map((entry: FuelSubmissionEntry) => (
               <p key={entry.fuelTypeId} className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">{entry.fuelTypeName}:</span> ${entry.price.toFixed(2)} /L
+                <span className="font-semibold text-slate-900 dark:text-white">{entry.fuelTypeName}:</span> ${formatPrice(entry.price)} /L
               </p>
             ))
           ) : (
@@ -52,7 +59,7 @@ export const SubmissionConfirmationDialog: React.FC<SubmissionConfirmationDialog
                 <span className="font-semibold text-slate-900 dark:text-white">Fuel:</span> {confirmed.fuel_type || confirmed.fuelTypeName || 'Unknown'}
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">Price:</span> ${Number(confirmed.price || 0).toFixed(2)} /L
+                <span className="font-semibold text-slate-900 dark:text-white">Price:</span> ${formatPrice(confirmed.price)} /L
               </p>
             </>
           )}

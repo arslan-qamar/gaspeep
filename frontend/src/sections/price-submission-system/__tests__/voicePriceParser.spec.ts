@@ -25,9 +25,9 @@ describe('voicePriceParser', () => {
   })
 
   it('parses spoken prices with and without decimals', () => {
-    expect(parseSpokenPrice('three seventy nine')).toBe(3.79)
-    expect(parseSpokenPrice('three point seven nine')).toBe(3.79)
-    expect(parseSpokenPrice('4.29')).toBe(4.29)
+    expect(parseSpokenPrice('three seventy nine')).toBe(379)
+    expect(parseSpokenPrice('three point seven nine')).toBe(379)
+    expect(parseSpokenPrice('4.29')).toBe(429)
   })
 
   it('extracts multiple fuel-price pairs from one transcript', () => {
@@ -37,13 +37,13 @@ describe('voicePriceParser', () => {
     expect(parsed.candidates[0]).toEqual(
       expect.objectContaining({
         normalizedFuelId: 'f-e10',
-        price: 3.79,
+        price: 379,
       })
     )
     expect(parsed.candidates[1]).toEqual(
       expect.objectContaining({
         normalizedFuelId: 'f-diesel',
-        price: 4.29,
+        price: 429,
       })
     )
   })
@@ -55,7 +55,7 @@ describe('voicePriceParser', () => {
     expect(parsed.candidates[0]).toEqual(
       expect.objectContaining({
         normalizedFuelId: 'f-91',
-        price: 3.59,
+        price: 359,
       })
     )
   })
@@ -75,10 +75,10 @@ describe('voicePriceParser', () => {
 
     expect(parsed.candidates).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ normalizedFuelId: 'f-e10', price: 3 }),
-        expect.objectContaining({ normalizedFuelId: 'f-diesel', price: 4 }),
-        expect.objectContaining({ normalizedFuelId: 'f-91', price: 7 }),
-        expect.objectContaining({ normalizedFuelId: 'f-95', price: 6 }),
+        expect.objectContaining({ normalizedFuelId: 'f-e10', price: 300 }),
+        expect.objectContaining({ normalizedFuelId: 'f-diesel', price: 400 }),
+        expect.objectContaining({ normalizedFuelId: 'f-91', price: 700 }),
+        expect.objectContaining({ normalizedFuelId: 'f-95', price: 600 }),
       ])
     )
     expect(parsed.candidates.length).toBeGreaterThanOrEqual(4)

@@ -61,7 +61,7 @@ export const PriceEntryStep: React.FC<PriceEntryStepProps> = ({
     </div>
 
     <div className="mb-6">
-      <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">Fuel Prices *</label>
+      <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">Fuel Prices (cents) *</label>
       <div className="space-y-3">
         {fuelTypesList.length === 0 ? (
           <p className="text-sm text-slate-600 dark:text-slate-400">Loading fuel types...</p>
@@ -81,10 +81,10 @@ export const PriceEntryStep: React.FC<PriceEntryStepProps> = ({
                   {f.displayName || f.name}
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-700 dark:text-slate-300">$</span>
+                  <span className="text-slate-700 dark:text-slate-300">c</span>
                   <input
                     id={`fuel-price-${f.id}`}
-                    inputMode="decimal"
+                    inputMode="numeric"
                     value={pricesByFuelType[f.id] || ''}
                     onChange={(e) => {
                       const nextValue = e.target.value
@@ -94,17 +94,17 @@ export const PriceEntryStep: React.FC<PriceEntryStepProps> = ({
                       }))
                       setFuelType(f.id)
                     }}
-                    placeholder="3.79"
+                    placeholder="379"
                     className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <span className="text-slate-600 dark:text-slate-400">/L</span>
+                  <span className="text-slate-600 dark:text-slate-400">c/L</span>
                 </div>
               </div>
             )
           })
         )}
       </div>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Fill one or more fuel prices, then submit together.</p>
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Enter whole cents only (example: 379 means $3.79/L).</p>
     </div>
 
     {error && (

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -191,7 +192,7 @@ func extractFuelEntries(text string) []OCRPriceEntry {
 
 		if fuelLabel != "" && len(parsedPrices) > 0 {
 			for _, candidate := range parsedPrices {
-				key := fuelLabel + "|" + fmt.Sprintf("%.3f", candidate.price)
+				key := fuelLabel + "|" + fmt.Sprintf("%.1f", candidate.price)
 				if _, ok := seen[key]; ok {
 					continue
 				}
@@ -211,7 +212,7 @@ func extractFuelEntries(text string) []OCRPriceEntry {
 
 		if pendingFuel != "" && len(parsedPrices) > 0 && idx-pendingFuelIndex <= 3 {
 			candidate := parsedPrices[0]
-			key := pendingFuel + "|" + fmt.Sprintf("%.3f", candidate.price)
+			key := pendingFuel + "|" + fmt.Sprintf("%.1f", candidate.price)
 			if _, ok := seen[key]; !ok {
 				seen[key] = struct{}{}
 				entries = append(entries, OCRPriceEntry{FuelType: pendingFuel, Price: candidate.price})
@@ -231,6 +232,8 @@ func detectFuelLabel(lines []string, idx int) string {
 	switch {
 	case strings.Contains(normalized, "E10"):
 		return "E10"
+	case strings.Contains(normalized, "PREMIUM DIESEL") || (strings.Contains(normalized, "PREMIUM") && strings.Contains(normalized, "DIESEL")):
+		return "Premium Diesel"
 	case strings.Contains(normalized, "DIESEL"):
 		return "Diesel"
 	case strings.Contains(normalized, "98"):
@@ -279,14 +282,19 @@ func parseFuelPriceToken(raw string) (float64, bool) {
 		if err != nil {
 			return 0, false
 		}
-		// Common OCR output for cents/L: "158.9" means 1.589
+		// Common OCR output for cents/L: "158.9" means 158.9 cents/L.
 		if value >= 20 {
-			value = value / 100
+			cents := roundToSingleDecimal(value)
+			if !isReasonableFuelPriceCents(cents) {
+				return 0, false
+			}
+			return cents, true
 		}
-		if !isReasonableFuelPrice(value) {
+		cents := roundToSingleDecimal(value * 100)
+		if !isReasonableFuelPriceCents(cents) {
 			return 0, false
 		}
-		return value, true
+		return cents, true
 	}
 
 	// Ignore very short integers like "94" from noise such as "E10 94".
@@ -299,18 +307,23 @@ func parseFuelPriceToken(raw string) (float64, bool) {
 		return 0, false
 	}
 
-	// Common OCR output: "1499" => 1.499, "159" => 1.59
+	var cents float64
+	// Common OCR output: "1499" => 149.9c, "159" => 159c.
 	if len(raw) == 4 {
-		value = value / 1000
+		cents = roundToSingleDecimal(value / 10)
 	} else {
-		value = value / 100
+		cents = roundToSingleDecimal(value)
 	}
-	if !isReasonableFuelPrice(value) {
+	if !isReasonableFuelPriceCents(cents) {
 		return 0, false
 	}
-	return value, true
+	return cents, true
 }
 
-func isReasonableFuelPrice(price float64) bool {
-	return price >= 0.5 && price <= 9.99
+func isReasonableFuelPriceCents(price float64) bool {
+	return price >= 50 && price <= 999.9
+}
+
+func roundToSingleDecimal(value float64) float64 {
+	return math.Round(value*10) / 10
 }

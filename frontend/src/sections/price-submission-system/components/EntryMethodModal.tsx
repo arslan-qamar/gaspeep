@@ -191,7 +191,8 @@ export const EntryMethodModal: React.FC<EntryMethodModalProps> = ({
 
                         <input
                           aria-label={`Price for ${entry.spokenFuel}`}
-                          inputMode="decimal"
+                          inputMode="numeric"
+                          placeholder="379"
                           value={entry.price}
                           onChange={(event) => {
                             const nextPrice = event.target.value

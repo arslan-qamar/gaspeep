@@ -88,7 +88,7 @@ describe('MapPage location focus', () => {
 
   it('passes selected location to MapView focusLocation', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>

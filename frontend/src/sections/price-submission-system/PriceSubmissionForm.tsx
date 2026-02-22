@@ -111,8 +111,8 @@ export const PriceSubmissionForm: React.FC = () => {
         const resp = await apiClient.get('/fuel-types')
         if (!isMountedRef.current) return
         setFuelTypesList(resp.data || [])
-        if (!fuelType && resp.data && resp.data.length > 0) {
-          setFuelType(resp.data[0].id)
+        if (resp.data && resp.data.length > 0) {
+          setFuelType((currentFuelType) => currentFuelType || resp.data[0].id)
         }
       } catch (_err) {
         // ignore
@@ -122,7 +122,7 @@ export const PriceSubmissionForm: React.FC = () => {
     return () => {
       isMountedRef.current = false
     }
-  }, [fuelType])
+  }, [])
 
   // Geolocation for station step
   useEffect(() => {
@@ -271,7 +271,7 @@ export const PriceSubmissionForm: React.FC = () => {
         const raw = (pricesByFuelType[f.id] || '').trim()
         if (!raw) return null
 
-        const parsed = parseFloat(raw)
+        const parsed = Number.parseFloat(raw)
         return {
           fuelTypeId: f.id,
           fuelTypeName: f.displayName || f.name,
@@ -283,7 +283,12 @@ export const PriceSubmissionForm: React.FC = () => {
   }, [fuelTypesList, pricesByFuelType])
 
   const hasInvalidEntry = useMemo(() => {
-    return enteredFuelEntries.some((entry) => isNaN(entry.parsed) || entry.parsed <= 0)
+    return enteredFuelEntries.some(
+      (entry) =>
+        Number.isNaN(entry.parsed) ||
+        entry.parsed <= 0 ||
+        !/^\d+(?:\.\d+)?$/.test(entry.raw)
+    )
   }, [enteredFuelEntries])
 
   const resolveFuelTypeId = useCallback(
@@ -393,9 +398,9 @@ export const PriceSubmissionForm: React.FC = () => {
       .filter((entry) => entry.selected)
       .map((entry) => ({
         fuelTypeId: entry.fuelTypeId,
-        price: parseFloat(entry.price),
+        price: Number.parseInt(entry.price, 10),
       }))
-      .filter((entry) => entry.fuelTypeId && Number.isFinite(entry.price) && entry.price > 0)
+      .filter((entry) => entry.fuelTypeId && Number.isInteger(entry.price) && entry.price > 0)
 
     if (approvedEntries.length === 0) {
       setVoiceReviewError('Select at least one valid fuel entry to apply.')
@@ -405,7 +410,7 @@ export const PriceSubmissionForm: React.FC = () => {
     setPricesByFuelType((previous) => {
       const next = { ...previous }
       approvedEntries.forEach((entry) => {
-        next[entry.fuelTypeId] = entry.price.toFixed(2)
+        next[entry.fuelTypeId] = String(entry.price)
       })
       return next
     })
@@ -426,7 +431,7 @@ export const PriceSubmissionForm: React.FC = () => {
       price: entry.parsed,
     }))
 
-    if (submissionPayloads.some((entry) => entry.price > 100)) {
+    if (submissionPayloads.some((entry) => entry.price > 1000)) {
       if (!confirm('One or more prices entered look unusually high. Submit anyway?')) return
     }
 
@@ -524,7 +529,7 @@ export const PriceSubmissionForm: React.FC = () => {
         selected: Boolean(fallbackFuelTypeId),
         spokenFuel: candidate.spokenFuel,
         fuelTypeId: fallbackFuelTypeId,
-        price: candidate.price.toFixed(2),
+        price: String(Math.round(candidate.price)),
         confidence: candidate.confidence,
       }
     })
@@ -554,7 +559,7 @@ export const PriceSubmissionForm: React.FC = () => {
     setPricesByFuelType((previous) => {
       const next = { ...previous }
       resolvedEntries.forEach((entry) => {
-        next[entry.fuelTypeId] = entry.price.toFixed(2)
+        next[entry.fuelTypeId] = String(entry.price)
       })
       return next
     })
@@ -576,7 +581,7 @@ export const PriceSubmissionForm: React.FC = () => {
     
       <div
         data-testid="price-submission-glass-wrapper"
-        className=" bg-white max-w-2xl mx-auto p-4 md:p-6 rounded-xl border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
+        className="relative bg-white max-w-2xl mx-auto p-4 md:p-6 rounded-xl border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
         <SubmissionHeader currentStepNumber={currentStepNumber} steps={steps} />
 
         {currentStep === 'station' && (

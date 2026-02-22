@@ -17,22 +17,22 @@ jest.mock('../../../lib/api', () => {
 let mockVoiceParsedPayload = {
   transcript: 'E10 three seventy nine and diesel four twenty nine',
   candidates: [
-    { spokenFuel: 'E10', normalizedFuelId: 'f-e10', price: 3.79, confidence: 0.96 },
-    { spokenFuel: 'diesel', normalizedFuelId: 'f-diesel', price: 4.29, confidence: 0.94 },
+    { spokenFuel: 'E10', normalizedFuelId: 'f-e10', price: 379, confidence: 0.96 },
+    { spokenFuel: 'diesel', normalizedFuelId: 'f-diesel', price: 429, confidence: 0.94 },
   ],
   unmatched: [],
 }
 
 let mockPhotoParsedPayload = {
   entries: [
-    { fuelType: 'E10', price: 3.95 },
-    { fuelType: 'Premium 98', price: 4.11 },
-    { fuelType: 'Premium 95', price: 4.01 },
+    { fuelType: 'E10', price: 395 },
+    { fuelType: 'Premium 98', price: 411 },
+    { fuelType: 'Premium 95', price: 401 },
   ],
   fuelType: 'E10',
-  price: 3.95,
+  price: 395,
   photoUrl: 'https://example.com/price-board.jpg',
-  ocrData: '{"text":"E10 3.95 Premium 98 4.11 Premium 95 4.01"}',
+  ocrData: '{"text":"E10 395 Premium 98 411 Premium 95 401"}',
 }
 
 jest.mock('../VoiceInputScreen', () => {
@@ -148,7 +148,7 @@ describe('PriceSubmissionForm', () => {
 
     // Step 2: enter price in specific fuel type input
     const fuelInput = screen.getByLabelText(/Unleaded 91/i)
-    fireEvent.change(fuelInput, { target: { value: '3.49' } })
+    fireEvent.change(fuelInput, { target: { value: '349' } })
 
     // click submit
     const submitBtn = screen.getByRole('button', { name: /Submit Price|Confirm & Submit|Confirm/ })
@@ -161,7 +161,7 @@ describe('PriceSubmissionForm', () => {
         expect.objectContaining({
           stationId: 's-1',
           submissionMethod: 'text',
-          entries: [{ fuelTypeId: 'f-91', price: 3.49 }],
+          entries: [{ fuelTypeId: 'f-91', price: 349 }],
         })
       )
     )
@@ -249,8 +249,8 @@ describe('PriceSubmissionForm', () => {
     expect(await screen.findByRole('heading', { name: /Confirm Detected Prices/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /apply selected/i }))
 
-    expect(screen.getByLabelText('E10')).toHaveValue('3.79')
-    expect(screen.getByLabelText('Diesel')).toHaveValue('4.29')
+    expect(screen.getByLabelText('E10')).toHaveValue('379')
+    expect(screen.getByLabelText('Diesel')).toHaveValue('429')
 
     fireEvent.click(screen.getByRole('button', { name: /submit price/i }))
 
@@ -261,8 +261,8 @@ describe('PriceSubmissionForm', () => {
           stationId: 's-1',
           submissionMethod: 'voice',
           entries: [
-            { fuelTypeId: 'f-e10', price: 3.79 },
-            { fuelTypeId: 'f-diesel', price: 4.29 },
+            { fuelTypeId: 'f-e10', price: 379 },
+            { fuelTypeId: 'f-diesel', price: 429 },
           ],
         })
       )
@@ -310,9 +310,9 @@ describe('PriceSubmissionForm', () => {
     fireEvent.click(screen.getByTitle('Camera / Photo Entry'))
     fireEvent.click(screen.getByRole('button', { name: /mock parse photo/i }))
 
-    expect(screen.getByLabelText('E10')).toHaveValue('3.95')
-    expect(screen.getByLabelText('U98')).toHaveValue('4.11')
-    expect(screen.getByLabelText('U95')).toHaveValue('4.01')
+    expect(screen.getByLabelText('E10')).toHaveValue('395')
+    expect(screen.getByLabelText('U98')).toHaveValue('411')
+    expect(screen.getByLabelText('U95')).toHaveValue('401')
     fireEvent.click(screen.getByRole('button', { name: /submit price/i }))
 
     await waitFor(() =>
@@ -322,15 +322,77 @@ describe('PriceSubmissionForm', () => {
           stationId: 's-1',
           submissionMethod: 'photo',
           photoUrl: 'https://example.com/price-board.jpg',
-          ocrData: '{"text":"E10 3.95 Premium 98 4.11 Premium 95 4.01"}',
+          ocrData: '{"text":"E10 395 Premium 98 411 Premium 95 401"}',
           entries: expect.arrayContaining([
-            { fuelTypeId: 'f-e10', price: 3.95 },
-            { fuelTypeId: 'f-u95', price: 4.01 },
-            { fuelTypeId: 'f-u98', price: 4.11 },
+            { fuelTypeId: 'f-e10', price: 395 },
+            { fuelTypeId: 'f-u95', price: 401 },
+            { fuelTypeId: 'f-u98', price: 411 },
           ]),
         })
       )
     )
+  })
+
+  it('preserves decimal-cent photo prices without rounding', async () => {
+    const previousPhotoPayload = mockPhotoParsedPayload
+    mockPhotoParsedPayload = {
+      entries: [
+        { fuelType: 'E10', price: 151.9 },
+        { fuelType: 'Unleaded 91', price: 153.9 },
+      ],
+      fuelType: 'E10',
+      price: 151.9,
+      photoUrl: 'https://example.com/price-board.jpg',
+      ocrData: '{"text":"Unleaded E10 1519 Unleaded 1539"}',
+    }
+
+    ;(apiClient.get as jest.Mock).mockResolvedValue({
+      data: [
+        { id: 'f-e10', name: 'E10', displayName: 'E10' },
+        { id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' },
+      ],
+    })
+    ;(apiClient.post as jest.Mock).mockImplementation((url: string, body: any) => {
+      if (url === '/stations/search-nearby') {
+        return Promise.resolve({
+          data: [{ id: 's-1', name: '7-Eleven Crows Nest', address: '85 Willoughby Rd', brand: '7-Eleven', latitude: -33.861, longitude: 151.201 }],
+        })
+      }
+      if (url === '/price-submissions') {
+        return Promise.resolve({ data: { submissions: body.entries || [] } })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    renderForm()
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
+    fireEvent.focus(screen.getByPlaceholderText(/search station by name or address/i))
+    const stationAddress = await screen.findByText('85 Willoughby Rd')
+    const stationOption = stationAddress.closest('button')
+    expect(stationOption).not.toBeNull()
+    fireEvent.click(stationOption)
+    fireEvent.click(screen.getByRole('button', { name: /continue to price entry/i }))
+
+    fireEvent.click(screen.getByTitle('Camera / Photo Entry'))
+    fireEvent.click(screen.getByRole('button', { name: /mock parse photo/i }))
+
+    expect(screen.getByLabelText('E10')).toHaveValue('151.9')
+    expect(screen.getByLabelText('Unleaded 91')).toHaveValue('153.9')
+    fireEvent.click(screen.getByRole('button', { name: /submit price/i }))
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/price-submissions',
+        expect.objectContaining({
+          entries: expect.arrayContaining([
+            { fuelTypeId: 'f-e10', price: 151.9 },
+            { fuelTypeId: 'f-91', price: 153.9 },
+          ]),
+        })
+      )
+    )
+
+    mockPhotoParsedPayload = previousPhotoPayload
   })
 
   it('starts on step 2 when arriving with preselected station from map', async () => {

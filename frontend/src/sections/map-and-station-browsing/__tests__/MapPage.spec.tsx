@@ -157,7 +157,7 @@ describe('MapPage', () => {
 
   it('renders search bar and overlaid filter controls', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -172,7 +172,7 @@ describe('MapPage', () => {
 
   it('exposes search input with an accessible name', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -184,7 +184,7 @@ describe('MapPage', () => {
 
   it('focuses search location input on page load', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -196,7 +196,7 @@ describe('MapPage', () => {
 
   it('does not show location results dropdown on initial auto-focus', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -209,7 +209,7 @@ describe('MapPage', () => {
 
   it('links dropdown trigger to its popup via aria-controls', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -227,7 +227,7 @@ describe('MapPage', () => {
 
   it('shows filter controls directly without modal', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -240,7 +240,7 @@ describe('MapPage', () => {
 
   it('closes Fuel Types dropdown when escape is pressed', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -260,7 +260,7 @@ describe('MapPage', () => {
 
   it('closes Brands dropdown when escape is pressed', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -280,7 +280,7 @@ describe('MapPage', () => {
 
   it('closes search location dropdown when escape is pressed from clear button focus', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -333,7 +333,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -380,7 +380,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -402,7 +402,7 @@ describe('MapPage', () => {
 
   it('performs search when enter pressed in search input', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -446,7 +446,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -473,7 +473,7 @@ describe('MapPage', () => {
 
   it('shows loading indicator during search', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -493,7 +493,7 @@ describe('MapPage', () => {
 
   it('fetches stations on initial load', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -515,7 +515,7 @@ describe('MapPage', () => {
 
     // Should not throw error
     expect(() => render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -528,7 +528,7 @@ describe('MapPage', () => {
 
     // Should not throw error when rendering
     expect(() => render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -543,7 +543,7 @@ describe('MapPage', () => {
 
   it('shows overlaid filter controls', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -556,7 +556,7 @@ describe('MapPage', () => {
 
   it('keeps filter control row from stretching sibling controls when dropdowns expand', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -586,7 +586,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -625,7 +625,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -654,7 +654,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -673,7 +673,7 @@ describe('MapPage', () => {
     const { mapPreferencesApi } = jest.requireMock('@/lib/api');
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -700,7 +700,7 @@ describe('MapPage', () => {
     const { apiClient, mapPreferencesApi } = jest.requireMock('@/lib/api');
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -746,7 +746,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -766,7 +766,7 @@ describe('MapPage', () => {
     const { apiClient } = jest.requireMock('@/lib/api');
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>
@@ -817,7 +817,7 @@ describe('MapPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <QueryClientProvider client={new QueryClient()}>
           <MapPage />
         </QueryClientProvider>

@@ -48,6 +48,12 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
     setPreview(nextPreview)
   }
 
+  const parsePositiveNumber = (value: unknown): number | null => {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric) || numeric <= 0) return null
+    return numeric
+  }
+
   const normalizeAnalysisResponse = (raw: any): PhotoAnalysisResult => {
     const listCandidate =
       (Array.isArray(raw?.entries) && raw.entries) ||
@@ -65,25 +71,33 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({ onParsed, 
           entry?.type ||
           entry?.name ||
           ''
-        const numericPrice = Number(entry?.price ?? entry?.value ?? entry?.amount)
+        const numericPrice =
+          parsePositiveNumber(entry?.price) ??
+          parsePositiveNumber(entry?.priceCents) ??
+          parsePositiveNumber(entry?.value) ??
+          parsePositiveNumber(entry?.amount)
 
         if (!fuelType || !Number.isFinite(numericPrice) || numericPrice <= 0) return null
         return {
           fuelType: String(fuelType),
-          price: Number(numericPrice.toFixed(3)),
+          price: numericPrice,
         }
       })
       .filter((entry): entry is PhotoAnalysisEntry => Boolean(entry))
 
     if (parsedEntries.length === 0) {
       const topFuelType = raw?.fuelType || raw?.fuel_type || raw?.fuel || ''
-      const topPrice = Number(raw?.price ?? raw?.value ?? raw?.amount)
+      const topPrice =
+        parsePositiveNumber(raw?.price) ??
+        parsePositiveNumber(raw?.priceCents) ??
+        parsePositiveNumber(raw?.value) ??
+        parsePositiveNumber(raw?.amount)
       if (!topFuelType || !Number.isFinite(topPrice) || topPrice <= 0) {
         throw new Error('No valid price was detected in this image.')
       }
       parsedEntries.push({
         fuelType: String(topFuelType),
-        price: Number(topPrice.toFixed(3)),
+        price: topPrice,
       })
     }
 

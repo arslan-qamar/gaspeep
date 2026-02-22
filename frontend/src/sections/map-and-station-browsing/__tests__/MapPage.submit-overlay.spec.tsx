@@ -83,7 +83,7 @@ const LocationSpy = () => {
 
 const renderMapRoute = (initialEntry: string) =>
   render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <QueryClientProvider client={new QueryClient()}>
         <Routes>
           <Route

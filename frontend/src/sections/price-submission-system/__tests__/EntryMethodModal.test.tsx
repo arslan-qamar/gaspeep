@@ -26,7 +26,7 @@ jest.mock('../PhotoUploadScreen', () => {
         'div',
         null,
         React.createElement('p', null, `photo-modal:${String(isModal)}`),
-        React.createElement('button', { onClick: () => onParsed({ entries: [], fuelType: 'E10', price: 3.99 }) }, 'Mock Photo Parsed'),
+        React.createElement('button', { onClick: () => onParsed({ entries: [], fuelType: 'E10', price: 399 }) }, 'Mock Photo Parsed'),
         React.createElement('button', { onClick: onCancel }, 'Mock Photo Cancel')
       ),
   }
@@ -44,7 +44,7 @@ const voiceReviewEntries: VoiceReviewEntry[] = [
     selected: true,
     spokenFuel: 'Diesel',
     fuelTypeId: 'diesel',
-    price: '2.20',
+    price: '220',
     confidence: 0.95,
   },
   {
@@ -52,7 +52,7 @@ const voiceReviewEntries: VoiceReviewEntry[] = [
     selected: true,
     spokenFuel: 'E10',
     fuelTypeId: 'e10',
-    price: '1.90',
+    price: '190',
     confidence: 0.85,
   },
   {
@@ -60,7 +60,7 @@ const voiceReviewEntries: VoiceReviewEntry[] = [
     selected: false,
     spokenFuel: 'U98',
     fuelTypeId: 'u98',
-    price: '3.10',
+    price: '310',
     confidence: 0.7,
   },
 ]
@@ -125,7 +125,7 @@ describe('EntryMethodModal', () => {
     expect(screen.getByText('photo-modal:true')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Mock Photo Parsed' }))
-    expect(props.onPhotoParsed).toHaveBeenCalledWith({ entries: [], fuelType: 'E10', price: 3.99 })
+    expect(props.onPhotoParsed).toHaveBeenCalledWith({ entries: [], fuelType: 'E10', price: 399 })
 
     fireEvent.click(screen.getByRole('button', { name: 'Mock Photo Cancel' }))
     expect(props.onClose).toHaveBeenCalled()
@@ -157,10 +157,10 @@ describe('EntryMethodModal', () => {
     const withFuelUpdate = fuelUpdater(voiceReviewEntries)
     expect(withFuelUpdate[0].fuelTypeId).toBe('u98')
 
-    fireEvent.change(screen.getByLabelText('Price for Diesel'), { target: { value: '2.39' } })
+    fireEvent.change(screen.getByLabelText('Price for Diesel'), { target: { value: '239' } })
     const priceUpdater = setVoiceReviewEntries.mock.calls[2][0]
     const withPriceUpdate = priceUpdater(voiceReviewEntries)
-    expect(withPriceUpdate[0].price).toBe('2.39')
+    expect(withPriceUpdate[0].price).toBe('239')
 
     fireEvent.click(screen.getByRole('button', { name: /apply selected/i }))
     expect(props.applyVoiceSelections).toHaveBeenCalled()

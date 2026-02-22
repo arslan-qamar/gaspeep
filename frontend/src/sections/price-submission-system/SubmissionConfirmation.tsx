@@ -7,6 +7,12 @@ export const SubmissionConfirmation: React.FC<{ submission: any; onDone: () => v
   const stationName = submission.station_name || submission.stationName || submission.station || 'Unknown'
   const fuelName = submission.fuel_type || submission.fuelTypeName || submission.fuelType || 'Unknown'
   const status = submission.moderationStatus || submission.moderation_status || 'pending'
+  const formatPrice = (value: unknown): string => {
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return '0.00'
+    const dollars = numericValue > 20 ? numericValue / 100 : numericValue
+    return dollars.toFixed(2)
+  }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -84,7 +90,7 @@ export const SubmissionConfirmation: React.FC<{ submission: any; onDone: () => v
                   Price
                 </div>
                 <div className="font-medium text-slate-900 dark:text-white">
-                  ${submission.price?.toFixed(2) || '0.00'} /L
+                  ${formatPrice(submission.price)} /L
                 </div>
               </div>
             </div>

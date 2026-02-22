@@ -71,10 +71,10 @@ func TestPriceSubmissionHandler_AnalyzePhoto_Success(t *testing.T) {
 	handler.SetOCRService(&testOCRService{
 		result: &service.OCRResult{
 			Entries: []service.OCRPriceEntry{
-				{FuelType: "E10", Price: 3.95},
-				{FuelType: "Diesel", Price: 4.19},
+				{FuelType: "E10", Price: 395},
+				{FuelType: "Diesel", Price: 419},
 			},
-			OCRData: "E10 3.95\nDiesel 4.19",
+			OCRData: "E10 395\nDiesel 419",
 		},
 	})
 
@@ -89,7 +89,7 @@ func TestPriceSubmissionHandler_AnalyzePhoto_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Contains(t, rr.Body.String(), `"fuelType":"E10"`)
 	assert.Contains(t, rr.Body.String(), `"fuelType":"Diesel"`)
-	assert.Contains(t, rr.Body.String(), `"ocrData":"E10 3.95\nDiesel 4.19"`)
+	assert.Contains(t, rr.Body.String(), `"ocrData":"E10 395\nDiesel 419"`)
 }
 
 func TestPriceSubmissionHandler_AnalyzePhoto_NoFile(t *testing.T) {

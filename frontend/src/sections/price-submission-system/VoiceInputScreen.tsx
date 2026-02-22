@@ -215,7 +215,7 @@ export const VoiceInputScreen: React.FC<VoiceInputScreenProps> = ({
           </button>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
-            Example: "E10 three seventy nine, diesel four twenty nine"
+            Example: "E10 three seventy nine cents, diesel four twenty nine cents"
           </p>
         </div>
       </div>
