@@ -467,7 +467,7 @@ describe('MapPage', () => {
     await user.keyboard('{ArrowDown}{Enter}');
 
     await waitFor(() => {
-      expect(searchInput).toHaveValue('Los Angeles, CA, USA');
+      expect(searchInput).toHaveValue('');
     });
   });
 

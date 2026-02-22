@@ -179,6 +179,7 @@ const normalizeBrand = (brand: string | null | undefined): string => (
 export const MapPage: React.FC = () => {
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -506,6 +507,21 @@ export const MapPage: React.FC = () => {
     return stations.filter((station) => selectedBrandSet.has(normalizeBrand(station.brand)));
   }, [stations, selectedBrands]);
 
+  const stationSearchResults = useMemo(() => {
+    const trimmedQuery = debouncedSearchQuery.trim().toLowerCase();
+    return visibleStations.filter((station) => {
+      if (trimmedQuery.length === 0) return true;
+      const name = station.name?.toLowerCase() ?? '';
+      const brand = station.brand?.toLowerCase() ?? '';
+      const address = station.address?.toLowerCase() ?? '';
+      return (
+        name.includes(trimmedQuery) ||
+        brand.includes(trimmedQuery) ||
+        address.includes(trimmedQuery)
+      );
+    });
+  }, [visibleStations, debouncedSearchQuery]);
+
   useEffect(() => {
     const trimmedQuery = debouncedSearchQuery.trim();
     if (trimmedQuery.length < 2) {
@@ -593,11 +609,30 @@ export const MapPage: React.FC = () => {
     const zoom = viewportRef.current?.zoom ?? 14;
     viewportRef.current = { latitude: lat, longitude: lng, zoom };
     setFocusLocation({ lat, lng, zoom });
-    setSearchQuery(result.display_name);
+    setSearchQuery('');
     setIsSearchOpen(false);
     setLocationResults([]);
     setHighlightedIndex(-1);
     setFetchParams({ lat, lng, zoom, clearExisting: true });
+  }, []);
+
+  const handleSelectStationResult = useCallback((stationResult: Station) => {
+    const lat = stationResult.latitude;
+    const lng = stationResult.longitude;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const zoom = viewportRef.current?.zoom ?? 14;
+    viewportRef.current = { latitude: lat, longitude: lng, zoom };
+    setFocusLocation({ lat, lng, zoom });
+    setSelectedStationId(stationResult.id);
+    setSelectedStation(null);
+    setIsSearchOpen(false);
+    setHighlightedIndex(-1);
+  }, []);
+
+  const handleMapStationSelect = useCallback((stationResult: Station) => {
+    setSelectedStationId(stationResult.id);
+    setSelectedStation(stationResult);
   }, []);
 
   // Clear search query
@@ -797,8 +832,8 @@ export const MapPage: React.FC = () => {
         {userLocation ? (
           <MapView
             stations={visibleStations}
-            selectedStationId={selectedStation?.id}
-            onStationSelect={setSelectedStation}
+            selectedStationId={selectedStationId || undefined}
+            onStationSelect={handleMapStationSelect}
             userLocation={userLocation}
             focusLocation={focusLocation}
             onViewportChange={handleViewportChange}
@@ -886,6 +921,27 @@ export const MapPage: React.FC = () => {
                   {result.display_name}
                 </button>
               ))}
+
+              <div className="px-3 py-2 border-y border-white/30 dark:border-white/10 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200">
+                Stations
+              </div>
+              {stationSearchResults.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-slate-700 dark:text-slate-200">No stations matched your search.</div>
+              ) : (
+                stationSearchResults.map((stationResult) => (
+                  <button
+                    key={`station-result-${stationResult.id}`}
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-transparent"
+                    onClick={() => handleSelectStationResult(stationResult)}
+                  >
+                    <div className="font-medium text-slate-900 dark:text-slate-100">{stationResult.name}</div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300">
+                      {[stationResult.brand, stationResult.address].filter(Boolean).join(' • ') || 'Address unavailable'}
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           )}
         </div>
