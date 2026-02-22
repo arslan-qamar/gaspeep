@@ -190,6 +190,20 @@ describe('PriceSubmissionForm', () => {
     expect(searchInput).toHaveValue('')
   })
 
+  it('renders submit page wrapper with map-style glass UI classes', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({ data: [{ id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' }] })
+    ;(apiClient.post as jest.Mock).mockResolvedValue({ data: [] })
+
+    const { container } = renderForm()
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
+
+    const glassWrapper = container.querySelector('div.rounded-xl.border.border-white\\/35')
+    expect(glassWrapper).toBeInTheDocument()
+    expect(glassWrapper).toHaveClass('bg-transparent')
+    expect(glassWrapper).toHaveClass('backdrop-blur-md')
+    expect(glassWrapper).toHaveClass('shadow-[0_10px_30px_rgba(15,23,42,0.25)]')
+  })
+
   it('requires review before applying voice candidates and submits selected entries as voice method', async () => {
     ;(apiClient.get as jest.Mock).mockResolvedValue({
       data: [

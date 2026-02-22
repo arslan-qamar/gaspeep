@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X, ChevronDown } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
+import { PriceSubmissionForm } from '../../price-submission-system/PriceSubmissionForm';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
 import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query'
@@ -174,6 +175,8 @@ export const MapPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isSubmitOverlayOpen = searchParams.get('overlay') === 'submit';
 
   // Refs — use refs for values only needed in callbacks/effects, not in render
   const lastFetchLocation = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
@@ -569,6 +572,27 @@ export const MapPage: React.FC = () => {
     ));
   };
 
+  const closeSubmitOverlay = useCallback(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('overlay');
+    setSearchParams(nextParams);
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!isSubmitOverlayOpen) return;
+
+    const handleEscapeClose = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeSubmitOverlay();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeClose);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeClose);
+    };
+  }, [isSubmitOverlayOpen, closeSubmitOverlay]);
+
   return (
     <div className="w-full h-full relative">
       {/* Loading Indicator */}
@@ -715,10 +739,30 @@ export const MapPage: React.FC = () => {
         isOpen={!!selectedStation}
         onClose={() => setSelectedStation(null)}
         onSubmitPrice={(stationId, fuelTypeId) => {
-          navigate('/submit', { state: { stationId, fuelTypeId } });
+          navigate('/map?overlay=submit', { state: { stationId, fuelTypeId } });
           setSelectedStation(null);
         }}
       />
+
+      {isSubmitOverlayOpen && (
+        <div className="absolute inset-0 z-50 bg-slate-950/50 backdrop-blur-sm">
+          <div className="relative h-full overflow-y-auto">
+            <div className="sticky top-0 z-10 flex justify-end p-3">
+              <button
+                type="button"
+                onClick={closeSubmitOverlay}
+                aria-label="Close submit overlay"
+                className="pointer-events-auto rounded-lg p-2 text-white/80 hover:text-white hover:bg-transparent transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="px-3 pb-3 max-w-xl mx-auto rounded-xl overflow-hidden shadow-lg bg-slate-50  dark:bg-slate-800">
+              <PriceSubmissionForm />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
