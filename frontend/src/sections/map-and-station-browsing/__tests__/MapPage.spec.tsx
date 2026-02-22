@@ -170,6 +170,18 @@ describe('MapPage', () => {
     expect(screen.getByLabelText(/Show verified prices only/i)).toBeInTheDocument();
   });
 
+  it('exposes search input with an accessible name', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('textbox', { name: /search location/i })).toBeInTheDocument();
+  });
+
   it('focuses search location input on page load', () => {
     render(
       <MemoryRouter>
@@ -180,6 +192,24 @@ describe('MapPage', () => {
     );
 
     expect(screen.getByPlaceholderText('Search location')).toHaveFocus();
+  });
+
+  it('links dropdown trigger to its popup via aria-controls', async () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const fuelButton = screen.getByRole('button', { name: /Fuel Types/i });
+    await user.click(fuelButton);
+
+    const popupId = fuelButton.getAttribute('aria-controls');
+    expect(popupId).toBeTruthy();
+    expect(document.getElementById(popupId as string)).toBeInTheDocument();
   });
 
   it('shows filter controls directly without modal', async () => {

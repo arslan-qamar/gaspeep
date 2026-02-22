@@ -56,6 +56,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  const dropdownId = `${title.toLowerCase().replace(/\s+/g, '-')}-filter-options`;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -97,21 +98,22 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         ref={triggerRef}
         type="button"
         aria-expanded={isOpen}
-        aria-haspopup="menu"
+        aria-controls={dropdownId}
         onClick={() => setIsOpen((open) => !open)}
         className="w-full rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-md px-3 py-2.5 text-left text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[0_10px_30px_rgba(15,23,42,0.18)] min-h-11 flex items-center justify-between"
       >
         <span>{triggerText}</span>
         <ChevronDown
           size={16}
+          aria-hidden="true"
           className={`shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
         <div
+          id={dropdownId}
           className="rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-xl shadow-[0_16px_40px_rgba(15,23,42,0.3)] p-2"
-          role="menu"
           aria-label={`${title} options`}
         >
           {options.length > 0 ? (
@@ -209,6 +211,9 @@ export const MapPage: React.FC = () => {
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const locationOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const submitOverlayDialogRef = useRef<HTMLDivElement | null>(null);
+  const submitOverlayCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   // Params for the current fetch — updating this triggers the React Query fetch
   const [fetchParams, setFetchParams] = useState<{
@@ -715,15 +720,62 @@ export const MapPage: React.FC = () => {
   useEffect(() => {
     if (!isSubmitOverlayOpen) return;
 
-    const handleEscapeClose = (event: KeyboardEvent) => {
+    previouslyFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusCloseButton = window.requestAnimationFrame(() => {
+      submitOverlayCloseButtonRef.current?.focus();
+    });
+
+    const handleOverlayKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         closeSubmitOverlay();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const dialogElement = submitOverlayDialogRef.current;
+      if (!dialogElement) return;
+
+      const focusableElements = Array.from(
+        dialogElement.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute('disabled') && element.tabIndex !== -1);
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement as HTMLElement | null;
+
+      if (!activeElement || !dialogElement.contains(activeElement)) {
+        event.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
-    document.addEventListener('keydown', handleEscapeClose);
+    document.addEventListener('keydown', handleOverlayKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleEscapeClose);
+      window.cancelAnimationFrame(focusCloseButton);
+      document.removeEventListener('keydown', handleOverlayKeyDown);
+      previouslyFocusedElementRef.current?.focus();
     };
   }, [isSubmitOverlayOpen, closeSubmitOverlay]);
 
@@ -731,7 +783,11 @@ export const MapPage: React.FC = () => {
     <div className="w-full h-full relative">
       {/* Loading Indicator */}
       {loading && (
-        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-40 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-lg">
+        <div
+          className="absolute top-24 left-1/2 transform -translate-x-1/2 z-40 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-lg"
+          role="status"
+          aria-live="polite"
+        >
           Loading stations...
         </div>
       )}
@@ -758,11 +814,18 @@ export const MapPage: React.FC = () => {
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] max-w-5xl pointer-events-none">
         <div ref={searchContainerRef} className="pointer-events-auto relative">
           <div className="flex items-center gap-2 bg-transparent border border-white/35 dark:border-white/10 px-3 rounded-lg backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
-            <Search size={20} className="text-slate-600 dark:text-slate-300" />
+            <Search size={20} className="text-slate-600 dark:text-slate-300" aria-hidden="true" />
+            <label htmlFor="map-location-search" className="sr-only">
+              Search location
+            </label>
             <input
+              id="map-location-search"
               ref={searchInputRef}
               type="text"
               placeholder="Search location"
+              aria-label="Search location"
+              aria-expanded={isSearchOpen}
+              aria-controls="map-location-search-results"
               value={searchQuery}
               onFocus={() => {
                 if (skipNextSearchFocusOpenRef.current) {
@@ -780,16 +843,18 @@ export const MapPage: React.FC = () => {
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={handleClearSearch}
                 className="p-1 hover:bg-transparent rounded transition-colors"
                 aria-label="Clear search"
               >
-                <X size={18} className="text-slate-700 dark:text-slate-200" />
+                <X size={18} className="text-slate-700 dark:text-slate-200" aria-hidden="true" />
               </button>
             )}
           </div>
           {isSearchOpen && (
             <div
+              id="map-location-search-results"
               data-testid="map-unified-search-dropdown"
               className="absolute mt-2 w-full rounded-lg border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-xl shadow-[0_16px_40px_rgba(15,23,42,0.35)] z-30 max-h-80 overflow-y-auto"
             >
@@ -846,10 +911,11 @@ export const MapPage: React.FC = () => {
             />
           </div>
           <div className="pointer-events-auto rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-md px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.18)] min-h-11">
-            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100">
+            <label htmlFor="max-price-range" className="block text-sm font-medium text-slate-900 dark:text-slate-100">
               Max Price: {maxPriceDraft.toFixed(1)}¢/L
             </label>
             <input
+              id="max-price-range"
               type="range"
               min={0}
               max={400}
@@ -896,15 +962,22 @@ export const MapPage: React.FC = () => {
 
       {isSubmitOverlayOpen && (
         <div className="absolute inset-0 z-50 bg-slate-950/50 backdrop-blur-sm">
-          <div className="relative h-full overflow-y-auto">
+          <div
+            ref={submitOverlayDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Submit fuel price"
+            className="relative h-full overflow-y-auto"
+          >
             <div className="sticky top-0 z-10 flex justify-end p-3">
               <button
+                ref={submitOverlayCloseButtonRef}
                 type="button"
                 onClick={closeSubmitOverlay}
                 aria-label="Close submit overlay"
                 className="pointer-events-auto rounded-lg p-2 text-white/80 hover:text-white hover:bg-transparent transition-colors"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             {/* <div className="px-3 pb-3 max-w-xl mx-auto rounded-xl overflow-hidden shadow-lg bg-slate-50  dark:bg-slate-800"> */}

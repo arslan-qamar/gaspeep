@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
@@ -125,7 +125,16 @@ describe('MapPage submit overlay mode', () => {
   it('renders submit form overlay when query param overlay=submit is present', () => {
     renderMapRoute('/map?overlay=submit')
 
+    expect(screen.getByRole('dialog', { name: /submit fuel price/i })).toBeInTheDocument()
     expect(screen.getByTestId('submit-overlay-form')).toBeInTheDocument()
+  })
+
+  it('moves focus to close button when submit overlay opens', async () => {
+    renderMapRoute('/map?overlay=submit')
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /close submit overlay/i })).toHaveFocus()
+    })
   })
 
   it('does not render submit overlay by default', () => {
