@@ -680,7 +680,10 @@ export const MapPage: React.FC = () => {
           )}
         </div>
 
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(200px,1fr)_minmax(200px,1fr)_minmax(200px,1fr)] gap-3">
+        <div
+          data-testid="map-filter-controls-row"
+          className="mt-3 grid items-start grid-cols-1 lg:grid-cols-[minmax(200px,1fr)_minmax(200px,1fr)_minmax(200px,1fr)] gap-3"
+        >
           <div className="pointer-events-auto">
             <MultiSelectDropdown
               title="Fuel Types"

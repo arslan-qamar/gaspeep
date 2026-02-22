@@ -285,6 +285,19 @@ describe('MapPage', () => {
     expect(screen.getByRole('button', { name: /Brands/i })).toBeInTheDocument();
   });
 
+  it('keeps filter control row from stretching sibling controls when dropdowns expand', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const filterControlsRow = screen.getByTestId('map-filter-controls-row');
+    expect(filterControlsRow).toHaveClass('items-start');
+  });
+
   it('clears markers when search returns empty', async () => {
     // Override fetch so search returns an empty array
     (global.fetch as jest.Mock).mockImplementation((url) => {

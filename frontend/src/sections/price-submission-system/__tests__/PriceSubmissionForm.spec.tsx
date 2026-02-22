@@ -194,10 +194,10 @@ describe('PriceSubmissionForm', () => {
     ;(apiClient.get as jest.Mock).mockResolvedValue({ data: [{ id: 'f-91', name: 'UNLEADED_91', displayName: 'Unleaded 91' }] })
     ;(apiClient.post as jest.Mock).mockResolvedValue({ data: [] })
 
-    const { container } = renderForm()
+    renderForm()
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/fuel-types'))
 
-    const glassWrapper = container.querySelector('div.rounded-xl.border.border-white\\/35')
+    const glassWrapper = screen.getByTestId('price-submission-glass-wrapper')
     expect(glassWrapper).toBeInTheDocument()
     expect(glassWrapper).toHaveClass('bg-transparent')
     expect(glassWrapper).toHaveClass('backdrop-blur-md')
