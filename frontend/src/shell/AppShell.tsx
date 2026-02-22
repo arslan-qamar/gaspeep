@@ -32,6 +32,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const userTier = user?.tier || 'free'
   const userName = user?.displayName || user?.email || 'User'
   const isStationOwner = user?.isStationOwner || false
+  const hideDesktopSidebar = isAuthenticated && userTier === 'premium'
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-neutral-950">
@@ -48,15 +49,17 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar Navigation - Hidden on mobile */}
-        <div className="hidden md:block md:w-64 lg:w-72">
-          <Navigation
-            userTier={userTier}
-            currentPath={location.pathname}
-            isAuthenticated={isAuthenticated}
-            isStationOwner={isStationOwner}
-          />
-        </div>
+        {/* Desktop Sidebar Navigation - Hidden on mobile and hidden for premium users */}
+        {!hideDesktopSidebar && (
+          <div className="hidden md:block md:w-64 lg:w-72">
+            <Navigation
+              userTier={userTier}
+              currentPath={location.pathname}
+              isAuthenticated={isAuthenticated}
+              isStationOwner={isStationOwner}
+            />
+          </div>
+        )}
 
         {/* Content Area */}
         <main className="flex-1 overflow-hidden">
