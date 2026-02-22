@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapPage from '../pages/MapPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -424,6 +424,46 @@ describe('MapPage', () => {
             brands: ['Shell'],
           })
         );
+    });
+  });
+
+  it('commits max price once after slider interaction ends', async () => {
+    const { apiClient, mapPreferencesApi } = jest.requireMock('@/lib/api');
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(
+        apiClient.post.mock.calls.some(([url]: [string]) => url === '/stations/search-nearby')
+      ).toBe(true);
+    });
+
+    const searchNearbyCallCount = () =>
+      apiClient.post.mock.calls.filter(([url]: [string]) => url === '/stations/search-nearby').length;
+
+    const baselineSearchNearbyCalls = searchNearbyCallCount();
+    const slider = screen.getByRole('slider');
+
+    fireEvent.change(slider, { target: { value: '390' } });
+    fireEvent.change(slider, { target: { value: '380' } });
+    fireEvent.change(slider, { target: { value: '370' } });
+
+    expect(mapPreferencesApi.updateMapFilterPreferences).not.toHaveBeenCalled();
+    expect(searchNearbyCallCount()).toBe(baselineSearchNearbyCalls);
+
+    fireEvent.mouseUp(slider);
+
+    await waitFor(() => {
+      expect(mapPreferencesApi.updateMapFilterPreferences).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(searchNearbyCallCount()).toBe(baselineSearchNearbyCalls + 1);
     });
   });
 

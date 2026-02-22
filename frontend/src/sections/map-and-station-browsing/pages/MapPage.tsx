@@ -169,6 +169,7 @@ export const MapPage: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [maxPriceDraft, setMaxPriceDraft] = useState(DEFAULT_MAX_PRICE_CENTS);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [focusLocation, setFocusLocation] = useState<{ lat: number; lng: number; zoom?: number } | undefined>(undefined);
@@ -184,6 +185,7 @@ export const MapPage: React.FC = () => {
   const prevFiltersRef = useRef(filters);
   const prevSelectedBrandsRef = useRef(selectedBrands);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const maxPriceCommitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipNextFilterSaveRef = useRef(false);
   const skipNextBrandSaveRef = useRef(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
@@ -268,6 +270,35 @@ export const MapPage: React.FC = () => {
     },
   })
 
+  const commitMaxPrice = useCallback((nextMaxPrice: number) => {
+    const sanitizedMaxPrice = Number.isFinite(nextMaxPrice)
+      ? Math.min(Math.max(nextMaxPrice, 0), DEFAULT_MAX_PRICE_CENTS)
+      : DEFAULT_MAX_PRICE_CENTS;
+    setFilters((previous) => (
+      previous.maxPrice === sanitizedMaxPrice
+        ? previous
+        : { ...previous, maxPrice: sanitizedMaxPrice }
+    ));
+  }, []);
+
+  const scheduleMaxPriceCommit = useCallback((nextMaxPrice: number) => {
+    if (maxPriceCommitTimerRef.current) {
+      clearTimeout(maxPriceCommitTimerRef.current);
+    }
+    maxPriceCommitTimerRef.current = setTimeout(() => {
+      commitMaxPrice(nextMaxPrice);
+      maxPriceCommitTimerRef.current = null;
+    }, 300);
+  }, [commitMaxPrice]);
+
+  const flushMaxPriceCommit = useCallback(() => {
+    if (maxPriceCommitTimerRef.current) {
+      clearTimeout(maxPriceCommitTimerRef.current);
+      maxPriceCommitTimerRef.current = null;
+    }
+    commitMaxPrice(maxPriceDraft);
+  }, [commitMaxPrice, maxPriceDraft]);
+
   useEffect(() => {
     if (preferencesHydrated) return
     if (loadingSavedFilters) return
@@ -284,6 +315,16 @@ export const MapPage: React.FC = () => {
     }
     setPreferencesHydrated(true)
   }, [loadingSavedFilters, savedPreferences, filters, selectedBrands, preferencesHydrated])
+
+  useEffect(() => {
+    setMaxPriceDraft(filters.maxPrice);
+  }, [filters.maxPrice]);
+
+  useEffect(() => () => {
+    if (maxPriceCommitTimerRef.current) {
+      clearTimeout(maxPriceCommitTimerRef.current);
+    }
+  }, []);
 
     // Ensure fetchedStations are reflected into local `stations` state. This
     // duplicates onSuccess safety and guards against cases where the query
@@ -702,20 +743,22 @@ export const MapPage: React.FC = () => {
           </div>
           <div className="pointer-events-auto rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-md px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.18)] min-h-11">
             <label className="block text-sm font-medium text-slate-900 dark:text-slate-100">
-              Max Price: {filters.maxPrice.toFixed(1)}¢/L
+              Max Price: {maxPriceDraft.toFixed(1)}¢/L
             </label>
             <input
               type="range"
               min={0}
               max={400}
               step={0.1}
-              value={filters.maxPrice}
-              onChange={(e) =>
-                setFilters((previous) => ({
-                  ...previous,
-                  maxPrice: parseFloat(e.target.value),
-                }))
-              }
+              value={maxPriceDraft}
+              onChange={(e) => {
+                const nextValue = Number.parseFloat(e.target.value);
+                setMaxPriceDraft(nextValue);
+                scheduleMaxPriceCommit(nextValue);
+              }}
+              onMouseUp={flushMaxPriceCommit}
+              onTouchEnd={flushMaxPriceCommit}
+              onBlur={flushMaxPriceCommit}
               className="w-full mt-1"
             />
             <label className="mt-1.5 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
@@ -760,9 +803,9 @@ export const MapPage: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="px-3 pb-3 max-w-xl mx-auto rounded-xl overflow-hidden shadow-lg bg-slate-50  dark:bg-slate-800">
+            {/* <div className="px-3 pb-3 max-w-xl mx-auto rounded-xl overflow-hidden shadow-lg bg-slate-50  dark:bg-slate-800"> */}
               <PriceSubmissionForm />
-            </div>
+            {/* </div> */}
           </div>
         </div>
       )}
