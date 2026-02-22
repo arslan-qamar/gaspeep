@@ -8,3 +8,4 @@ build/
 backend/bin/api
 cookies.txt
 backend/__debug*
+.playwright-cli/
