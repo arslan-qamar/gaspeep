@@ -605,6 +605,20 @@ export const MapPage: React.FC = () => {
   };
 
   const handleSearchInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Tab' && !event.shiftKey && isSearchOpen && locationResults.length > 0) {
+      event.preventDefault();
+      setHighlightedIndex(0);
+      locationOptionRefs.current[0]?.focus();
+      return;
+    }
+
+    if (event.key === 'ArrowDown' && isSearchOpen && locationResults.length > 0) {
+      event.preventDefault();
+      setHighlightedIndex(0);
+      locationOptionRefs.current[0]?.focus();
+      return;
+    }
+
     if (!isSearchOpen || locationResults.length === 0) {
       if (event.key === 'ArrowDown' && locationResults.length > 0) {
         event.preventDefault();

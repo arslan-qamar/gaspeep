@@ -252,14 +252,109 @@ describe('MapPage', () => {
       expect(screen.getByTestId('map-unified-search-dropdown')).toBeInTheDocument();
     });
 
-    await user.tab();
-    expect(screen.getByRole('button', { name: /Clear search/i })).toHaveFocus();
+    const clearButton = screen.getByRole('button', { name: /Clear search/i });
+    clearButton.focus();
+    expect(clearButton).toHaveFocus();
 
     await user.keyboard('{Escape}');
 
     await waitFor(() => {
       expect(screen.queryByTestId('map-unified-search-dropdown')).not.toBeInTheDocument();
     });
+  });
+
+  it('moves focus from search input to first location result on tab', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      const requestUrl = typeof url === 'string' ? url : (url as { url?: string })?.url ?? String(url);
+      if (requestUrl.includes('nominatim.openstreetmap.org/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              lat: '40.73061',
+              lon: '-73.935242',
+              display_name: 'New York, NY, USA',
+            },
+            {
+              lat: '34.052235',
+              lon: '-118.243683',
+              display_name: 'Los Angeles, CA, USA',
+            },
+          ]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search location');
+    await user.type(searchInput, 'new');
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'New York, NY, USA' })).toBeInTheDocument();
+    });
+
+    expect(searchInput).toHaveFocus();
+    await user.tab();
+
+    expect(screen.getByRole('button', { name: 'New York, NY, USA' })).toHaveFocus();
+  });
+
+  it('moves focus from search input to first location result on arrow down', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      const requestUrl = typeof url === 'string' ? url : (url as { url?: string })?.url ?? String(url);
+      if (requestUrl.includes('nominatim.openstreetmap.org/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              lat: '40.73061',
+              lon: '-73.935242',
+              display_name: 'New York, NY, USA',
+            },
+            {
+              lat: '34.052235',
+              lon: '-118.243683',
+              display_name: 'Los Angeles, CA, USA',
+            },
+          ]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search location');
+    await user.type(searchInput, 'new');
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'New York, NY, USA' })).toBeInTheDocument();
+    });
+
+    expect(searchInput).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(screen.getByRole('button', { name: 'New York, NY, USA' })).toHaveFocus();
   });
 
   it('performs search when enter pressed in search input', async () => {
