@@ -20,11 +20,6 @@ jest.mock('../components/StationDetailSheet', () => ({
   default: () => null,
 }));
 
-jest.mock('../components/FilterModal', () => ({
-  __esModule: true,
-  default: () => null,
-}));
-
 jest.mock('@/lib/api', () => ({
   apiClient: {
     post: jest.fn(),

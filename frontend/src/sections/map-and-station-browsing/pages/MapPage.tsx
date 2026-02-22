@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X, ChevronDown } from 'lucide-react';
 import MapView from '../components/MapView';
 import StationDetailSheet from '../components/StationDetailSheet';
-import FilterModal, { FuelTypeOption, FilterState } from '../components/FilterModal';
 import { Station } from '../types';
 import { calculateDistance, getRadiusFromZoom } from '../../../lib/utils';
 import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query'
@@ -22,6 +21,108 @@ type NominatimResult = {
   lat: string;
   lon: string;
   display_name: string;
+};
+
+interface FilterState {
+  fuelTypes: string[];
+  maxPrice: number;
+  onlyVerified: boolean;
+}
+
+interface FuelTypeOption {
+  id: string;
+  label: string;
+}
+
+interface MultiSelectDropdownOption {
+  id: string;
+  label: string;
+}
+
+interface MultiSelectDropdownProps {
+  title: string;
+  options: MultiSelectDropdownOption[];
+  selectedValues: string[];
+  onToggleValue: (value: string) => void;
+}
+
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
+  title,
+  options,
+  selectedValues,
+  onToggleValue,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(`[data-dropdown-root="${title}"]`)) {
+        return;
+      }
+      setIsOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [isOpen, title]);
+
+  const selectedCount = selectedValues.length;
+  const triggerText = selectedCount > 0 ? `${title} (${selectedCount} selected)` : title;
+
+  return (
+    <div className="space-y-2 min-w-[160px]" data-dropdown-root={title}>
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-md px-3 py-2.5 text-left text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[0_10px_30px_rgba(15,23,42,0.18)] min-h-11 flex items-center justify-between"
+      >
+        <span>{triggerText}</span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className="rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-xl shadow-[0_16px_40px_rgba(15,23,42,0.3)] p-2"
+          role="menu"
+          aria-label={`${title} options`}
+        >
+          {options.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+              {options.map((option) => {
+                const checked = selectedSet.has(option.id);
+                return (
+                  <label
+                    key={option.id}
+                    className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm cursor-pointer hover:bg-transparent"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggleValue(option.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-300 px-2 py-2">No options available</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const areFiltersEqual = (a: FilterState, b: FilterState): boolean => (
@@ -66,7 +167,6 @@ export const MapPage: React.FC = () => {
   const [locationSearchError, setLocationSearchError] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -452,84 +552,34 @@ export const MapPage: React.FC = () => {
     }
   };
 
+  const handleFuelTypeToggle = (fuelTypeId: string) => {
+    setFilters((previous) => ({
+      ...previous,
+      fuelTypes: previous.fuelTypes.includes(fuelTypeId)
+        ? previous.fuelTypes.filter((value) => value !== fuelTypeId)
+        : [...previous.fuelTypes, fuelTypeId],
+    }));
+  };
+
+  const handleBrandToggle = (brand: string) => {
+    setSelectedBrands((previous) => (
+      previous.includes(brand)
+        ? previous.filter((value) => value !== brand)
+        : [...previous, brand]
+    ));
+  };
+
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Search & Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex gap-2">
-        <div ref={searchContainerRef} className="flex-1 relative">
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 rounded-lg">
-          <Search size={20} className="text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search location"
-            value={searchQuery}
-            onFocus={() => setIsSearchOpen(true)}
-            onKeyDown={handleKeyDown}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsSearchOpen(true);
-            }}
-            className="flex-1 bg-transparent py-2 outline-none text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-          />
-          {searchQuery && (
-            <button
-              onClick={handleClearSearch}
-              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-              aria-label="Clear search"
-            >
-              <X size={18} className="text-slate-600 dark:text-slate-300" />
-            </button>
-          )}
-          </div>
-          {isSearchOpen && (
-            <div
-              data-testid="map-unified-search-dropdown"
-              className="absolute mt-2 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-30 max-h-80 overflow-y-auto"
-            >
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Locations
-              </div>
-              {isSearchingLocations && (
-                <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">Searching locations...</div>
-              )}
-              {!isSearchingLocations && locationSearchError && (
-                <div className="px-3 py-2 text-sm text-rose-500">{locationSearchError}</div>
-              )}
-              {!isSearchingLocations && !locationSearchError && locationResults.length === 0 && (
-                <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">Type at least 2 characters</div>
-              )}
-              {locationResults.map((result, index) => (
-                <button
-                  key={`${result.lat}:${result.lon}:${result.display_name}`}
-                  type="button"
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                    highlightedIndex === index ? 'bg-slate-100 dark:bg-slate-800' : ''
-                  }`}
-                  onClick={() => handleSelectLocation(result)}
-                >
-                  {result.display_name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => setFilterModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-        >
-          <Filter size={20} />
-          <span className="hidden sm:inline">Filters</span>
-        </button>
-      </div>
+    <div className="w-full h-full relative">
       {/* Loading Indicator */}
       {loading && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-lg">
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-40 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-lg">
           Loading stations...
         </div>
       )}
 
       {/* Map */}
-      <div className="flex-1">
+      <div className="w-full h-full">
         {userLocation ? (
           <MapView
             stations={visibleStations}
@@ -547,6 +597,118 @@ export const MapPage: React.FC = () => {
         )}
       </div>
 
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] max-w-5xl pointer-events-none">
+        <div ref={searchContainerRef} className="pointer-events-auto relative">
+          <div className="flex items-center gap-2 bg-transparent border border-white/35 dark:border-white/10 px-3 rounded-lg backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
+            <Search size={20} className="text-slate-600 dark:text-slate-300" />
+            <input
+              type="text"
+              placeholder="Search location"
+              value={searchQuery}
+              onFocus={() => setIsSearchOpen(true)}
+              onKeyDown={handleKeyDown}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+              }}
+              className="flex-1 bg-transparent py-2 outline-none text-slate-900 dark:text-white placeholder-slate-600 dark:placeholder-slate-300"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="p-1 hover:bg-transparent rounded transition-colors"
+                aria-label="Clear search"
+              >
+                <X size={18} className="text-slate-700 dark:text-slate-200" />
+              </button>
+            )}
+          </div>
+          {isSearchOpen && (
+            <div
+              data-testid="map-unified-search-dropdown"
+              className="absolute mt-2 w-full rounded-lg border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-xl shadow-[0_16px_40px_rgba(15,23,42,0.35)] z-30 max-h-80 overflow-y-auto"
+            >
+              <div className="px-3 py-2 border-b border-white/30 dark:border-white/10 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200">
+                Locations
+              </div>
+              {isSearchingLocations && (
+                <div className="px-3 py-2 text-sm text-slate-700 dark:text-slate-200">Searching locations...</div>
+              )}
+              {!isSearchingLocations && locationSearchError && (
+                <div className="px-3 py-2 text-sm text-rose-500">{locationSearchError}</div>
+              )}
+              {!isSearchingLocations && !locationSearchError && locationResults.length === 0 && (
+                <div className="px-3 py-2 text-sm text-slate-700 dark:text-slate-200">Type at least 2 characters</div>
+              )}
+              {locationResults.map((result, index) => (
+                <button
+                  key={`${result.lat}:${result.lon}:${result.display_name}`}
+                  type="button"
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-transparent ${
+                    highlightedIndex === index ? 'bg-transparent' : ''
+                  }`}
+                  onClick={() => handleSelectLocation(result)}
+                >
+                  {result.display_name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(200px,1fr)_minmax(200px,1fr)_minmax(200px,1fr)] gap-3">
+          <div className="pointer-events-auto">
+            <MultiSelectDropdown
+              title="Fuel Types"
+              options={fuelTypeOptions.map((fuelType) => ({ id: fuelType.id, label: fuelType.label }))}
+              selectedValues={filters.fuelTypes}
+              onToggleValue={handleFuelTypeToggle}
+            />
+          </div>
+          <div className="pointer-events-auto">
+            <MultiSelectDropdown
+              title="Brands"
+              options={brandOptions.map((brand) => ({ id: brand, label: brand }))}
+              selectedValues={selectedBrands}
+              onToggleValue={handleBrandToggle}
+            />
+          </div>
+          <div className="pointer-events-auto rounded-xl border border-white/35 dark:border-white/15 bg-transparent backdrop-blur-md px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.18)] min-h-11">
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100">
+              Max Price: {filters.maxPrice.toFixed(1)}¢/L
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={400}
+              step={0.1}
+              value={filters.maxPrice}
+              onChange={(e) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  maxPrice: parseFloat(e.target.value),
+                }))
+              }
+              className="w-full mt-1"
+            />
+            <label className="mt-1.5 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={filters.onlyVerified}
+                onChange={(e) =>
+                  setFilters((previous) => ({
+                    ...previous,
+                    onlyVerified: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded"
+              />
+              Show verified prices only
+            </label>
+          </div>
+        </div>
+      </div>
+
       {/* Station Detail Sheet */}
       <StationDetailSheet
         station={selectedStation}
@@ -556,18 +718,6 @@ export const MapPage: React.FC = () => {
           navigate('/submit', { state: { stationId, fuelTypeId } });
           setSelectedStation(null);
         }}
-      />
-
-      {/* Filter Modal */}
-      <FilterModal
-        isOpen={filterModalOpen}
-        filters={filters}
-        fuelTypeOptions={fuelTypeOptions}
-        brandOptions={brandOptions}
-        selectedBrands={selectedBrands}
-        onFiltersChange={setFilters}
-        onSelectedBrandsChange={setSelectedBrands}
-        onClose={() => setFilterModalOpen(false)}
       />
     </div>
   );

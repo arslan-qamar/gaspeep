@@ -155,7 +155,7 @@ describe('MapPage', () => {
     });
   });
 
-  it('renders search bar and filter button', () => {
+  it('renders search bar and overlaid filter controls', () => {
     render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
@@ -165,11 +165,12 @@ describe('MapPage', () => {
     );
 
     expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Fuel Types/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Brands/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Show verified prices only/i)).toBeInTheDocument();
   });
 
-  it('opens filter modal when filter button clicked', async () => {
+  it('shows filter controls directly without modal', async () => {
     render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
@@ -178,15 +179,8 @@ describe('MapPage', () => {
       </MemoryRouter>
     );
 
-    const user = userEvent.setup();
-    const filterButtons = screen.getAllByRole('button');
-    const filterButton = filterButtons.find(btn => btn.textContent?.includes('Filters'));
-
-    if (filterButton) {
-      await user.click(filterButton);
-      // Modal opened - check if filter options are visible
-      expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
-    }
+    expect(screen.getByRole('button', { name: /Fuel Types/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Brands/i })).toBeInTheDocument();
   });
 
   it('performs search when enter pressed in search input', async () => {
@@ -278,7 +272,7 @@ describe('MapPage', () => {
     });
   });
 
-  it('shows responsive filter button text', () => {
+  it('shows overlaid filter controls', () => {
     render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
@@ -287,9 +281,8 @@ describe('MapPage', () => {
       </MemoryRouter>
     );
 
-    // Filter button exists and has responsive text styling
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Fuel Types/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Brands/i })).toBeInTheDocument();
   });
 
   it('clears markers when search returns empty', async () => {
@@ -363,13 +356,8 @@ describe('MapPage', () => {
     });
 
     const user = userEvent.setup();
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-
-    await user.click(filterButton!);
     await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await user.click(screen.getByLabelText('Diesel'));
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
 
     await waitFor(() => {
       expect(screen.queryByTitle('Shell')).not.toBeInTheDocument();
@@ -392,10 +380,6 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-    await user.click(filterButton!);
-
     await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await waitFor(() => {
       expect(screen.getByLabelText('Diesel')).toBeChecked();
@@ -415,14 +399,10 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-    await user.click(filterButton!);
     await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await user.click(screen.getByLabelText('Diesel'));
     await user.click(screen.getByRole('button', { name: /Brands/i }));
     await user.click(screen.getByLabelText('Shell'));
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
 
     await waitFor(() => {
         expect(mapPreferencesApi.updateMapFilterPreferences).toHaveBeenCalledWith(
@@ -452,9 +432,6 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-    await user.click(filterButton!);
     await user.click(screen.getByRole('button', { name: /Brands/i }));
 
     await waitFor(() => {
@@ -480,18 +457,9 @@ describe('MapPage', () => {
     });
 
     const user = userEvent.setup();
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-    await user.click(filterButton!);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /^Brands/ })).toBeInTheDocument();
-    });
-
     const callsBeforeBrandSelect = apiClient.post.mock.calls.length;
     await user.click(screen.getByRole('button', { name: /Brands/i }));
     await user.click(screen.getByLabelText('Shell'));
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
 
     await waitFor(() => {
       expect(screen.getByTitle('Shell')).toBeInTheDocument();
@@ -504,7 +472,7 @@ describe('MapPage', () => {
   it('preserves fuel and brand filters on location selection requery', async () => {
     const { apiClient, mapPreferencesApi } = jest.requireMock('@/lib/api');
     mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
-      data: { fuelTypes: ['2'], maxPrice: 300, onlyVerified: false },
+      data: { fuelTypes: ['2'], brands: [], maxPrice: 300, onlyVerified: false },
     });
     (global.fetch as jest.Mock).mockImplementation((url) => {
       const requestUrl = typeof url === 'string' ? url : (url as { url?: string })?.url ?? String(url);
@@ -542,12 +510,8 @@ describe('MapPage', () => {
     const user = userEvent.setup();
     const searchInput = screen.getByPlaceholderText('Search location');
 
-    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
-    expect(filterButton).toBeDefined();
-    await user.click(filterButton!);
     await user.click(screen.getByRole('button', { name: /Brands/i }));
     await user.click(screen.getByLabelText('Shell'));
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
 
     await user.clear(searchInput);
     await user.type(searchInput, 'new');
