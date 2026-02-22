@@ -10,7 +10,7 @@ INSERT INTO brands (id, name, display_name, display_order) VALUES
   ('660e8400-e29b-41d4-a716-446655441001'::uuid, '7-Eleven', '7-Eleven', 1),
   ('660e8400-e29b-41d4-a716-446655441002'::uuid, 'AGL', 'AGL', 2),
   ('660e8400-e29b-41d4-a716-446655441003'::uuid, 'AMPM', 'AMPM', 3),
-  ('660e8400-e29b-41d4-a716-446655441004'::uuid, 'Metro', 'Metro', 4),
+  ('660e8400-e29b-41d4-a716-446655441004'::uuid, 'Metro Fuel', 'Metro Fuel', 4),
   ('660e8400-e29b-41d4-a716-446655441005'::uuid, 'APW', 'APW', 5),
   ('660e8400-e29b-41d4-a716-446655441006'::uuid, 'AUS', 'AUS', 6),
   ('660e8400-e29b-41d4-a716-446655441007'::uuid, 'Ampol', 'Ampol', 7),
