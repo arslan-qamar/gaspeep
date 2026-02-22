@@ -54,6 +54,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   onToggleValue,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   useEffect(() => {
@@ -72,12 +73,28 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     };
   }, [isOpen, title]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
   const selectedCount = selectedValues.length;
   const triggerText = selectedCount > 0 ? `${title} (${selectedCount} selected)` : title;
 
   return (
     <div className="space-y-2 min-w-[160px]" data-dropdown-root={title}>
       <button
+        ref={triggerRef}
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -188,7 +205,10 @@ export const MapPage: React.FC = () => {
   const maxPriceCommitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipNextFilterSaveRef = useRef(false);
   const skipNextBrandSaveRef = useRef(false);
+  const skipNextSearchFocusOpenRef = useRef(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const locationOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // Params for the current fetch — updating this triggers the React Query fetch
   const [fetchParams, setFetchParams] = useState<{
@@ -536,6 +556,30 @@ export const MapPage: React.FC = () => {
     setHighlightedIndex(locationResults.length > 0 ? 0 : -1);
   }, [locationResults]);
 
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    locationOptionRefs.current = locationOptionRefs.current.slice(0, locationResults.length);
+  }, [locationResults.length]);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setIsSearchOpen(false);
+      skipNextSearchFocusOpenRef.current = true;
+      searchInputRef.current?.focus();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isSearchOpen]);
+
   const handleSelectLocation = useCallback((result: NominatimResult) => {
     const lat = Number.parseFloat(result.lat);
     const lng = Number.parseFloat(result.lon);
@@ -560,7 +604,7 @@ export const MapPage: React.FC = () => {
     setHighlightedIndex(-1);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isSearchOpen || locationResults.length === 0) {
       if (event.key === 'ArrowDown' && locationResults.length > 0) {
         event.preventDefault();
@@ -593,6 +637,41 @@ export const MapPage: React.FC = () => {
     if (event.key === 'Escape') {
       event.preventDefault();
       setIsSearchOpen(false);
+    }
+  };
+
+  const handleSearchResultKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (locationResults.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      const nextIndex = (index + 1) % locationResults.length;
+      setHighlightedIndex(nextIndex);
+      locationOptionRefs.current[nextIndex]?.focus();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const nextIndex = index <= 0 ? locationResults.length - 1 : index - 1;
+      setHighlightedIndex(nextIndex);
+      locationOptionRefs.current[nextIndex]?.focus();
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = locationResults[index];
+      if (!selected) return;
+      handleSelectLocation(selected);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsSearchOpen(false);
+      skipNextSearchFocusOpenRef.current = true;
+      searchInputRef.current?.focus();
     }
   };
 
@@ -667,11 +746,18 @@ export const MapPage: React.FC = () => {
           <div className="flex items-center gap-2 bg-transparent border border-white/35 dark:border-white/10 px-3 rounded-lg backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
             <Search size={20} className="text-slate-600 dark:text-slate-300" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search location"
               value={searchQuery}
-              onFocus={() => setIsSearchOpen(true)}
-              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (skipNextSearchFocusOpenRef.current) {
+                  skipNextSearchFocusOpenRef.current = false;
+                  return;
+                }
+                setIsSearchOpen(true);
+              }}
+              onKeyDown={handleSearchInputKeyDown}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setIsSearchOpen(true);
@@ -709,9 +795,13 @@ export const MapPage: React.FC = () => {
                 <button
                   key={`${result.lat}:${result.lon}:${result.display_name}`}
                   type="button"
+                  ref={(element) => {
+                    locationOptionRefs.current[index] = element;
+                  }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-transparent ${
                     highlightedIndex === index ? 'bg-transparent' : ''
                   }`}
+                  onKeyDown={(event) => handleSearchResultKeyDown(event, index)}
                   onClick={() => handleSelectLocation(result)}
                 >
                   {result.display_name}

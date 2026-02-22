@@ -170,6 +170,18 @@ describe('MapPage', () => {
     expect(screen.getByLabelText(/Show verified prices only/i)).toBeInTheDocument();
   });
 
+  it('focuses search location input on page load', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByPlaceholderText('Search location')).toHaveFocus();
+  });
+
   it('shows filter controls directly without modal', async () => {
     render(
       <MemoryRouter>
@@ -181,6 +193,73 @@ describe('MapPage', () => {
 
     expect(screen.getByRole('button', { name: /Fuel Types/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Brands/i })).toBeInTheDocument();
+  });
+
+  it('closes Fuel Types dropdown when escape is pressed', async () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
+    expect(screen.getByLabelText('Diesel')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Diesel')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes Brands dropdown when escape is pressed', async () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+    expect(screen.getByLabelText('Shell')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Shell')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes search location dropdown when escape is pressed from clear button focus', async () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search location');
+
+    await user.type(searchInput, 'ab');
+    await waitFor(() => {
+      expect(screen.getByTestId('map-unified-search-dropdown')).toBeInTheDocument();
+    });
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: /Clear search/i })).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('map-unified-search-dropdown')).not.toBeInTheDocument();
+    });
   });
 
   it('performs search when enter pressed in search input', async () => {
@@ -199,6 +278,58 @@ describe('MapPage', () => {
     // Component updates the search query and triggers a fetch with React Query
     await waitFor(() => {
       expect(searchInput).toHaveValue('test');
+    });
+  });
+
+  it('allows arrow navigation between location results when a result is focused', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      const requestUrl = typeof url === 'string' ? url : (url as { url?: string })?.url ?? String(url);
+      if (requestUrl.includes('nominatim.openstreetmap.org/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              lat: '40.73061',
+              lon: '-73.935242',
+              display_name: 'New York, NY, USA',
+            },
+            {
+              lat: '34.052235',
+              lon: '-118.243683',
+              display_name: 'Los Angeles, CA, USA',
+            },
+          ]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search location');
+    await user.type(searchInput, 'new');
+
+    const resultsDropdown = await screen.findByTestId('map-unified-search-dropdown');
+    await waitFor(() => {
+      expect(within(resultsDropdown).getByRole('button', { name: 'New York, NY, USA' })).toBeInTheDocument();
+    });
+    const newYorkResult = within(resultsDropdown).getByRole('button', { name: 'New York, NY, USA' });
+    newYorkResult.focus();
+
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    await waitFor(() => {
+      expect(searchInput).toHaveValue('Los Angeles, CA, USA');
     });
   });
 

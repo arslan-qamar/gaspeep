@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "accessibility-compliance": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3936584cc5ff5c958f33b0072ad17ba2bc9ed947dd3ada3c1ce4f4265385aada"
+    },
     "api-security-best-practices": {
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "github",
@@ -10,6 +15,11 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"
+    },
+    "fixing-accessibility": {
+      "source": "ibelick/ui-skills",
+      "sourceType": "github",
+      "computedHash": "4fa8f5a772b4eef3d28a54c136b507d070e54e2c326578f65eaf5e5a0118b38a"
     },
     "security-review": {
       "source": "affaan-m/everything-claude-code",
