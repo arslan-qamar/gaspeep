@@ -19,6 +19,7 @@ type User struct {
 
 type MapFilterPreferences struct {
 	FuelTypes    []string `json:"fuelTypes"`
+	Brands       []string `json:"brands"`
 	MaxPrice     float64  `json:"maxPrice"`
 	OnlyVerified bool     `json:"onlyVerified"`
 }
@@ -44,6 +45,13 @@ type FuelType struct {
 	DisplayName  string `json:"displayName"`
 	Description  string `json:"description"`
 	ColorCode    string `json:"colorCode"`
+	DisplayOrder int    `json:"displayOrder"`
+}
+
+type Brand struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	DisplayName  string `json:"displayName"`
 	DisplayOrder int    `json:"displayOrder"`
 }
 

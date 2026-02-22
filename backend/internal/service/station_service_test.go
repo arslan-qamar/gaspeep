@@ -65,8 +65,8 @@ func (m *MockStationRepository) SearchStations(searchQuery string, limit int) ([
 	return args.Get(0).([]models.Station), args.Error(1)
 }
 
-func (m *MockStationRepository) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error) {
-	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, maxPrice)
+func (m *MockStationRepository) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, brands []string, maxPrice float64) ([]models.Station, error) {
+	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, brands, maxPrice)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -187,10 +187,11 @@ func TestStationService_SearchStationsNearby_CallsRepository(t *testing.T) {
 	service := NewStationService(mockRepo)
 
 	fuelTypes := []string{"premium"}
+	brands := []string{"Shell", "BP"}
 	expectedStations := []models.Station{{ID: "nearby-search-1"}}
-	mockRepo.On("SearchStationsNearby", -33.8, 151.2, 15, "bp", fuelTypes, 2.0).Return(expectedStations, nil)
+	mockRepo.On("SearchStationsNearby", -33.8, 151.2, 15, "bp", fuelTypes, brands, 2.0).Return(expectedStations, nil)
 
-	result, err := service.SearchStationsNearby(-33.8, 151.2, 15, "bp", fuelTypes, 2.0)
+	result, err := service.SearchStationsNearby(-33.8, 151.2, 15, "bp", fuelTypes, brands, 2.0)
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedStations, result)

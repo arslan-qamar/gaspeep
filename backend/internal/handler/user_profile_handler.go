@@ -111,6 +111,7 @@ func (h *UserProfileHandler) GetMapFilterPreferences(c *gin.Context) {
 	if prefs == nil {
 		c.JSON(http.StatusOK, models.MapFilterPreferences{
 			FuelTypes:    []string{},
+			Brands:       []string{},
 			MaxPrice:     400,
 			OnlyVerified: false,
 		})
@@ -140,6 +141,9 @@ func (h *UserProfileHandler) UpdateMapFilterPreferences(c *gin.Context) {
 	}
 	if req.FuelTypes == nil {
 		req.FuelTypes = []string{}
+	}
+	if req.Brands == nil {
+		req.Brands = []string{}
 	}
 
 	if err := h.userRepo.UpdateMapFilterPreferences(userID.(string), req); err != nil {

@@ -446,6 +446,7 @@ func (r *PgStationRepository) SearchStationsNearby(
 	radiusKm int,
 	searchQuery string,
 	fuelTypes []string,
+	brands []string,
 	maxPrice float64,
 ) ([]models.Station, error) {
 	query := `
@@ -500,6 +501,21 @@ func (r *PgStationRepository) SearchStationsNearby(
 		} else {
 			query += ` AND UPPER(ft.name) = ANY($` + strconv.Itoa(argIndex) + `)`
 			args = append(args, pq.Array(nameVals))
+			argIndex++
+		}
+	}
+
+	if len(brands) > 0 {
+		normalizedBrands := make([]string, 0, len(brands))
+		for _, brand := range brands {
+			trimmedBrand := strings.ToUpper(strings.TrimSpace(brand))
+			if trimmedBrand != "" {
+				normalizedBrands = append(normalizedBrands, trimmedBrand)
+			}
+		}
+		if len(normalizedBrands) > 0 {
+			query += ` AND UPPER(TRIM(s.brand)) = ANY($` + strconv.Itoa(argIndex) + `)`
+			args = append(args, pq.Array(normalizedBrands))
 			argIndex++
 		}
 	}

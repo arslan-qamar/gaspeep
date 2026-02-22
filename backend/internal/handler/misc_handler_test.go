@@ -48,6 +48,37 @@ func TestFuelTypeHandler(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+func TestBrandHandler(t *testing.T) {
+	mockService := new(testhelpers.MockBrandService)
+	h := NewBrandHandler(mockService)
+	require.NotNil(t, h)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/brands", h.GetBrands)
+	r.GET("/brands/:id", h.GetBrand)
+
+	mockService.On("GetBrands").Return([]models.Brand{{ID: "b1"}}, nil).Once()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/brands", nil)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	mockService.On("GetBrand", "b1").Return(&models.Brand{ID: "b1"}, nil).Once()
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/brands/b1", nil)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	mockService.On("GetBrand", "404").Return(nil, sql.ErrNoRows).Once()
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/brands/404", nil)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	mockService.AssertExpectations(t)
+}
+
 func TestFuelPriceHandler(t *testing.T) {
 	mockService := new(testhelpers.MockFuelPriceService)
 	h := NewFuelPriceHandler(mockService)

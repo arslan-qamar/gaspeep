@@ -64,8 +64,8 @@ func (m *MockStationService) SearchStations(searchQuery string, limit int) ([]mo
 	return args.Get(0).([]models.Station), args.Error(1)
 }
 
-func (m *MockStationService) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, maxPrice float64) ([]models.Station, error) {
-	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, maxPrice)
+func (m *MockStationService) SearchStationsNearby(lat, lon float64, radiusKm int, searchQuery string, fuelTypes []string, brands []string, maxPrice float64) ([]models.Station, error) {
+	args := m.Called(lat, lon, radiusKm, searchQuery, fuelTypes, brands, maxPrice)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -214,6 +214,27 @@ func (m *MockFuelTypeService) GetFuelType(id string) (*models.FuelType, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.FuelType), args.Error(1)
+}
+
+// MockBrandService is a mock implementation of service.BrandService
+type MockBrandService struct {
+	mock.Mock
+}
+
+func (m *MockBrandService) GetBrands() ([]models.Brand, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Brand), args.Error(1)
+}
+
+func (m *MockBrandService) GetBrand(id string) (*models.Brand, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Brand), args.Error(1)
 }
 
 // MockBroadcastService is a mock implementation of service.BroadcastService

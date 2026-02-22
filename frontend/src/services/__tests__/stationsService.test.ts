@@ -113,6 +113,7 @@ describe('stationsService', () => {
       radiusKm: 12,
       query: 'Fuel',
       fuelTypes: [1],
+      brands: ['Shell', 'BP'],
       maxPrice: 2.1,
     }
     const signal = new AbortController().signal

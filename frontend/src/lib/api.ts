@@ -93,6 +93,21 @@ export const fuelTypeApi = {
     apiClient.get<FuelType>(`/fuel-types/${id}`),
 }
 
+export interface Brand {
+  id: string
+  name: string
+  displayName: string
+  displayOrder: number
+}
+
+export const brandApi = {
+  getBrands: () =>
+    apiClient.get<Brand[]>('/brands'),
+
+  getBrand: (id: string) =>
+    apiClient.get<Brand>(`/brands/${id}`),
+}
+
 // Fuel Price API
 export interface FuelPrice {
   id: string
@@ -145,6 +160,7 @@ export const fuelPriceApi = {
 
 export interface MapFilterPreferences {
   fuelTypes: string[]
+  brands: string[]
   maxPrice: number
   onlyVerified: boolean
 }

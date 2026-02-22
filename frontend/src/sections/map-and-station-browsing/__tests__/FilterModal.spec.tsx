@@ -15,6 +15,8 @@ const mockFuelTypeOptions = [
   { id: 'unleaded-91', label: 'Unleaded 91' },
   { id: 'diesel', label: 'Diesel' },
 ];
+const mockBrandOptions = ['Shell', 'BP', 'Caltex'];
+const mockSelectedBrands = ['Shell'];
 
 describe('FilterModal', () => {
   it('does not render when not open', () => {
@@ -23,7 +25,10 @@ describe('FilterModal', () => {
         isOpen={false}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
@@ -36,7 +41,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
@@ -47,41 +55,44 @@ describe('FilterModal', () => {
     expect(screen.getByLabelText('Show verified prices only')).toBeChecked();
   });
 
-  it('shows fuel type checkboxes with correct checked state', () => {
+  it('shows selected fuel types count in dropdown trigger', () => {
     render(
       <FilterModal
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
 
-    expect(screen.getByLabelText('E10')).toBeChecked();
-    expect(screen.getByLabelText('Diesel')).toBeChecked();
-    expect(screen.getByLabelText('Unleaded 91')).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /Fuel Types.*2 selected/i })).toBeInTheDocument();
   });
 
-  it('toggles fuel type checkboxes', async () => {
+  it('updates fuel type checkbox selections from dropdown', async () => {
     render(
       <FilterModal
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
 
-    const unleadedCheckbox = screen.getByLabelText('Unleaded 91');
-    expect(unleadedCheckbox).not.toBeChecked();
     const user = userEvent.setup();
-    await user.click(unleadedCheckbox);
-    expect(unleadedCheckbox).toBeChecked();
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
+    await user.click(screen.getByLabelText('Unleaded 91'));
+    expect(screen.getByLabelText('Unleaded 91')).toBeChecked();
 
-    await user.click(unleadedCheckbox);
-    expect(unleadedCheckbox).not.toBeChecked();
+    await user.click(screen.getByLabelText('Unleaded 91'));
+    expect(screen.getByLabelText('Unleaded 91')).not.toBeChecked();
   });
 
   it('updates max price when slider changes', async () => {
@@ -90,7 +101,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
@@ -107,7 +121,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={() => {}}
       />
     );
@@ -126,7 +143,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={mockClose}
       />
     );
@@ -140,13 +160,17 @@ describe('FilterModal', () => {
 
   it('calls onFiltersChange and onClose when apply button clicked', async () => {
     const mockFiltersChange = jest.fn();
+    const mockBrandsChange = jest.fn();
     const mockClose = jest.fn();
     render(
       <FilterModal
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={mockFiltersChange}
+        onSelectedBrandsChange={mockBrandsChange}
         onClose={mockClose}
       />
     );
@@ -156,6 +180,7 @@ describe('FilterModal', () => {
     await user.click(applyButton);
 
     expect(mockFiltersChange).toHaveBeenCalledWith(mockFilters);
+    expect(mockBrandsChange).toHaveBeenCalledWith(mockSelectedBrands);
     expect(mockClose).toHaveBeenCalledTimes(1);
   });
 
@@ -166,7 +191,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={mockClose}
       />
     );
@@ -185,7 +213,10 @@ describe('FilterModal', () => {
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={() => {}}
+        onSelectedBrandsChange={() => {}}
         onClose={mockClose}
       />
     );
@@ -199,18 +230,23 @@ describe('FilterModal', () => {
 
   it('applies filter changes when apply clicked', async () => {
     const mockFiltersChange = jest.fn();
+    const mockBrandsChange = jest.fn();
     render(
       <FilterModal
         isOpen={true}
         filters={mockFilters}
         fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
         onFiltersChange={mockFiltersChange}
+        onSelectedBrandsChange={mockBrandsChange}
         onClose={() => {}}
       />
     );
 
     // Change some filters
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await user.click(screen.getByLabelText('Unleaded 91'));
     const slider = screen.getByDisplayValue('199.9');
     fireEvent.change(slider, { target: { value: '205' } });
@@ -219,10 +255,36 @@ describe('FilterModal', () => {
     const applyButton = screen.getByRole('button', { name: /apply/i });
     await user.click(applyButton);
 
-    expect(mockFiltersChange).toHaveBeenCalledWith({
-      fuelTypes: ['e10', 'diesel', 'unleaded-91'],
-      maxPrice: 205.0,
-      onlyVerified: false,
-    });
+    expect(mockFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fuelTypes: expect.arrayContaining(['e10', 'diesel', 'unleaded-91']),
+        maxPrice: 205.0,
+        onlyVerified: false,
+      })
+    );
+    expect(mockBrandsChange).toHaveBeenCalledWith(['Shell']);
+  });
+
+  it('updates brand checkbox selections from dropdown and applies selected brands', async () => {
+    const mockBrandsChange = jest.fn();
+    render(
+      <FilterModal
+        isOpen={true}
+        filters={mockFilters}
+        fuelTypeOptions={mockFuelTypeOptions}
+        brandOptions={mockBrandOptions}
+        selectedBrands={mockSelectedBrands}
+        onFiltersChange={() => {}}
+        onSelectedBrandsChange={mockBrandsChange}
+        onClose={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+    await user.click(screen.getByLabelText('BP'));
+    await user.click(screen.getByRole('button', { name: /apply/i }));
+
+    expect(mockBrandsChange).toHaveBeenCalledWith(['Shell', 'BP']);
   });
 });

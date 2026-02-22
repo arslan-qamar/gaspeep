@@ -178,6 +178,7 @@ func (h *StationHandler) SearchStationsNearby(c *gin.Context) {
 		RadiusKm  int      `json:"radiusKm" binding:"required,min=1,max=200"`
 		Query     string   `json:"query"`
 		FuelTypes []string `json:"fuelTypes"`
+		Brands    []string `json:"brands"`
 		MaxPrice  float64  `json:"maxPrice"`
 	}
 
@@ -186,7 +187,7 @@ func (h *StationHandler) SearchStationsNearby(c *gin.Context) {
 		return
 	}
 
-	stations, err := h.stationService.SearchStationsNearby(req.Latitude, req.Longitude, req.RadiusKm, req.Query, req.FuelTypes, req.MaxPrice)
+	stations, err := h.stationService.SearchStationsNearby(req.Latitude, req.Longitude, req.RadiusKm, req.Query, req.FuelTypes, req.Brands, req.MaxPrice)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed: " + err.Error()})
 		return

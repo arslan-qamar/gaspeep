@@ -218,6 +218,7 @@ func TestUserProfileHandlerMapFilterPreferences(t *testing.T) {
 		assert.Equal(t, "u1", userID)
 		return &models.MapFilterPreferences{
 			FuelTypes:    []string{"diesel"},
+			Brands:       []string{"Shell"},
 			MaxPrice:     185.4,
 			OnlyVerified: true,
 		}, nil
@@ -227,16 +228,18 @@ func TestUserProfileHandlerMapFilterPreferences(t *testing.T) {
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), `"diesel"`)
+	assert.Contains(t, w.Body.String(), `"Shell"`)
 	assert.Contains(t, w.Body.String(), `"maxPrice":185.4`)
 
 	repo.updateMapFilterPreferencesFn = func(userID string, prefs models.MapFilterPreferences) error {
 		assert.Equal(t, "u1", userID)
 		assert.Equal(t, []string{"u91"}, prefs.FuelTypes)
+		assert.Equal(t, []string{"Shell", "BP"}, prefs.Brands)
 		assert.Equal(t, 199.9, prefs.MaxPrice)
 		assert.Equal(t, true, prefs.OnlyVerified)
 		return nil
 	}
-	req = httptest.NewRequest(http.MethodPut, "/preferences/map-filters", bytes.NewReader([]byte(`{"fuelTypes":["u91"],"maxPrice":199.9,"onlyVerified":true}`)))
+	req = httptest.NewRequest(http.MethodPut, "/preferences/map-filters", bytes.NewReader([]byte(`{"fuelTypes":["u91"],"brands":["Shell","BP"],"maxPrice":199.9,"onlyVerified":true}`)))
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)

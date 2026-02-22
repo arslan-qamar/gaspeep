@@ -1,10 +1,20 @@
 {
   "version": 1,
   "skills": {
+    "api-security-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "f99942bacaa99665d0c5197d2d1891d800cc15f13e354e8190a87be154bc9380"
+    },
     "brainstorming": {
       "source": "obra/superpowers",
       "sourceType": "github",
       "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"
+    },
+    "security-review": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "f2293fda202029f35b4d5175d2b229ad01b59c08a5ba4bb16287f60074d35970"
     },
     "tailwind-design-system": {
       "source": "wshobson/agents",

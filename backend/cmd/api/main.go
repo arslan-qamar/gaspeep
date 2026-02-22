@@ -69,6 +69,7 @@ func main() {
 	passwordResetRepo := repository.NewPgPasswordResetRepository(database)
 	stationRepo := repository.NewPgStationRepository(database)
 	fuelTypeRepo := repository.NewPgFuelTypeRepository(database)
+	brandRepo := repository.NewPgBrandRepository(database)
 	fuelPriceRepo := repository.NewPgFuelPriceRepository(database)
 	priceSubmissionRepo := repository.NewPgPriceSubmissionRepository(database)
 	alertRepo := repository.NewPgAlertRepository(database)
@@ -79,6 +80,7 @@ func main() {
 	// --- Services ---
 	stationService := service.NewStationService(stationRepo)
 	fuelTypeService := service.NewFuelTypeService(fuelTypeRepo)
+	brandService := service.NewBrandService(brandRepo)
 	fuelPriceService := service.NewFuelPriceService(fuelPriceRepo)
 	priceSubmissionService := service.NewPriceSubmissionService(priceSubmissionRepo, fuelPriceRepo, alertRepo)
 	ocrService := service.NewGoogleVisionOCRServiceFromEnv()
@@ -94,6 +96,7 @@ func main() {
 	userProfileHandler := handler.NewUserProfileHandler(userRepo, passwordResetRepo)
 	stationHandler := handler.NewStationHandler(stationService)
 	fuelTypeHandler := handler.NewFuelTypeHandler(fuelTypeService)
+	brandHandler := handler.NewBrandHandler(brandService)
 	fuelPriceHandler := handler.NewFuelPriceHandler(fuelPriceService)
 	priceSubmissionHandler := handler.NewPriceSubmissionHandler(priceSubmissionService)
 	priceSubmissionHandler.SetOCRService(ocrService)
@@ -147,6 +150,13 @@ func main() {
 	{
 		fuelTypes.GET("", fuelTypeHandler.GetFuelTypes)
 		fuelTypes.GET("/:id", fuelTypeHandler.GetFuelType)
+	}
+
+	// Brand routes
+	brands := router.Group("/api/brands")
+	{
+		brands.GET("", brandHandler.GetBrands)
+		brands.GET("/:id", brandHandler.GetBrand)
 	}
 
 	// Fuel price routes

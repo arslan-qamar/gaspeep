@@ -378,7 +378,7 @@ func TestSearchStationsNearby_ExcludesNonPositivePrices(t *testing.T) {
 	testhelpers.CreateTestFuelPrice(t, db, s2.ID, fuelType, 1.59)
 
 	repo := NewPgStationRepository(db)
-	results, err := repo.SearchStationsNearby(centerLat, centerLon, 10, "", nil, 0)
+	results, err := repo.SearchStationsNearby(centerLat, centerLon, 10, "", nil, nil, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, results)
 
@@ -393,6 +393,32 @@ func TestSearchStationsNearby_ExcludesNonPositivePrices(t *testing.T) {
 	}
 
 	assert.True(t, positivePriceFound, "expected at least one positive price in search-nearby results")
+}
+
+func TestSearchStationsNearby_BrandFilteringCaseInsensitiveExact(t *testing.T) {
+	db := testhelpers.SetupTestDBWithCleanup(t)
+
+	centerLat, centerLon := -33.8568, 151.2153
+
+	shellStation := testhelpers.CreateTestStation(t, db, centerLat+0.01, centerLon)
+	bpStation := testhelpers.CreateTestStation(t, db, centerLat+0.02, centerLon)
+
+	_, err := db.Exec("UPDATE stations SET brand = $1 WHERE id = $2", "Shell", shellStation.ID)
+	require.NoError(t, err)
+	_, err = db.Exec("UPDATE stations SET brand = $1 WHERE id = $2", "BP", bpStation.ID)
+	require.NoError(t, err)
+
+	fuelType := testhelpers.CreateTestFuelType(t, db, "E10")
+	testhelpers.CreateTestFuelPrice(t, db, shellStation.ID, fuelType, 1.59)
+	testhelpers.CreateTestFuelPrice(t, db, bpStation.ID, fuelType, 1.62)
+
+	repo := NewPgStationRepository(db)
+	results, err := repo.SearchStationsNearby(centerLat, centerLon, 10, "", nil, []string{"sHeLl"}, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, results)
+	require.Len(t, results, 1)
+	assert.Equal(t, shellStation.ID, results[0].ID)
+	assert.Equal(t, "Shell", results[0].Brand)
 }
 
 // TestCreateStation_WithAmenities tests creating station with amenities

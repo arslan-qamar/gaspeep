@@ -16,6 +16,7 @@ export type SearchNearbyParams = {
   radiusKm: number
   query?: string
   fuelTypes?: Array<number | string>
+  brands?: string[]
   maxPrice?: number
 }
 

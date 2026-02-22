@@ -33,7 +33,7 @@ func TestSearchStationsNearby_PassesMaxPriceAsCents(t *testing.T) {
 	require.NoError(t, err)
 
 	mockService.
-		On("SearchStationsNearby", -33.8688, 151.2093, 5, "", mock.Anything, 199.9).
+		On("SearchStationsNearby", -33.8688, 151.2093, 5, "", mock.Anything, mock.Anything, 199.9).
 		Return([]models.Station{}, nil).
 		Once()
 
@@ -64,7 +64,38 @@ func TestSearchStationsNearby_PassesWholeNumberCentsMaxPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	mockService.
-		On("SearchStationsNearby", -33.8688, 151.2093, 5, "", mock.Anything, 200.0).
+		On("SearchStationsNearby", -33.8688, 151.2093, 5, "", mock.Anything, mock.Anything, 200.0).
+		Return([]models.Station{}, nil).
+		Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/stations/search-nearby", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	mockService.AssertExpectations(t)
+}
+
+func TestSearchStationsNearby_PassesBrands(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(testhelpers.MockStationService)
+	handler := NewStationHandler(mockService)
+	router := gin.New()
+	router.POST("/api/stations/search-nearby", handler.SearchStationsNearby)
+
+	payload := map[string]interface{}{
+		"latitude":  -33.8688,
+		"longitude": 151.2093,
+		"radiusKm":  5,
+		"brands":    []string{"Shell", "BP"},
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	mockService.
+		On("SearchStationsNearby", -33.8688, 151.2093, 5, "", mock.Anything, []string{"Shell", "BP"}, 0.0).
 		Return([]models.Station{}, nil).
 		Once()
 

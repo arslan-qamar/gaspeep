@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MapPage from '../pages/MapPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -34,6 +34,10 @@ jest.mock('@/lib/api', () => ({
     getFuelPrices: jest.fn(),
     getStationPrices: jest.fn(),
     getCheapestPrices: jest.fn(),
+  },
+  brandApi: {
+    getBrands: jest.fn(),
+    getBrand: jest.fn(),
   },
   mapPreferencesApi: {
     getMapFilterPreferences: jest.fn(),
@@ -97,7 +101,8 @@ const mockStations: Station[] = [
 describe('MapPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const { apiClient, fuelTypeApi, mapPreferencesApi } = jest.requireMock('@/lib/api');
+    (global.fetch as jest.Mock).mockReset();
+    const { apiClient, fuelTypeApi, brandApi, mapPreferencesApi } = jest.requireMock('@/lib/api');
     apiClient.post.mockResolvedValue({ data: mockStations });
     fuelTypeApi.getFuelTypes.mockResolvedValue({
       data: [
@@ -105,8 +110,14 @@ describe('MapPage', () => {
         { id: '2', name: 'Diesel', displayName: 'Diesel', displayOrder: 2 },
       ],
     });
+    brandApi.getBrands.mockResolvedValue({
+      data: [
+        { id: 'b1', name: 'Shell', displayName: 'Shell', displayOrder: 1 },
+        { id: 'b2', name: 'BP', displayName: 'BP', displayOrder: 2 },
+      ],
+    });
     mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
-      data: { fuelTypes: [], maxPrice: 400, onlyVerified: false },
+      data: { fuelTypes: [], brands: [], maxPrice: 400, onlyVerified: false },
     });
     mapPreferencesApi.updateMapFilterPreferences.mockResolvedValue({ data: { message: 'ok' } });
 
@@ -122,6 +133,12 @@ describe('MapPage', () => {
 
     // Mock successful API calls
     (global.fetch as jest.Mock).mockImplementation((url) => {
+      if (typeof url === 'string' && url.includes('nominatim.openstreetmap.org/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
       if (url.includes('/api/stations/nearby')) {
         return Promise.resolve({
           ok: true,
@@ -147,7 +164,7 @@ describe('MapPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
@@ -168,7 +185,7 @@ describe('MapPage', () => {
     if (filterButton) {
       await user.click(filterButton);
       // Modal opened - check if filter options are visible
-      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
     }
   });
 
@@ -182,8 +199,8 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
-    await user.type(searchInput, 'test{Enter}');
+    const searchInput = screen.getByPlaceholderText('Search location');
+    await user.type(searchInput, 'test');
 
     // Component updates the search query and triggers a fetch with React Query
     await waitFor(() => {
@@ -201,13 +218,13 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
-    await user.type(searchInput, 'test{Enter}');
+    const searchInput = screen.getByPlaceholderText('Search location');
+    await user.type(searchInput, 'test');
 
     // Component may show loading indicator during fetch
     await waitFor(() => {
       // After query completes, search input should still be there
-      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
     });
   });
 
@@ -223,7 +240,7 @@ describe('MapPage', () => {
     // Component uses geolocation to get user location, then fetches nearby stations
     await waitFor(() => {
       // Verify search input is rendered (component loaded)
-      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
     }, { timeout: 5000 });
   });
 
@@ -257,7 +274,7 @@ describe('MapPage', () => {
 
     // Component should render the search input even with errors
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search location')).toBeInTheDocument();
     });
   });
 
@@ -302,10 +319,10 @@ describe('MapPage', () => {
     );
 
     const user = userEvent.setup();
-    const searchInput = screen.getByPlaceholderText('Filter stations by name e.g: Shell, BP...');
+    const searchInput = screen.getByPlaceholderText('Search location');
 
     // Perform a search that returns results
-    await user.type(searchInput, 'test{Enter}');
+    await user.type(searchInput, 'test');
 
     // Component should accept the input and trigger a search
     await waitFor(() => {
@@ -350,6 +367,7 @@ describe('MapPage', () => {
     expect(filterButton).toBeDefined();
 
     await user.click(filterButton!);
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await user.click(screen.getByLabelText('Diesel'));
     await user.click(screen.getByRole('button', { name: 'Apply' }));
 
@@ -362,7 +380,7 @@ describe('MapPage', () => {
   it('loads saved map filter preferences from backend', async () => {
     const { mapPreferencesApi } = jest.requireMock('@/lib/api');
     mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
-      data: { fuelTypes: ['2'], maxPrice: 175.5, onlyVerified: true },
+      data: { fuelTypes: ['2'], brands: ['Shell'], maxPrice: 175.5, onlyVerified: true },
     });
 
     render(
@@ -378,9 +396,11 @@ describe('MapPage', () => {
     expect(filterButton).toBeDefined();
     await user.click(filterButton!);
 
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await waitFor(() => {
       expect(screen.getByLabelText('Diesel')).toBeChecked();
     });
+    expect(screen.getByRole('button', { name: /Brands.*1 selected/i })).toBeInTheDocument();
   });
 
   it('saves map filter preferences to backend when filters are applied', async () => {
@@ -398,14 +418,159 @@ describe('MapPage', () => {
     const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
     expect(filterButton).toBeDefined();
     await user.click(filterButton!);
+    await user.click(screen.getByRole('button', { name: /Fuel Types/i }));
     await user.click(screen.getByLabelText('Diesel'));
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+    await user.click(screen.getByLabelText('Shell'));
     await user.click(screen.getByRole('button', { name: 'Apply' }));
 
     await waitFor(() => {
-      expect(mapPreferencesApi.updateMapFilterPreferences).toHaveBeenCalledWith(
+        expect(mapPreferencesApi.updateMapFilterPreferences).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fuelTypes: ['2'],
+            brands: ['Shell'],
+          })
+        );
+    });
+  });
+
+  it('loads brand options from backend brands endpoint', async () => {
+    const { brandApi } = jest.requireMock('@/lib/api');
+    brandApi.getBrands.mockResolvedValue({
+      data: [
+        { id: 'b1', name: 'Shell', displayName: 'Shell', displayOrder: 1 },
+        { id: 'b2', name: 'Caltex', displayName: 'Caltex', displayOrder: 2 },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+    await user.click(filterButton!);
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+
+    await waitFor(() => {
+      expect(brandApi.getBrands).toHaveBeenCalledTimes(1);
+      expect(screen.getByLabelText('Caltex')).toBeInTheDocument();
+    });
+  });
+
+  it('filters markers locally by selected brand in Filters modal without backend requery', async () => {
+    const { apiClient } = jest.requireMock('@/lib/api');
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Shell')).toBeInTheDocument();
+      expect(screen.getByTitle('BP')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+    await user.click(filterButton!);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^Brands/ })).toBeInTheDocument();
+    });
+
+    const callsBeforeBrandSelect = apiClient.post.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+    await user.click(screen.getByLabelText('Shell'));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Shell')).toBeInTheDocument();
+      expect(screen.queryByTitle('BP')).not.toBeInTheDocument();
+    });
+
+    expect(apiClient.post.mock.calls.length).toBe(callsBeforeBrandSelect);
+  });
+
+  it('preserves fuel and brand filters on location selection requery', async () => {
+    const { apiClient, mapPreferencesApi } = jest.requireMock('@/lib/api');
+    mapPreferencesApi.getMapFilterPreferences.mockResolvedValue({
+      data: { fuelTypes: ['2'], maxPrice: 300, onlyVerified: false },
+    });
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      const requestUrl = typeof url === 'string' ? url : (url as { url?: string })?.url ?? String(url);
+      if (requestUrl.includes('nominatim.openstreetmap.org/search')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              lat: '40.73061',
+              lon: '-73.935242',
+              display_name: 'New York, NY, USA',
+            },
+          ]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MapPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Shell')).toBeInTheDocument();
+      expect(screen.getByTitle('BP')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const searchInput = screen.getByPlaceholderText('Search location');
+
+    const filterButton = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Filters'));
+    expect(filterButton).toBeDefined();
+    await user.click(filterButton!);
+    await user.click(screen.getByRole('button', { name: /Brands/i }));
+    await user.click(screen.getByLabelText('Shell'));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await user.clear(searchInput);
+    await user.type(searchInput, 'new');
+    await user.click(searchInput);
+    await waitFor(() => {
+      expect(screen.getByText('Locations')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('map-unified-search-dropdown')).getByRole('button', { name: 'New York, NY, USA' })
+      ).toBeInTheDocument();
+    });
+    await user.click(
+      within(screen.getByTestId('map-unified-search-dropdown')).getByRole('button', { name: 'New York, NY, USA' })
+    );
+
+    await waitFor(() => {
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/stations/search-nearby',
         expect.objectContaining({
           fuelTypes: ['2'],
-        })
+          brands: ['Shell'],
+          maxPrice: 300,
+        }),
+        expect.any(Object)
       );
     });
   });

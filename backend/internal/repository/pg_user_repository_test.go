@@ -292,6 +292,7 @@ func TestMapFilterPreferences_RoundTrip(t *testing.T) {
 
 	updateErr := repo.UpdateMapFilterPreferences(user.ID, models.MapFilterPreferences{
 		FuelTypes:    []string{"u91", "diesel"},
+		Brands:       []string{"Shell", "BP"},
 		MaxPrice:     204.9,
 		OnlyVerified: true,
 	})
@@ -301,6 +302,7 @@ func TestMapFilterPreferences_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, prefs)
 	assert.Equal(t, []string{"u91", "diesel"}, prefs.FuelTypes)
+	assert.Equal(t, []string{"Shell", "BP"}, prefs.Brands)
 	assert.Equal(t, 204.9, prefs.MaxPrice)
 	assert.True(t, prefs.OnlyVerified)
 }
