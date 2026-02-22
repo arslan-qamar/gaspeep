@@ -581,7 +581,7 @@ export const PriceSubmissionForm: React.FC = () => {
     
       <div
         data-testid="price-submission-glass-wrapper"
-        className="relative bg-white max-w-2xl mx-auto p-4 md:p-6 rounded-xl border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
+        className="bg-white max-w-2xl mx-auto p-4 md:p-6 rounded-xl border border-white/35 dark:border-white/10 bg-transparent backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
         <SubmissionHeader currentStepNumber={currentStepNumber} steps={steps} />
 
         {currentStep === 'station' && (

@@ -34,9 +34,9 @@ export const SubmissionConfirmationDialog: React.FC<SubmissionConfirmationDialog
     <div
       role="dialog"
       aria-modal="true"
-      className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-4 rounded-xl"
+      className="inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-6">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-xl  border-slate-200 dark:border-slate-800 p-6">
         <div className="text-center">
           <div className="text-5xl mb-3">✅</div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Thanks for contributing!</h2>
